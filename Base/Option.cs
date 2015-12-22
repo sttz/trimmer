@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -133,45 +134,42 @@ public abstract class Option : IOption
 
 	public Type[] ChildOptionTypes { get; protected set; }
 
-	private Dictionary<string, IChildOption> children;
+	private Dictionary<string, IOption> children;
 
 	public bool HasChildren {
 		get {
-			return ChildOptionTypes != null && ChildOptionTypes.Length > 0;
+			return children != null && children.Count > 0;
 		}
 	}
 
-	public IEnumerable<IChildOption> Children {
+	public IEnumerable<IOption> Children {
 		get {
 			if (children == null) {
-				return Enumerable.Empty<IChildOption>();
+				return Enumerable.Empty<IOption>();
 			} else {
 				return children.Values;
 			}
 		}
 	}
 
-	private void CreateChildren()
+	protected void CreateChildren()
 	{
-		if (ChildOptionTypes == null || ChildOptionTypes.Length == 0)
-			return;
+		var type = GetType();
 
-		children = new Dictionary<string, IChildOption>(StringComparer.OrdinalIgnoreCase);
-
-		foreach (var childType in ChildOptionTypes) {
-			var child = Activator.CreateInstance(childType) as IChildOption;
-			if (child == null) {
-				Debug.LogError(string.Format(
-					"Child option type '{0}' does not implement IChildOption.",
-					childType.Name
-				));
+		var nested = type.GetNestedTypes(BindingFlags.Public);
+		foreach (var nestedType in nested) {
+			if (!typeof(IOption).IsAssignableFrom(nestedType))
 				continue;
-			}
+
+			if (children == null)
+				children = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
+
+			var child = (IOption)Activator.CreateInstance(nestedType);
 			children[child.Name] = child;
 		}
 	}
 
-	public IChildOption GetChild(string name)
+	public IOption GetChild(string name)
 	{
 		if (children == null)
 			return null;

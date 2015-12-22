@@ -36,8 +36,8 @@ public class Profile : IEnumerable<IOption>
 						.Where(t => 
 							t.IsClass 
 							&& !t.IsAbstract 
+							&& !t.IsNested
 							&& typeof(IOption).IsAssignableFrom(t)
-							&& !typeof(IChildOption).IsAssignableFrom(t)
 						)
 					);
 				}
@@ -160,11 +160,13 @@ public class Profile : IEnumerable<IOption>
 	/// Recursive method to apply a node with all its variants and
 	/// children to an option.
 	/// </summary>
-	private void LoadNode(IOption option, ValueStore.Node node)
+	private void LoadNode(IOption option, ValueStore.Node node, bool isRootNode = true)
 	{
 		option.Load(node.value ?? string.Empty);
 
 		if (option.IsVariant) {
+			option.IsDefaultVariant = isRootNode;
+
 			// Reset variants since the node might not contain a value
 			foreach (var variantOption in option.Variants) {
 				variantOption.Load(string.Empty);
@@ -173,7 +175,7 @@ public class Profile : IEnumerable<IOption>
 			if (node.variants != null) {
 				foreach (var variantNode in node.variants) {
 					var variantOption = option.GetVariant(variantNode.name);
-					LoadNode(variantOption, variantNode);
+					LoadNode(variantOption, variantNode, false);
 				}
 			}
 		}
@@ -187,7 +189,7 @@ public class Profile : IEnumerable<IOption>
 			foreach (var childNode in node.children) {
 				var childOption = option.GetChild(childNode.name);
 				if (childOption != null) {
-					LoadNode(childOption, childNode);
+					LoadNode(childOption, childNode, false);
 				}
 			}
 		}

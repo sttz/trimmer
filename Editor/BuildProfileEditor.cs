@@ -43,9 +43,9 @@ public class BuildProfileEditor : Editor
 	struct RenameParameterInstruction
 	{
 		public int controlId;
-		public string optionName;
-		public string oldParameter;
-		public string newParameter;
+		public ValueStore.Node parentNode;
+		public ValueStore.Node variantNode;
+		public string newName;
 	}
 
 	/// <summary>
@@ -281,11 +281,11 @@ public class BuildProfileEditor : Editor
 		GUI.enabled = (buildProfile != null || BuildManager.EditorDefaultsProfile == null);
 
 		if (renameParameter.controlId > 0 
-			&& renameParameter.optionName != null) {
+				&& renameParameter.variantNode != null) {
 			if (EditorGUIUtility.keyboardControl != renameParameter.controlId) {
 				ApplyVariantRename();
 			} else if (EditorGUIUtility.keyboardControl == renameParameter.controlId
-				&& (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)) {
+					&& (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)) {
 				ApplyVariantRename();
 			}
 		}
@@ -526,18 +526,32 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	protected void ShowOption(IOption option, ValueStore.Node node)
+	protected void ShowOption(IOption option, ValueStore.Node node, ValueStore.Node parentNode = null, bool isSubVariant = false)
 	{
 		var displayName = OptionDisplayName(option.Name);
 
 		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
 		{
-			if (option.IsVariant) {
+			if (option.IsVariant && !isSubVariant) {
 				EditorGUILayout.LabelField(displayName, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
 				if (GUILayout.Button(GUIContent.none, plusStyle)) {
 					AddNewVariant(option, node);
 				}
 				GUILayout.FlexibleSpace();
+
+			} else if (option.IsVariant) {
+				// TODO: Rename in play mode?
+				node.name = EditorGUILayout.TextField(node.name, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
+
+				var level = EditorGUI.indentLevel;
+				EditorGUI.indentLevel = 0;
+				profile.EditOption(GUIContent.none, option, node);
+				EditorGUI.indentLevel = level;
+
+				if (GUILayout.Button(GUIContent.none, minusStyle)) {
+					// TODO: Delayed remove
+					parentNode.RemoveVariant(node.name);
+				}
 
 			} else {
 				tempContent.text = displayName;
@@ -554,24 +568,34 @@ public class BuildProfileEditor : Editor
 						EditorGUILayout.Space();
 				}
 				EditorGUILayout.EndHorizontal();
+			} else {
+				GUILayout.Space(buildColumnWidth + 4);
 			}
 		}
 		EditorGUILayout.EndHorizontal();
 
-		if (option.IsVariant || option.HasChildren) {
+		if ((option.IsVariant && !isSubVariant) || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
-			node.isExpanded = EditorGUI.Foldout(rect, node.isExpanded, GUIContent.none);
+			node.isExpanded = EditorGUI.Foldout(rect, node.isExpanded, GUIContent.none, true);
 		}
 
 		if (node.isExpanded) {
-			if (option.IsVariant) {
+			if (option.IsVariant && node.variants != null) {
 				EditorGUI.indentLevel++;
-				ShowOptionVariants(option.Name, option, node);
+				//ShowOptionVariants(option.Name, option, node);
+				foreach (var variantNode in node.variants) {
+					ShowOption(option, variantNode, node, true);
+				}
 				EditorGUI.indentLevel--;
 			}
 
-			if (option.HasChildren) {
-				// TODO: Show children
+			if (option.HasChildren && (!option.IsVariant || isSubVariant)) {
+				EditorGUI.indentLevel++;
+				foreach (var childOption in option.Children) {
+					var childNode = node.GetOrCreateChild(childOption.Name);
+					ShowOption(childOption, childNode, node);
+				}
+				EditorGUI.indentLevel--;
 			}
 		}
 	}
@@ -587,9 +611,9 @@ public class BuildProfileEditor : Editor
 
 			// Apply queued changes
 			if (renameParameter.controlId == controlId
-				&& controlId == EditorGUIUtility.keyboardControl
-				&& renameParameter.optionName != null) {
-				newParam = renameParameter.newParameter;
+					&& controlId == EditorGUIUtility.keyboardControl
+					&& renameParameter.variantNode != null) {
+				newParam = renameParameter.newName;
 			}
 
 			EditorGUILayout.BeginHorizontal();
@@ -603,7 +627,7 @@ public class BuildProfileEditor : Editor
 				EditorGUI.indentLevel = level;
 
 				if (GUILayout.Button(GUIContent.none, minusStyle)) {
-					newParam = string.Empty;
+					newParam = null;
 					EditorGUIUtility.keyboardControl = -1;
 				}
 
@@ -616,9 +640,9 @@ public class BuildProfileEditor : Editor
 			// Delay renaming the parameter for later
 			if (newParam != variantNode.name && controlId > 0) {
 				renameParameter.controlId = controlId;
-				renameParameter.optionName = option.Name;
-				renameParameter.oldParameter = variantNode.name;
-				renameParameter.newParameter = newParam;
+				renameParameter.parentNode = node;
+				renameParameter.variantNode = variantNode;
+				renameParameter.newName = newParam;
 			}
 		}
 	}
@@ -639,15 +663,37 @@ public class BuildProfileEditor : Editor
 
 	void ApplyVariantRename()
 	{
-		/*var value = profile.Defaults[renameParameter.optionName, renameParameter.oldParameter];
-
-		profile.Defaults[renameParameter.optionName, renameParameter.oldParameter] = string.Empty;
-
-		if (renameParameter.newParameter != string.Empty) {
-			profile.Defaults[renameParameter.optionName, renameParameter.newParameter] = value;
+		if (renameParameter.newName == null) {
+			renameParameter.parentNode.RemoveVariant(renameParameter.variantNode.name);
+		} else {
+			renameParameter.variantNode.name = renameParameter.newName;
 		}
 
-		renameParameter = default(RenameParameterInstruction);*/
+		renameParameter = default(RenameParameterInstruction);
+	}
+
+	void ShowOptionChildren(string optionName, IOption option, ValueStore.Node node)
+	{
+		if (!option.HasChildren)
+			return;
+
+		foreach (var childOption in option.Children) {
+			var childNode = node.GetOrCreateChild(childOption.Name);
+
+			EditorGUILayout.BeginHorizontal();
+			{
+				var level = EditorGUI.indentLevel;
+				EditorGUI.indentLevel = 0;
+				tempContent.text = childOption.Name;
+				profile.EditOption(tempContent, childOption, childNode);
+				EditorGUI.indentLevel = level;
+
+				if (buildProfile != null) {
+					GUILayout.Space(buildColumnWidth + 4);
+				}
+			}
+			EditorGUILayout.EndHorizontal();
+		}
 	}
 }
 

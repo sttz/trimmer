@@ -112,11 +112,11 @@ public interface IOption
 	/// <summary>
 	/// Get a child option by its name.
 	/// </summary>
-	IChildOption GetChild(string name);
+	IOption GetChild(string name);
 	/// <summary>
 	/// Enumerate all children of this option.
 	/// </summary>
-	IEnumerable<IChildOption> Children { get; }
+	IEnumerable<IOption> Children { get; }
 
 	/// <summary>
 	/// The default category the option is placed under.
@@ -204,10 +204,5 @@ public interface IOption<TValue> : IOption
 	/// </summary>
 	string Save(TValue input);
 }
-
-/// <summary>
-/// Interface identifying a child option.
-/// </summary>
-public interface IChildOption : IOption { }
 
 }
