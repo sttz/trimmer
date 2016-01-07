@@ -36,19 +36,6 @@ public class BuildProfileEditor : Editor
 	// -------- Static --------
 
 	/// <summary>
-	/// Renaming parameter values needs to be delayed until focus is lost
-	/// or rename confirmed using e.g. enter. This struct holds the necessary
-	/// info to execute the rename later.
-	/// </summary>
-	struct RenameParameterInstruction
-	{
-		public int controlId;
-		public ValueStore.Node parentNode;
-		public ValueStore.Node variantNode;
-		public string newName;
-	}
-
-	/// <summary>
 	/// Shared and re-used GUIContent instance to reduce allocations.
 	/// (Unity is doing this all the time in its own GUI code).
 	/// </summary>
@@ -194,7 +181,9 @@ public class BuildProfileEditor : Editor
 
 	protected void OnDisable()
 	{
-		// NOP
+		if (profile.store.IsDirty(true)) {
+			EditorUtility.SetDirty(profile);
+		}
 	}
 
 	// -------- Fields --------
@@ -206,8 +195,6 @@ public class BuildProfileEditor : Editor
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
-
-	RenameParameterInstruction renameParameter;
 
 	/*bool recordingActivationSequence;
 	KeyCode[] newSequence;
@@ -280,16 +267,6 @@ public class BuildProfileEditor : Editor
 	{
 		GUI.enabled = (buildProfile != null || BuildManager.EditorDefaultsProfile == null);
 
-		if (renameParameter.controlId > 0 
-				&& renameParameter.variantNode != null) {
-			if (EditorGUIUtility.keyboardControl != renameParameter.controlId) {
-				ApplyVariantRename();
-			} else if (EditorGUIUtility.keyboardControl == renameParameter.controlId
-					&& (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)) {
-				ApplyVariantRename();
-			}
-		}
-
 		// Options header
 		EditorGUILayout.BeginHorizontal();
 		{
@@ -304,7 +281,7 @@ public class BuildProfileEditor : Editor
 		string lastCategory = null;
 		foreach (var option in options) {
 			var root = profile.store.GetOrCreateRoot(option.Name);
-			var category = root != null ? root.category : option.Category;
+			var category = root != null ? root.Category : option.Category;
 			if (category != lastCategory) {
 				if (!string.IsNullOrEmpty(category)) {
 					EditorGUILayout.Space();
@@ -541,7 +518,7 @@ public class BuildProfileEditor : Editor
 
 			} else if (option.IsVariant) {
 				// TODO: Rename in play mode?
-				node.name = EditorGUILayout.TextField(node.name, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
+				node.Name = EditorGUILayout.TextField(node.Name, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
@@ -550,7 +527,7 @@ public class BuildProfileEditor : Editor
 
 				if (GUILayout.Button(GUIContent.none, minusStyle)) {
 					// TODO: Delayed remove
-					parentNode.RemoveVariant(node.name);
+					parentNode.RemoveVariant(node.Name);
 				}
 
 			} else {
@@ -563,7 +540,7 @@ public class BuildProfileEditor : Editor
 				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
 				{
 					if (option == null || !option.BuildOnly) {
-						root.includeInBuild = EditorGUILayout.Toggle(root.includeInBuild, GUILayout.Width(toggleWidth));
+						root.IncludeInBuild = EditorGUILayout.Toggle(root.IncludeInBuild, GUILayout.Width(toggleWidth));
 					} else
 						EditorGUILayout.Space();
 				}
@@ -576,14 +553,13 @@ public class BuildProfileEditor : Editor
 
 		if ((option.IsVariant && !isSubVariant) || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
-			node.isExpanded = EditorGUI.Foldout(rect, node.isExpanded, GUIContent.none, true);
+			node.IsExpanded = EditorGUI.Foldout(rect, node.IsExpanded, GUIContent.none, true);
 		}
 
-		if (node.isExpanded) {
-			if (option.IsVariant && node.variants != null) {
+		if (node.IsExpanded) {
+			if (option.IsVariant && node.Variants != null) {
 				EditorGUI.indentLevel++;
-				//ShowOptionVariants(option.Name, option, node);
-				foreach (var variantNode in node.variants) {
+				foreach (var variantNode in node.Variants) {
 					ShowOption(option, variantNode, node, true);
 				}
 				EditorGUI.indentLevel--;
@@ -600,53 +576,6 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	void ShowOptionVariants(string optionName, IOption option, ValueStore.Node node)
-	{
-		if (node.variants == null)
-			return;
-
-		foreach (var variantNode in node.variants) {
-			var newParam = variantNode.name;
-			var controlId = 0;
-
-			// Apply queued changes
-			if (renameParameter.controlId == controlId
-					&& controlId == EditorGUIUtility.keyboardControl
-					&& renameParameter.variantNode != null) {
-				newParam = renameParameter.newName;
-			}
-
-			EditorGUILayout.BeginHorizontal();
-			{
-				newParam = EditorGUILayout.TextField(newParam, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
-				controlId = GetLastControlID();
-
-				var level = EditorGUI.indentLevel;
-				EditorGUI.indentLevel = 0;
-				profile.EditOption(GUIContent.none, option, variantNode);
-				EditorGUI.indentLevel = level;
-
-				if (GUILayout.Button(GUIContent.none, minusStyle)) {
-					newParam = null;
-					EditorGUIUtility.keyboardControl = -1;
-				}
-
-				if (buildProfile != null) {
-					GUILayout.Space(buildColumnWidth + 4);
-				}
-			}
-			EditorGUILayout.EndHorizontal();
-
-			// Delay renaming the parameter for later
-			if (newParam != variantNode.name && controlId > 0) {
-				renameParameter.controlId = controlId;
-				renameParameter.parentNode = node;
-				renameParameter.variantNode = variantNode;
-				renameParameter.newName = newParam;
-			}
-		}
-	}
-
 	void AddNewVariant(IOption option, ValueStore.Node node)
 	{
 		if (!option.IsVariant)
@@ -659,41 +588,6 @@ public class BuildProfileEditor : Editor
 		} while (node.GetVariant(name) != null);
 
 		node.AddVariant(name, option.DefaultIniValue ?? string.Empty);
-	}
-
-	void ApplyVariantRename()
-	{
-		if (renameParameter.newName == null) {
-			renameParameter.parentNode.RemoveVariant(renameParameter.variantNode.name);
-		} else {
-			renameParameter.variantNode.name = renameParameter.newName;
-		}
-
-		renameParameter = default(RenameParameterInstruction);
-	}
-
-	void ShowOptionChildren(string optionName, IOption option, ValueStore.Node node)
-	{
-		if (!option.HasChildren)
-			return;
-
-		foreach (var childOption in option.Children) {
-			var childNode = node.GetOrCreateChild(childOption.Name);
-
-			EditorGUILayout.BeginHorizontal();
-			{
-				var level = EditorGUI.indentLevel;
-				EditorGUI.indentLevel = 0;
-				tempContent.text = childOption.Name;
-				profile.EditOption(tempContent, childOption, childNode);
-				EditorGUI.indentLevel = level;
-
-				if (buildProfile != null) {
-					GUILayout.Space(buildColumnWidth + 4);
-				}
-			}
-			EditorGUILayout.EndHorizontal();
-		}
 	}
 }
 

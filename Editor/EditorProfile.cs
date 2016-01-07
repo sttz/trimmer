@@ -130,7 +130,7 @@ public class EditorProfile : ScriptableObject
 			var editModeOption = editModeProfile.GetOption(option.Name);
 			var newValue = editModeOption.EditGUI(label, editModeOption.Save());
 			editModeOption.Load(newValue);
-			node.value = newValue;
+			node.Value = newValue;
 		
 		} else {
 			EditOptionNode(label, option, node);
@@ -144,7 +144,7 @@ public class EditorProfile : ScriptableObject
 	/// </summary>
 	protected void EditOptionNode(GUIContent label, IOption option, ValueStore.Node node)
 	{
-		node.value = option.EditGUI(label, node.value);
+		node.Value = option.EditGUI(label, node.Value);
 	}
 
 	// -------- Edit Mode --------

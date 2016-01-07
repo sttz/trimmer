@@ -21,28 +21,12 @@ public class ValueStore : ISerializationCallbackReceiver
 	[Serializable]
 	public class Node
 	{
-		/// <summary>
-		/// Name of the node, variant parameter for variant nodes
-		/// and child name for child nodes.
-		/// </summary>
-		public string name;
-		/// <summary>
-		/// The value (if any) of the node.
-		/// </summary>
-		public string value = string.Empty;
-		/// <summary>
-		/// Used in the editor to track expanded state.
-		/// </summary>
-		public bool isExpanded;
+		[SerializeField] internal string name;
+		[SerializeField] internal string value = string.Empty;
+		[SerializeField] internal bool isExpanded;
 
-		/// <summary>
-		/// Variant sub-nodes.
-		/// </summary>
-		[NonSerialized] public List<Node> variants;
-		/// <summary>
-		/// Child nodes.
-		/// </summary>
-		[NonSerialized] public List<Node> children;
+		[NonSerialized] internal List<Node> variants;
+		[NonSerialized] internal List<Node> children;
 
 		/// <summary>
 		/// Used for compatibility with Unity's serialization.
@@ -52,6 +36,77 @@ public class ValueStore : ISerializationCallbackReceiver
 		/// Used for compatibility with Unity's serialization.
 		/// </summary>
 		[SerializeField] internal int numChildren;
+
+		/// <summary>
+		/// Flag to track if store needs to be saved.
+		/// </summary>
+		[NonSerialized] internal bool isDirty;
+
+		/// <summary>
+		/// Name of the node, variant parameter for variant nodes
+		/// and child name for child nodes.
+		/// </summary>
+		public string Name {
+			get {
+				return name;
+			}
+			set {
+				this.name = value;
+				isDirty = true;
+			}
+		}
+
+		/// <summary>
+		/// The value (if any) of the node.
+		/// </summary>
+		public string Value {
+			get {
+				return value;
+			}
+			set {
+				this.value = value;
+				isDirty = true;
+			}
+		}
+
+		/// <summary>
+		/// Used in the editor to track expanded state.
+		/// </summary>
+		public bool IsExpanded {
+			get {
+				return isExpanded;
+			}
+			set {
+				isExpanded = value;
+				isDirty = true;
+			}
+		}
+
+		/// <summary>
+		/// Enumerate the node's variants.
+		/// </summary>
+		public IEnumerable<Node> Variants {
+			get {
+				if (variants != null) {
+					return variants;
+				} else {
+					return Enumerable.Empty<Node>();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Number of variants in this node.
+		/// </summary>
+		public int VariantCount {
+			get {
+				if (variants != null) {
+					return variants.Count;
+				} else {
+					return 0;
+				}
+			}
+		}
 
 		/// <summary>
 		/// Look up a variant node by name.
@@ -94,6 +149,7 @@ public class ValueStore : ISerializationCallbackReceiver
 				variants = new List<Node>();
 
 			variants.Add(node);
+			isDirty = true;
 			return node;
 		}
 
@@ -108,7 +164,34 @@ public class ValueStore : ISerializationCallbackReceiver
 			for (int i = 0; i < variants.Count; i++) {
 				if (variants[i].name.EqualsIgnoringCase(name)) {
 					variants.RemoveAt(i);
+					isDirty = true;
 					return;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Enumerate the node's children.
+		/// </summary>
+		public IEnumerable<Node> Children {
+			get {
+				if (children != null) {
+					return children;
+				} else {
+					return Enumerable.Empty<Node>();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Number of children in this node.
+		/// </summary>
+		public int ChildCount {
+			get {
+				if (children != null) {
+					return children.Count;
+				} else {
+					return 0;
 				}
 			}
 		}
@@ -154,6 +237,7 @@ public class ValueStore : ISerializationCallbackReceiver
 				children = new List<Node>();
 
 			children.Add(node);
+			isDirty = true;
 			return node;
 		}
 
@@ -168,6 +252,7 @@ public class ValueStore : ISerializationCallbackReceiver
 			for (int i = 0; i < children.Count; i++) {
 				if (children[i].name.EqualsIgnoringCase(name)) {
 					children.RemoveAt(i);
+					isDirty = true;
 					return;
 				}
 			}
@@ -219,14 +304,34 @@ public class ValueStore : ISerializationCallbackReceiver
 	[Serializable]
 	public class RootNode : Node
 	{
+		[SerializeField] internal string category;
+		[SerializeField] internal bool includeInBuild;
+
 		/// <summary>
 		/// The category of the node, only valid for root nodes.
 		/// </summary>
-		public string category;
+		public string Category {
+			get {
+				return category;
+			}
+			set {
+				category = value;
+				isDirty = true;
+			}
+		}
+
 		/// <summary>
 		/// Wether the option should be included in builds.
 		/// </summary>
-		public bool includeInBuild;
+		public bool IncludeInBuild {
+			get {
+				return includeInBuild;
+			}
+			set {
+				includeInBuild = value;
+				isDirty = true;
+			}
+		}
 
 		public override Node Clone()
 		{
@@ -240,7 +345,86 @@ public class ValueStore : ISerializationCallbackReceiver
 	/// <summary>
 	/// Root nodes by name.
 	/// </summary>
-	[NonSerialized] public List<RootNode> nodes;
+	[NonSerialized] List<RootNode> nodes;
+	/// <summary>
+	/// Track if the store roots have been changed.
+	/// </summary>
+	[NonSerialized] bool isDirty;
+
+	/// <summary>
+	/// Check if the store has been modified and optionally
+	/// reset the modification state.
+	/// </summary>
+	public bool IsDirty(bool clear = false)
+	{
+		var anyDirty = isDirty;
+
+		if (!clear && anyDirty)
+			return true;
+		else if (clear)
+			isDirty = false;
+
+		foreach (var root in Roots) {
+			anyDirty |= IsDirtyRecursive(root, clear);
+
+			if (!clear && anyDirty)
+				return true;
+		}
+
+		return anyDirty;
+	}
+
+	bool IsDirtyRecursive(Node node, bool clear = false)
+	{
+		var anyDirty = node.isDirty;
+
+		if (!clear && anyDirty)
+			return true;
+		else if (clear)
+			node.isDirty = false;
+
+		foreach (var variant in node.Variants) {
+			anyDirty |= IsDirtyRecursive(variant, clear);
+
+			if (!clear && anyDirty)
+				return true;
+		}
+
+		foreach (var child in node.Children) {
+			anyDirty |= IsDirtyRecursive(child, clear);
+
+			if (!clear && anyDirty)
+				return true;
+		}
+
+		return anyDirty;
+	}
+
+	/// <summary>
+	/// Enumerate the root nodes in this store.
+	/// </summary>
+	public IEnumerable<RootNode> Roots {
+		get {
+			if (nodes != null) {
+				return nodes;
+			} else {
+				return Enumerable.Empty<RootNode>();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Number of root nodes in this store.
+	/// </summary>
+	public int RootCount {
+		get {
+			if (nodes != null) {
+				return nodes.Count;
+			} else {
+				return 0;
+			}
+		}
+	}
 
 	/// <summary>
 	/// Get a root node by name.
@@ -266,7 +450,6 @@ public class ValueStore : ISerializationCallbackReceiver
 	{
 		var root = GetRoot(name);
 		if (root == null) {
-			Debug.Log("Create new root node: " + name);
 			root = AddRoot(name, string.Empty);
 		}
 		return root;
@@ -285,6 +468,7 @@ public class ValueStore : ISerializationCallbackReceiver
 			nodes = new List<RootNode>();
 
 		nodes.Add(node);
+		isDirty = true;
 		return node;
 	}
 
@@ -299,6 +483,7 @@ public class ValueStore : ISerializationCallbackReceiver
 		for (int i = 0; i < nodes.Count; i++) {
 			if (nodes[i].name.EqualsIgnoringCase(name)) {
 				nodes.RemoveAt(i);
+				isDirty = true;
 				return;
 			}
 		}

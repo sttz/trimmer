@@ -72,14 +72,12 @@ public class Profile : IEnumerable<IOption>
 			_store = value ?? new ValueStore();
 
 			// Apply values in store to options
-			if (_store.nodes != null) {
-				foreach (var node in _store.nodes) {
-					IOption option;
-					if (!options.TryGetValue(node.name, out option))
-						continue;
+			foreach (var node in _store.Roots) {
+				IOption option;
+				if (!options.TryGetValue(node.name, out option))
+					continue;
 
-					LoadNode(option, node);
-				}
+				LoadNode(option, node);
 			}
 		}
 	}

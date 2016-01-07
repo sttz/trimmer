@@ -130,7 +130,7 @@ public class BuildProfile : EditorProfile
 		if (node == null) {
 			return false;
 		} else {
-			return node.includeInBuild;
+			return node.IncludeInBuild;
 		}
 	}
 
