@@ -22,14 +22,14 @@ public class OptionVariantDummy : OptionString
 
 	public override void Apply()
 	{
-		//
+		base.Apply();
 	}
 
 #if UNITY_EDITOR
 
 	public override void Remove()
 	{
-		//
+		base.Remove();
 	}
 
 #endif
