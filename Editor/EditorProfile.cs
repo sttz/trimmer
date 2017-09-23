@@ -30,7 +30,7 @@ namespace sttz.Workbench {
 #if HAS_HELP_URL_ATTRIBUTE
 [HelpURL("http://sttz.ch/")]
 #endif
-public class EditorProfile : ScriptableObject
+public class EditorProfile : EditableProfile
 {
 	// -------- Static --------
 
@@ -51,26 +51,6 @@ public class EditorProfile : ScriptableObject
 	{
 		Selection.activeObject = EditorProfile.SharedInstance;
 	}
-
-	/// <summary>
-	/// Instances of all options used for editor purposes.
-	/// </summary>
-	/// <remarks>
-	/// These options are used for the editor GUI and should not be
-	/// used to change option values.
-	/// </remarks>
-	public static IEnumerable<IOption> AllOptions {
-		get {
-			if (_allOptions == null) {
-				_allOptions = new List<IOption>();
-				foreach (var optionType in Profile.AllOptions) {
-					_allOptions.Add((IOption)Activator.CreateInstance(optionType));
-				}
-			}
-			return _allOptions;
-		}
-	}
-	private static List<IOption> _allOptions;
 
 	/// <summary>
 	/// The profile used in the editor.
@@ -105,13 +85,19 @@ public class EditorProfile : ScriptableObject
 	/// </summary>
 	public ValueStore store = new ValueStore();
 
+	public override ValueStore Store {
+		get {
+			return store;
+		}
+	}
+
 	// -------- Methods --------
 
 	/// <summary>
 	/// Save the editor profile. Since it's stored in ProjectSettings,
 	/// it needs to be saved manually.
 	/// </summary>
-	public virtual void SaveIfNeeded()
+	public override void SaveIfNeeded()
 	{
 		if (store.IsDirty(true)) {
 			UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
@@ -125,8 +111,9 @@ public class EditorProfile : ScriptableObject
 	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
-	public virtual void EditOption(GUIContent label, IOption option, ValueStore.Node node)
+	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
+		// TODO: Fix runtime editing
 		if (Application.isPlaying) {
 			var runtimeOption = Workbench.Instance.Profile.GetOption(option.Name);
 			runtimeOption.Load(runtimeOption.EditGUI(label, runtimeOption.Save()));
@@ -138,18 +125,8 @@ public class EditorProfile : ScriptableObject
 			node.Value = newValue;
 		
 		} else {
-			EditOptionNode(label, option, node);
+			node.Value = option.EditGUI(label, node.Value);
 		}
-	}
-
-	// -------- Internals --------
-
-	/// <summary>
-	/// Show the edit GUI backed by the store node's value.
-	/// </summary>
-	protected void EditOptionNode(GUIContent label, IOption option, ValueStore.Node node)
-	{
-		node.Value = option.EditGUI(label, node.Value);
 	}
 
 	// -------- Edit Mode --------

@@ -15,7 +15,7 @@ namespace sttz.Workbench
 /// <summary>
 /// Editor GUI for <see cref="BuildProfile"/> and <see cref="EditorProfile"/>.
 /// </summary>
-[CustomEditor(typeof(EditorProfile), true)]
+[CustomEditor(typeof(EditableProfile), true)]
 public class BuildProfileEditor : Editor
 {
 	// -------- Constants --------
@@ -47,6 +47,26 @@ public class BuildProfileEditor : Editor
 	/// of captial letters together.
 	/// </summary>
 	static Regex SPACIFY_REGEX = new Regex(@"(?<! )(?:([A-Z]+)$|([A-Z]*)([A-Z])(?=[a-z]))");
+
+	/// <summary>
+	/// Instances of all options used for editor purposes.
+	/// </summary>
+	/// <remarks>
+	/// These options are used for the editor GUI and should not be
+	/// used to change option values.
+	/// </remarks>
+	public static IEnumerable<IOption> AllOptions {
+		get {
+			if (_allOptions == null) {
+				_allOptions = new List<IOption>();
+				foreach (var optionType in Profile.AllOptions) {
+					_allOptions.Add((IOption)Activator.CreateInstance(optionType));
+				}
+			}
+			return _allOptions;
+		}
+	}
+	private static List<IOption> _allOptions;
 
 	/// <summary>
 	/// Prettifies camel case names by adding spaces.
@@ -132,7 +152,8 @@ public class BuildProfileEditor : Editor
 
 	// -------- API --------
 
-	private EditorProfile profile;
+	private EditableProfile profile;
+	private EditorProfile editorProfile;
 	private BuildProfile buildProfile;
 
 	public override void OnInspectorGUI()
@@ -165,13 +186,14 @@ public class BuildProfileEditor : Editor
 
 	protected void OnEnable()
 	{
-		profile = (EditorProfile)target;
+		profile = (EditableProfile)target;
+		editorProfile = target as EditorProfile;
 		buildProfile = target as BuildProfile;
 
 		buildTarget = EditorUserBuildSettings.activeBuildTarget;
 
-		var allOptions = EditorProfile.AllOptions;
-		if (buildProfile == null) {
+		var allOptions = AllOptions;
+		if (editorProfile != null) {
 			allOptions = allOptions.Where(o => !o.BuildOnly);
 		}
 
@@ -238,7 +260,7 @@ public class BuildProfileEditor : Editor
 
 	void DefaultsGUI()
 	{
-		if (buildProfile == null) {
+		if (editorProfile != null) {
 			EditorGUILayout.BeginHorizontal();
 			{
 				// TODO: Invalidate
@@ -288,7 +310,7 @@ public class BuildProfileEditor : Editor
 		// Option list
 		string lastCategory = null;
 		foreach (var option in options) {
-			var root = profile.store.GetOrCreateRoot(option.Name);
+			var root = profile.Store.GetOrCreateRoot(option.Name);
 			if (option.Category != lastCategory) {
 				if (!string.IsNullOrEmpty(option.Category)) {
 					EditorGUILayout.Space();

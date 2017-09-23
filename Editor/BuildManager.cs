@@ -225,7 +225,11 @@ public class BuildManager
 		// Playing in editor
 		if (!BuildPipeline.isBuildingPlayer) {
 			if (!EditorApplication.isPlaying || Workbench.Instance == null) {
-				InjectWorkbench(EditorDefaultsProfile ?? EditorProfile.SharedInstance);
+				if (EditorDefaultsProfile != null) {
+					InjectWorkbench(EditorDefaultsProfile);
+				} else {
+					InjectWorkbench(EditorProfile.SharedInstance);
+				}
 			}
 			return;
 		}
@@ -303,14 +307,14 @@ public class BuildManager
 	/// <summary>
 	/// Create and configure the <see cref="Workbench"/> instance in the current scene.
 	/// </summary>
-	private static void InjectWorkbench(EditorProfile profile)
+	private static void InjectWorkbench(EditableProfile profile)
 	{
 		var go = new GameObject("Workbench");
 		var bench = go.AddComponent<Workbench>();
 
-		bench.store = profile.store;
+		bench.store = profile.Store;
 		if (bench.Profile != null) {
-			bench.Profile.Store = profile.store;
+			bench.Profile.Store = profile.Store;
 		}
 	}
 }

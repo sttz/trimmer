@@ -47,7 +47,7 @@ namespace sttz.Workbench
 #if HAS_CREATE_ASSET_MENU_ATTRIBUTE
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
 #endif
-public class BuildProfile : EditorProfile
+public class BuildProfile : EditableProfile
 {
 	// -------- Static --------
 
@@ -105,6 +105,19 @@ public class BuildProfile : EditorProfile
 	}
 	#endif
 
+	// ------ Fields ------
+
+	/// <summary>
+	/// The value store containing the values for the profile's options.
+	/// </summary>
+	public ValueStore store = new ValueStore();
+
+	public override ValueStore Store {
+		get {
+			return store;
+		}
+	}
+
 	// -------- Methods --------
 
 	/// <summary>
@@ -137,7 +150,7 @@ public class BuildProfile : EditorProfile
 	/// </summary>
 	public bool HasAvailableOptions(bool developerBuild)
 	{
-		foreach (var option in AllOptions) {
+		foreach (var option in BuildProfileEditor.AllOptions) {
 			if (IncludeInBuild(option.Name))
 				return true;
 		}
@@ -146,8 +159,7 @@ public class BuildProfile : EditorProfile
 
 	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
-		// BuildProfile always only edits its store
-		EditOptionNode(label, option, node);
+		node.Value = option.EditGUI(label, node.Value);
 	}
 
 	/// <summary>
