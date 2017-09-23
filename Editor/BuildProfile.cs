@@ -157,6 +157,12 @@ public class BuildProfile : EditorProfile
 		return false;
 	}
 
+	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
+	{
+		// BuildProfile always only edits its store
+		EditOptionNode(label, option, node);
+	}
+
 	/// <summary>
 	/// Check if the option scripting define symbols match those
 	/// that would be defined by this profile.

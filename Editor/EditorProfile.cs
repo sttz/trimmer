@@ -137,9 +137,8 @@ public class EditorProfile : ScriptableObject
 	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
-	public void EditOption(GUIContent label, IOption option, ValueStore.Node node)
+	public virtual void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
-		// TODO: Override in BuildProfile!
 		if (Application.isPlaying) {
 			var runtimeOption = Workbench.Instance.Profile.GetOption(option.Name);
 			runtimeOption.Load(runtimeOption.EditGUI(label, runtimeOption.Save()));
