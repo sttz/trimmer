@@ -103,7 +103,7 @@ public class EditorProfile : ScriptableObject
 	/// <summary>
 	/// The value store containing the values for the profile's options.
 	/// </summary>
-	public ValueStore store;
+	public ValueStore store = new ValueStore();
 
 	// -------- Properites --------
 
