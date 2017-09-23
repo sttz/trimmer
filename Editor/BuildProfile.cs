@@ -121,13 +121,11 @@ public class BuildProfile : EditableProfile
 	// -------- Methods --------
 
 	/// <summary>
-	/// Save the profile.
+	/// Mark the scriptable object dirty when necessary.
 	/// </summary>
 	public override void SaveIfNeeded()
 	{
 		if (store.IsDirty(true)) {
-			// Unlike the EditorProfile base class, BuildProfile serialization 
-			// is managed by Unity and we only set its dirty flag
 			EditorUtility.SetDirty(this);
 		}
 	}
@@ -150,15 +148,26 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public bool HasAvailableOptions(bool developerBuild)
 	{
-		foreach (var option in BuildProfileEditor.AllOptions) {
+		foreach (var option in AllOptions) {
 			if (IncludeInBuild(option.Name))
 				return true;
 		}
 		return false;
 	}
 
+	public override ValueStore.Node GetStoreRoot(IOption option)
+	{
+		return store.GetOrCreateRoot(option.Name);
+	}
+
+	public override IEnumerable<IOption> GetAllOptions()
+	{
+		return AllOptions;
+	}
+
 	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
+		// For build profiles, the store is always directly edited.
 		node.Value = option.EditGUI(label, node.Value);
 	}
 

@@ -311,11 +311,7 @@ public class BuildManager
 	{
 		var go = new GameObject("Workbench");
 		var bench = go.AddComponent<Workbench>();
-
-		bench.store = profile.Store;
-		if (bench.Profile != null) {
-			bench.Profile.Store = profile.Store;
-		}
+		bench.Store = profile.Store;
 	}
 }
 

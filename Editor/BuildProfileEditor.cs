@@ -49,26 +49,6 @@ public class BuildProfileEditor : Editor
 	static Regex SPACIFY_REGEX = new Regex(@"(?<! )(?:([A-Z]+)$|([A-Z]*)([A-Z])(?=[a-z]))");
 
 	/// <summary>
-	/// Instances of all options used for editor purposes.
-	/// </summary>
-	/// <remarks>
-	/// These options are used for the editor GUI and should not be
-	/// used to change option values.
-	/// </remarks>
-	public static IEnumerable<IOption> AllOptions {
-		get {
-			if (_allOptions == null) {
-				_allOptions = new List<IOption>();
-				foreach (var optionType in Profile.AllOptions) {
-					_allOptions.Add((IOption)Activator.CreateInstance(optionType));
-				}
-			}
-			return _allOptions;
-		}
-	}
-	private static List<IOption> _allOptions;
-
-	/// <summary>
 	/// Prettifies camel case names by adding spaces.
 	/// </summary>
 	public static string OptionDisplayName(string name)
@@ -192,12 +172,7 @@ public class BuildProfileEditor : Editor
 
 		buildTarget = EditorUserBuildSettings.activeBuildTarget;
 
-		var allOptions = AllOptions;
-		if (editorProfile != null) {
-			allOptions = allOptions.Where(o => !o.BuildOnly);
-		}
-
-		options = new List<IOption>(allOptions);
+		options = new List<IOption>(profile.GetAllOptions());
 		options.Sort((o1, o2) => {
 			var cat = string.CompareOrdinal(o1.Category, o2.Category);
 			if (cat != 0) {
@@ -223,8 +198,7 @@ public class BuildProfileEditor : Editor
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
 
-	List<KeyValuePair<ValueStore.Node, string>> removedVariants
-		= new List<KeyValuePair<ValueStore.Node, string>>();
+	List<Action> delayedRemovals = new List<Action>();
 
 	/*bool recordingActivationSequence;
 	KeyCode[] newSequence;
@@ -310,7 +284,6 @@ public class BuildProfileEditor : Editor
 		// Option list
 		string lastCategory = null;
 		foreach (var option in options) {
-			var root = profile.Store.GetOrCreateRoot(option.Name);
 			if (option.Category != lastCategory) {
 				if (!string.IsNullOrEmpty(option.Category)) {
 					EditorGUILayout.Space();
@@ -318,13 +291,16 @@ public class BuildProfileEditor : Editor
 				}
 				lastCategory = option.Category;
 			}
-			ShowOption(option, root);
+
+			ShowOption(option, profile.GetStoreRoot(option));
 		}
 
-		foreach (var removed in removedVariants) {
-			removed.Key.RemoveVariant(removed.Value);
+		if (Event.current.type != EventType.Layout) {
+			foreach (var action in delayedRemovals) {
+				action();
+			}
+			delayedRemovals.Clear();
 		}
-		removedVariants.Clear();
 
 		if (buildProfile != null) {
 			EditorGUILayout.Space();
@@ -536,30 +512,69 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	protected void ShowOption(IOption option, ValueStore.Node node, ValueStore.Node parentNode = null, bool isSubVariant = false)
+	protected void ShowOption(IOption option, ValueStore.Node node, ValueStore.Node parentNode = null, bool variantChild = false, IOption parentVariant = null)
 	{
 		var displayName = OptionDisplayName(option.Name);
+		var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
 
 		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
 		{
-			if (option.IsVariant && !isSubVariant) {
-				EditorGUILayout.LabelField(displayName, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
+			if (option.IsVariant && !variantChild) {
+				EditorGUILayout.LabelField(displayName, width);
 				if (GUILayout.Button(GUIContent.none, plusStyle)) {
 					AddNewVariant(option, node);
 				}
 				GUILayout.FlexibleSpace();
 
 			} else if (option.IsVariant) {
-				// TODO: Rename in play mode?
-				node.Name = EditorGUILayout.TextField(node.Name, GUILayout.Width(EditorGUIUtility.labelWidth - 4));
+				// Disable when editing the default variant
+				// TODO: Clean this shit up
+				var defaultVariant = (
+					(node == null && parentVariant == null)
+					|| (node != null && node == parentNode)
+				);
+				EditorGUI.BeginDisabledGroup(defaultVariant);
+				{
+					if (node != null) {
+						if (defaultVariant) {
+							EditorGUILayout.TextField(option.VariantDefaultParameter, width);
+						} else {
+							GUI.SetNextControlName(option.Name);
+							node.Name = EditorGUILayout.TextField(node.Name, width);
+							// Prevent naming the node the same as the default parameter
+							if (node.Name == option.VariantDefaultParameter
+									&& GUI.GetNameOfFocusedControl() != option.Name) {
+								node.Name = FindUniqueVariantName(option, parentNode);
+							}
+						}
+					} else {
+						// TODO: Rename in play mode?
+						EditorGUI.BeginDisabledGroup(true);
+						{
+							EditorGUILayout.TextField(option.VariantParameter, width);
+						}
+						EditorGUI.EndDisabledGroup();
+					}
+				}
+				EditorGUI.EndDisabledGroup();
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
 				profile.EditOption(GUIContent.none, option, node);
 				EditorGUI.indentLevel = level;
 
-				if (GUILayout.Button(GUIContent.none, minusStyle)) {
-					removedVariants.Add(new KeyValuePair<ValueStore.Node, string>(parentNode, node.Name));
+				if (!defaultVariant) {
+					if (GUILayout.Button(GUIContent.none, minusStyle)) {
+						if (node != null) {
+							delayedRemovals.Add(() => {
+								parentNode.RemoveVariant(node.Name);
+							});
+						} else {
+							delayedRemovals.Add(() => {
+								parentVariant.RemoveVariant(option);
+							});
+						}
+					}
 				}
 
 			} else {
@@ -567,7 +582,7 @@ public class BuildProfileEditor : Editor
 				profile.EditOption(tempContent, option, node);
 			}
 
-			if (buildProfile != null && node is ValueStore.RootNode) {
+			if (buildProfile != null && node != null && node != parentNode && node is ValueStore.RootNode) {
 				var root = (ValueStore.RootNode)node;
 				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
 				{
@@ -583,28 +598,50 @@ public class BuildProfileEditor : Editor
 		}
 		EditorGUILayout.EndHorizontal();
 
-		if ((option.IsVariant && !isSubVariant) || option.HasChildren) {
+		// TODO: Better place to save expanded state?
+		var isExpanded = (node != null ? node.IsExpanded : option.IsExpanded);
+
+		if ((option.IsVariant && !variantChild) || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
-			node.IsExpanded = EditorGUI.Foldout(rect, node.IsExpanded, GUIContent.none, true);
+			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 		}
 
-		if (node.IsExpanded) {
-			if (option.IsVariant && node.Variants != null) {
+		if (isExpanded) {
+			if (option.IsVariant && !variantChild) {
 				EditorGUI.indentLevel++;
-				foreach (var variantNode in node.Variants) {
-					ShowOption(option, variantNode, node, true);
+				if (node == null) {
+					ShowOption(option, null, null, true, null);
+					foreach (var variant in option.Variants) {
+						ShowOption(variant, null, null, true, option);
+					}
+				} else if (node.Variants != null) {
+					ShowOption(option, node, node, true);
+					foreach (var variantNode in node.Variants) {
+						// We pass in option twice here to signal the node
+						// is a variant child but that's not really nice...
+						ShowOption(option, variantNode, node, true);
+					}
 				}
 				EditorGUI.indentLevel--;
 			}
 
-			if (option.HasChildren && (!option.IsVariant || isSubVariant)) {
+			if (option.HasChildren && (!option.IsVariant || variantChild)) {
 				EditorGUI.indentLevel++;
 				foreach (var childOption in option.Children) {
-					var childNode = node.GetOrCreateChild(childOption.Name);
+					ValueStore.Node childNode = null;
+					if (node != null) {
+						childNode = node.GetOrCreateChild(childOption.Name);
+					}
 					ShowOption(childOption, childNode, node);
 				}
 				EditorGUI.indentLevel--;
 			}
+		}
+
+		if (node != null) {
+			node.IsExpanded = isExpanded;
+		} else {
+			option.IsExpanded = isExpanded;
 		}
 	}
 
@@ -613,13 +650,28 @@ public class BuildProfileEditor : Editor
 		if (!option.IsVariant)
 			throw new Exception("Option is not variant.");
 
-		var name = option.VariantDefaultParameter;
-		int i = 0;
-		do {
-			name = option.VariantDefaultParameter + (i++ == 0 ? "" : i.ToString());
-		} while (node.GetVariant(name) != null);
+		var parameter = FindUniqueVariantName(option, node);
 
-		node.AddVariant(name, option.DefaultValue ?? string.Empty);
+		if (node != null) {
+			node.AddVariant(parameter, option.DefaultValue ?? string.Empty);
+		} else {
+			option.AddVariant(parameter);
+		}
+	}
+
+	string FindUniqueVariantName(IOption option, ValueStore.Node node)
+	{
+		var parameter = option.VariantDefaultParameter;
+
+		int i = 1;
+		do {
+			parameter = option.VariantDefaultParameter + (i++).ToString();
+		} while (
+			(node == null && option.GetVariant(parameter) != null)
+			|| (node != null && node.GetVariant(parameter) != null)
+		);
+
+		return parameter;
 	}
 }
 

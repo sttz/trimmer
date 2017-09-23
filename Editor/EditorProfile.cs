@@ -109,16 +109,40 @@ public class EditorProfile : EditableProfile
 	}
 
 	/// <summary>
+	/// 
+	/// </summary>
+	public override ValueStore.Node GetStoreRoot(IOption option)
+	{
+		if (Application.isPlaying) {
+			// Force editor to edit options directly at runtime
+			return null;
+		} else {
+			return store.GetOrCreateRoot(option.Name);
+		}
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public override IEnumerable<IOption> GetAllOptions()
+	{
+		if (Application.isPlaying) {
+			return Workbench.Instance.Profile;
+		} else {
+			return AllOptions.Where(o => !o.BuildOnly);
+		}
+	}
+
+	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
 	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
-		// TODO: Fix runtime editing
 		if (Application.isPlaying) {
-			var runtimeOption = Workbench.Instance.Profile.GetOption(option.Name);
-			runtimeOption.Load(runtimeOption.EditGUI(label, runtimeOption.Save()));
+			option.Load(option.EditGUI(label, option.Save()));
 		
 		} else if (editModeProfile != null && editModeProfile.GetOption(option.Name) != null) {
+			// TODO: What about variant/child options?
 			var editModeOption = editModeProfile.GetOption(option.Name);
 			var newValue = editModeOption.EditGUI(label, editModeOption.Save());
 			editModeOption.Load(newValue);

@@ -34,7 +34,21 @@ public class Workbench : MonoBehaviour
 	/// <summary>
 	/// Values to use during runtime.
 	/// </summary>
-	public ValueStore store;
+	public ValueStore Store {
+		get {
+			return _store;
+		}
+		set {
+			_store = value;
+			if (Profile == null) {
+				Profile = new Profile(_store);
+			} else {
+				Profile.Store = _store;
+			}
+			Profile.Apply();
+		}
+	}
+	ValueStore _store;
 
 	// MonoBehaviour.OnEnable
 	protected void OnEnable()
@@ -47,11 +61,6 @@ public class Workbench : MonoBehaviour
 
 		Instance = this;
 		DontDestroyOnLoad(gameObject);
-
-		if (store != null && Profile == null) {
-			Profile = new Profile(store);
-			Profile.Apply();
-		}
 	}
 }
 

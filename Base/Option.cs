@@ -56,6 +56,17 @@ public abstract class Option : IOption
 
 	#endif
 
+	/// <summary>
+	/// Init a root node, i.e. a non-default-variant and non-child node.
+	/// </summary>
+	public virtual void InitRoot()
+	{
+		if (IsVariant) {
+			IsDefaultVariant = true;
+			VariantParameter = VariantDefaultParameter;
+		}
+	}
+
 	public abstract string Name { get; }
 	public string DefaultValue { get; protected set; }
 	public abstract void Load(string input);
@@ -81,7 +92,7 @@ public abstract class Option : IOption
 	public bool IsVariant { get; protected set; }
 	public string VariantParameter { get; set; }
 	public string VariantDefaultParameter { get; protected set; }
-	public bool IsDefaultVariant { get; set; }
+	public bool IsDefaultVariant { get; protected set; }
 
 	private Dictionary<string, IOption> variants;
 
@@ -112,6 +123,25 @@ public abstract class Option : IOption
 		variants[variant.VariantParameter] = variant;
 	}
 
+	/// <summary>
+	/// Like <see cref="AddVariant(IOption)"/> but creates and returns the instance.
+	/// </summary>
+	public IOption AddVariant(string parameter)
+	{
+		Assert.IsTrue(IsVariant, "Invalid call to AddVariant, option is not variant.");
+		Assert.IsTrue(IsDefaultVariant, "Invalid call to AddVariant, option is not the default variant.");
+
+		Assert.IsNotNull(parameter);
+		Assert.IsFalse(string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase), "Cannot add variant with default parameter.");
+		Assert.IsTrue(variants == null || !variants.ContainsKey(parameter), "Variant with paramter already exists.");
+
+		var instance = (IOption)Activator.CreateInstance(GetType());
+		instance.VariantParameter = parameter;
+
+		AddVariant(instance);
+		return instance;
+	}
+
 	public IOption GetVariant(string parameter)
 	{
 		Assert.IsTrue(IsVariant, "Invalid call to GetVariant, option is not variant.");
@@ -120,14 +150,31 @@ public abstract class Option : IOption
 		if (string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase))
 			return this;
 
-		IOption variant;
-		if (!variants.TryGetValue(parameter, out variant)) {
-			variant = (IOption)Activator.CreateInstance(GetType());
-			variant.VariantParameter = parameter;
-			variants[parameter] = variant;
+		IOption variant = null;
+		if (variants == null 
+				|| !variants.TryGetValue(parameter, out variant)) {
+			variant = AddVariant(parameter);
 		}
 
 		return variant;
+	}
+
+	/// <summary>
+	/// Remove a variant.
+	/// </summary>
+	/// <remarks>
+	/// Variants are only available on a <c>IsVariant</c> option and also only
+	/// on the <c>IsDefaultVariant</c> instance that acts as the container for
+	/// the other variants.
+	/// </remarks>
+	public void RemoveVariant(IOption option)
+	{
+		Assert.IsTrue(IsVariant, "Invalid call to RemoveVariant, option is not variant.");
+		Assert.IsTrue(IsDefaultVariant, "Invalid call to RemoveVariant, option is not the default variant.");
+
+		Assert.IsTrue(variants != null || variants.ContainsValue(option), "Invalid call to RemoveVariant, option is not a variant of this instance.");
+
+		variants.Remove(option.VariantParameter);
 	}
 
 	// -------- Children --------

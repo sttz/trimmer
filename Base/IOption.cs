@@ -32,6 +32,7 @@ public interface IOption
 	/// for the option in the ini file.
 	/// </summary>
 	string DefaultValue { get; }
+	void InitRoot();
 	/// <summary>
 	/// Parse a string and set the option's Value.
 	/// </summary>
@@ -80,18 +81,20 @@ public interface IOption
 	/// The main variant option contains all other variants. <see cref="GetVariant"/>
 	/// can only be used on the main variant option.
 	/// </remarks>
-	bool IsDefaultVariant { get; set; }
+	bool IsDefaultVariant { get; }
 
 	/// <summary>
 	/// Add a new variant to the main variant option. Only used if <see cref="IsVariant"/>
 	/// is true and can only be called on the main variant option (<see cref="IsDefaultVariant"/>).
 	/// </summary>
 	void AddVariant(IOption variant);
+	IOption AddVariant(string parameter);
 	/// <summary>
 	/// Get a variant option by its parameter. Only used if <see cref="IsVariant"/>
 	/// is true and can only be called on the main variant option (<see cref="IsDefaultVariant"/>).
 	/// </summary>
 	IOption GetVariant(string parameter);
+	void RemoveVariant(IOption option);
 	/// <summary>
 	/// Enumerate all variants of this option.
 	/// </summary>
@@ -172,6 +175,11 @@ public interface IOption
 	/// GUI used in the editor to edit the option's value.
 	/// </summary>
 	string EditGUI(GUIContent label, string input);
+
+	/// <summary>
+	/// Used to track expanded state in play mode in the editor.
+	/// </summary>
+	bool IsExpanded { get; set; }
 
 	#endif
 }

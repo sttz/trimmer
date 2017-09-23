@@ -25,7 +25,7 @@ public class Profile : IEnumerable<IOption>
 	/// <remarks>
 	/// All options in the editor and only included options in builds.
 	/// </remarks>
-	public static IEnumerable<Type> AllOptions {
+	public static IEnumerable<Type> AllOptionTypes {
 		get {
 			if (_options == null) {
 				_options = new List<Type>();
@@ -94,9 +94,11 @@ public class Profile : IEnumerable<IOption>
 	public Profile(ValueStore store)
 	{
 		// Create option instances
-		foreach (var optionType in AllOptions) {
+		foreach (var optionType in AllOptionTypes) {
+			// TODO: Profile shouldn't create build-only options?
 			if (ShouldCreateOption(optionType)) {
 				var option = (IOption)Activator.CreateInstance(optionType);
+				option.InitRoot();
 				options[option.Name] = option;
 			}
 		}
@@ -158,13 +160,11 @@ public class Profile : IEnumerable<IOption>
 	/// Recursive method to apply a node with all its variants and
 	/// children to an option.
 	/// </summary>
-	private void LoadNode(IOption option, ValueStore.Node node, bool isRootNode = true)
+	private void LoadNode(IOption option, ValueStore.Node node)
 	{
 		option.Load(node.value ?? string.Empty);
 
-		if (option.IsVariant) {
-			option.IsDefaultVariant = isRootNode;
-
+		if (option.IsDefaultVariant) {
 			// Reset variants since the node might not contain a value
 			foreach (var variantOption in option.Variants) {
 				variantOption.Load(string.Empty);
@@ -173,7 +173,7 @@ public class Profile : IEnumerable<IOption>
 			if (node.variants != null) {
 				foreach (var variantNode in node.variants) {
 					var variantOption = option.GetVariant(variantNode.name);
-					LoadNode(variantOption, variantNode, false);
+					LoadNode(variantOption, variantNode);
 				}
 			}
 		}
@@ -187,7 +187,7 @@ public class Profile : IEnumerable<IOption>
 			foreach (var childNode in node.children) {
 				var childOption = option.GetChild(childNode.name);
 				if (childOption != null) {
-					LoadNode(childOption, childNode, false);
+					LoadNode(childOption, childNode);
 				}
 			}
 		}
