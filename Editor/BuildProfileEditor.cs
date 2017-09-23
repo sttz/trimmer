@@ -201,6 +201,9 @@ public class BuildProfileEditor : Editor
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
 
+	List<KeyValuePair<ValueStore.Node, string>> removedVariants
+		= new List<KeyValuePair<ValueStore.Node, string>>();
+
 	/*bool recordingActivationSequence;
 	KeyCode[] newSequence;
 	KeyCode lastRecordedCode;
@@ -295,6 +298,11 @@ public class BuildProfileEditor : Editor
 			}
 			ShowOption(option, root);
 		}
+
+		foreach (var removed in removedVariants) {
+			removed.Key.RemoveVariant(removed.Value);
+		}
+		removedVariants.Clear();
 
 		if (buildProfile != null) {
 			EditorGUILayout.Space();
@@ -529,8 +537,7 @@ public class BuildProfileEditor : Editor
 				EditorGUI.indentLevel = level;
 
 				if (GUILayout.Button(GUIContent.none, minusStyle)) {
-					// TODO: Delayed remove
-					parentNode.RemoveVariant(node.Name);
+					removedVariants.Add(new KeyValuePair<ValueStore.Node, string>(parentNode, node.Name));
 				}
 
 			} else {
