@@ -11,8 +11,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 #endif
 
-// TODO: Dfeault DefaultIniValue = ""
-
 namespace sttz.Workbench {
 
 /// <summary>
@@ -68,7 +66,19 @@ public abstract class Option : IOption
 	}
 
 	public abstract string Name { get; }
-	public string DefaultValue { get; protected set; }
+
+	/// <summary>
+	/// The default value of the option.
+	/// </summary>
+	public string DefaultValue {
+		get {
+			return _defaultValue;
+		}
+		set {
+			_defaultValue = value;
+		}
+	}
+	private string _defaultValue = string.Empty;
 	public abstract void Load(string input);
 	public abstract string Save();
 
