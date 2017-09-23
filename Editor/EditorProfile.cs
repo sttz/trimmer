@@ -139,7 +139,12 @@ public class EditorProfile : EditableProfile
 	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
 	{
 		if (Application.isPlaying) {
-			option.Load(option.EditGUI(label, option.Save()));
+			var oldValue = option.Save();
+			var newValue = option.EditGUI(label, oldValue);
+			if (oldValue != newValue) {
+				option.Load(newValue);
+				option.Apply();
+			}
 		
 		} else if (editModeProfile != null && editModeProfile.GetOption(option.Name) != null) {
 			// TODO: What about variant/child options?
