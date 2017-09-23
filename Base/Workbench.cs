@@ -53,19 +53,6 @@ public class Workbench : MonoBehaviour
 			Profile.Apply();
 		}
 	}
-
-	// MonoBehaviour.OnLevelWasLoaded
-	protected void OnLevelWasLoaded()
-	{
-		if (!enabled)
-			return;
-
-		if (Profile == null) {
-			Debug.LogWarning("OnLevelWasLoaded: Null Profile: " + GetInstanceID());
-		} else {
-			Profile.Apply();
-		}
-	}
 }
 
 }
