@@ -16,6 +16,7 @@ public class OptionDummy : OptionToggle
 	public OptionDummy()
 	{
 		DefaultValue = "";
+		Category = "Debug";
 	}
 
 	public override void Apply()

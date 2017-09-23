@@ -176,7 +176,14 @@ public class BuildProfileEditor : Editor
 		}
 
 		options = new List<IOption>(allOptions);
-		// TODO: Option sorting
+		options.Sort((o1, o2) => {
+			var cat = string.CompareOrdinal(o1.Category, o2.Category);
+			if (cat != 0) {
+				return cat;
+			} else {
+				return string.CompareOrdinal(o1.Name, o2.Name);
+			}
+		});
 	}
 
 	protected void OnDisable()
@@ -279,15 +286,13 @@ public class BuildProfileEditor : Editor
 		string lastCategory = null;
 		foreach (var option in options) {
 			var root = profile.store.GetOrCreateRoot(option.Name);
-			var category = root != null ? root.Category : option.Category;
-			if (category != lastCategory) {
-				if (!string.IsNullOrEmpty(category)) {
+			if (option.Category != lastCategory) {
+				if (!string.IsNullOrEmpty(option.Category)) {
 					EditorGUILayout.Space();
-					EditorGUILayout.LabelField(category, EditorStyles.boldLabel);
+					EditorGUILayout.LabelField(option.Category, EditorStyles.boldLabel);
 				}
-				lastCategory = category;
+				lastCategory = option.Category;
 			}
-			// TODO: Categories GUI
 			ShowOption(option, root);
 		}
 

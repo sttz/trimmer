@@ -119,13 +119,9 @@ public interface IOption
 	IEnumerable<IOption> Children { get; }
 
 	/// <summary>
-	/// The default category the option is placed under.
+	/// The option's category.
 	/// </summary>
-	string DefaultCategory { get; }
-	/// <summary>
-	/// The option's current category.
-	/// </summary>
-	string Category { get; set; }
+	string Category { get; }
 
 	#if UNITY_EDITOR
 

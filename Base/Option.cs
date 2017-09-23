@@ -179,17 +179,7 @@ public abstract class Option : IOption
 
 	// -------- Category --------
 
-	private string _category;
-	public string Category {
-		get {
-			return _category ?? DefaultCategory;
-		}
-		set {
-			_category = value;
-		}
-	}
-
-	public string DefaultCategory { get; protected set; }
+	public string Category { get; protected set; }
 
 	#if UNITY_EDITOR
 

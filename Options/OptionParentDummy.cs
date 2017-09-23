@@ -16,6 +16,7 @@ public class OptionParentDummy : OptionToggle
 	public OptionParentDummy()
 	{
 		DefaultValue = "";
+		Category = "Debug";
 		CreateChildren();
 	}
 

@@ -304,21 +304,7 @@ public class ValueStore : ISerializationCallbackReceiver
 	[Serializable]
 	public class RootNode : Node
 	{
-		[SerializeField] internal string category;
 		[SerializeField] internal bool includeInBuild;
-
-		/// <summary>
-		/// The category of the node, only valid for root nodes.
-		/// </summary>
-		public string Category {
-			get {
-				return category;
-			}
-			set {
-				category = value;
-				isDirty = true;
-			}
-		}
 
 		/// <summary>
 		/// Wether the option should be included in builds.
@@ -336,7 +322,6 @@ public class ValueStore : ISerializationCallbackReceiver
 		public override Node Clone()
 		{
 			var clone = Clone<RootNode>();
-			clone.category = category;
 			clone.includeInBuild = includeInBuild;
 			return clone;
 		}
