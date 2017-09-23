@@ -35,12 +35,12 @@ public class EditorProfile : ScriptableObject
 	// -------- Static --------
 
 	/// <summary>
-	/// Path to the ini file used in the editor.
+	/// Path to the asset used to save the editor profile in.
 	/// </summary>
 	/// <remarks>
-	/// The path is relative to the project's <c>Assets</c> folder.
+	/// The path is relative to the project's folder.
 	/// </remarks>
-	public const string EDITOR_PROFILE_INI_PATH = "../Editor.ini";
+	public const string EDITOR_PROFILE_PATH = "Library/EditorProfile.asset";
 
 	/// <summary>
 	/// Show the editor profile in the inspector.
@@ -78,7 +78,10 @@ public class EditorProfile : ScriptableObject
 	public static EditorProfile SharedInstance {
 		get {
 			if (_editorProfile == null) {
-				_editorProfile = Resources.FindObjectsOfTypeAll<EditorProfile>().FirstOrDefault(p => p.GetType() == typeof(EditorProfile));
+				var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(EDITOR_PROFILE_PATH);
+				if (objs != null && objs.Length > 0 && objs[0] is EditorProfile) {
+					_editorProfile = (EditorProfile)objs[0];
+				}
 				if (_editorProfile == null) {
 					_editorProfile = ScriptableObject.CreateInstance<EditorProfile>();
 					_editorProfile.name = "Editor Profile";
@@ -115,6 +118,21 @@ public class EditorProfile : ScriptableObject
 	}
 
 	// -------- Methods --------
+
+	/// <summary>
+	/// Save the editor profile. Since it's stored in ProjectSettings,
+	/// it needs to be saved manually.
+	/// </summary>
+	public virtual void SaveIfNeeded()
+	{
+		if (store.IsDirty(true)) {
+			UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
+				new UnityEngine.Object[] { this },
+				EDITOR_PROFILE_PATH,
+				true
+			);
+		}
+	}
 
 	/// <summary>
 	/// Show the edit GUI for the given option.

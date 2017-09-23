@@ -181,9 +181,7 @@ public class BuildProfileEditor : Editor
 
 	protected void OnDisable()
 	{
-		if (profile.store.IsDirty(true)) {
-			EditorUtility.SetDirty(profile);
-		}
+		profile.SaveIfNeeded();
 	}
 
 	// -------- Fields --------

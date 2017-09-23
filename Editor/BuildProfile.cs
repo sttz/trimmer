@@ -122,6 +122,18 @@ public class BuildProfile : EditorProfile
 	// -------- Methods --------
 
 	/// <summary>
+	/// Save the profile.
+	/// </summary>
+	public override void SaveIfNeeded()
+	{
+		if (store.IsDirty(true)) {
+			// Unlike the EditorProfile base class, BuildProfile serialization 
+			// is managed by Unity and we only set its dirty flag
+			EditorUtility.SetDirty(this);
+		}
+	}
+
+	/// <summary>
 	/// Check if an option should be included in builds of this profile.
 	/// </summary>
 	public bool IncludeInBuild(string optionName)
