@@ -20,13 +20,18 @@ public class BuildManager
 	// -------- Active Profile --------
 
 	/// <summary>
-	/// Key used to save the active profile GUID in the editor defaults.
+	/// Platform name used to save project-specific settings.
+	/// </summary>
+	public const string SettingsPlatformName = "Workbench";
+	/// <summary>
+	/// Key used to save the active profile GUID.
 	/// </summary>
 	public const string ActiveProfileGUIDKey = "ActiveProfileGUID";
 	/// <summary>
-	/// Key used to save the editor defaults profile GUID in the editor defaults.
+	/// Key used to save the editor defaults profile GUID.
 	/// </summary>
-	public const string DefaultsProfileGUIDKey = "DefaultsProfileGUIDKey";
+	public const string DefaultsProfileGUIDKey = "DefaultsProfileGUID";
+
 
 	/// <summary>
 	/// The active profile, which is used for regular Unity builds.
@@ -38,7 +43,7 @@ public class BuildManager
 	public static BuildProfile ActiveProfile {
 		get {
 			if (_activeProfile == null) {
-				var guid = EditorPrefs.GetString(ActiveProfileGUIDKey);
+				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey);
 				if (string.IsNullOrEmpty(guid))
 					return null;
 
@@ -51,7 +56,7 @@ public class BuildManager
 				return;
 
 			if (value == null) {
-				EditorPrefs.DeleteKey(ActiveProfileGUIDKey);
+				EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, null);
 				return;
 			}
 
@@ -59,7 +64,7 @@ public class BuildManager
 			if (string.IsNullOrEmpty(guid))
 				return;
 
-			EditorPrefs.SetString(ActiveProfileGUIDKey, guid);
+			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, guid);
 
 			_activeProfile = value;
 			_activeProfile.ApplyScriptingDefineSymbols();
@@ -82,7 +87,7 @@ public class BuildManager
 	public static BuildProfile EditorDefaultsProfile {
 		get {
 			if (_editorDefaultsProfile == null) {
-				var guid = EditorPrefs.GetString(DefaultsProfileGUIDKey);
+				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey);
 				if (!string.IsNullOrEmpty(guid)) {
 					_editorDefaultsProfile = BuildManager.LoadAssetByGUID<BuildProfile>(guid);
 				}
@@ -98,7 +103,7 @@ public class BuildManager
 			if (value != null)
 				guid = BuildManager.GetAssetGUID(value);
 
-			EditorPrefs.SetString(DefaultsProfileGUIDKey, guid);
+			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey, guid);
 		}
 	}
 	private static BuildProfile _editorDefaultsProfile;
