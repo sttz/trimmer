@@ -45,7 +45,6 @@ namespace sttz.Workbench
 /// profile in the editor.</para>
 /// </remarks>
 #if HAS_CREATE_ASSET_MENU_ATTRIBUTE
-// TODO: Fix NullReferenceException when creating profile
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
 #endif
 public class BuildProfile : EditorProfile
