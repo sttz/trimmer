@@ -244,7 +244,7 @@ public class BuildProfileEditor : Editor
 				// TODO: Invalidate
 				if (defaultsProfiles == null) {
 					defaultsProfiles = BuildProfile.AllBuildProfiles.Prepend(null).ToArray();
-					defaultsProfilesNames = defaultsProfiles.Select(p => p == null ? "Editor" : p.ProfileName).ToArray();
+					defaultsProfilesNames = defaultsProfiles.Select(p => p == null ? "Editor" : p.name).ToArray();
 				}
 
 				var defaultsProfile = BuildManager.EditorDefaultsProfile;

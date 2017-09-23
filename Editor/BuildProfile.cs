@@ -105,19 +105,6 @@ public class BuildProfile : EditorProfile
 	}
 	#endif
 
-	// -------- Properties --------
-
-	public override string ProfileName {
-		get {
-			var profilePath = AssetDatabase.GetAssetPath(this);
-			if (string.IsNullOrEmpty(profilePath)) {
-				return null;
-			}
-
-			return Path.GetFileNameWithoutExtension(profilePath);
-		}
-	}
-
 	// -------- Methods --------
 
 	/// <summary>

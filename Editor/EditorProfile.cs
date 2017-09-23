@@ -105,18 +105,6 @@ public class EditorProfile : ScriptableObject
 	/// </summary>
 	public ValueStore store = new ValueStore();
 
-	// -------- Properites --------
-
-	/// <summary>
-	/// The name of the profile (file name without extension).
-	/// </summary>
-	public virtual string ProfileName {
-		get {
-			// TODO: Replace with this.name?
-			return "Editor Profile";
-		}
-	}
-
 	// -------- Methods --------
 
 	/// <summary>
