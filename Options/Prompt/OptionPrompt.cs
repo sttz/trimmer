@@ -15,7 +15,7 @@ public class OptionPrompt : OptionToggle
 
 	public OptionPrompt()
 	{
-		DefaultIniValue = "";
+		DefaultValue = "";
 		CreateChildren();
 	}
 
@@ -39,7 +39,7 @@ public class OptionPrompt : OptionToggle
 
 		public OptionPromptSize()
 		{
-			DefaultIniValue = "";
+			DefaultValue = "";
 		}
 	}
 
@@ -49,7 +49,7 @@ public class OptionPrompt : OptionToggle
 
 		public OptionPromptPosition()
 		{
-			DefaultIniValue = "";
+			DefaultValue = "";
 		}
 	}
 
@@ -59,7 +59,7 @@ public class OptionPrompt : OptionToggle
 
 		public OptionPromptActivation()
 		{
-			DefaultIniValue = "O-O-O";
+			DefaultValue = "O-O-O";
 		}
 	}
 }

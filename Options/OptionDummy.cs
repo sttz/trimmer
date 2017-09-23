@@ -15,7 +15,7 @@ public class OptionDummy : OptionToggle
 
 	public OptionDummy()
 	{
-		DefaultIniValue = "";
+		DefaultValue = "";
 	}
 
 	public override void Apply()

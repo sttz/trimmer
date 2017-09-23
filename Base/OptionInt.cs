@@ -25,7 +25,7 @@ public abstract class OptionInt : Option, IOption<int>
 	public int Parse(string input)
 	{
 		if (input.Length == 0)
-			input = DefaultIniValue ?? string.Empty;
+			input = DefaultValue ?? string.Empty;
 
 		int result;
 		if (int.TryParse(input, out result)) {

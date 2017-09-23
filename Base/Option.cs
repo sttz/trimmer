@@ -57,7 +57,7 @@ public abstract class Option : IOption
 	#endif
 
 	public abstract string Name { get; }
-	public string DefaultIniValue { get; protected set; }
+	public string DefaultValue { get; protected set; }
 	public abstract void Load(string input);
 	public abstract string Save();
 

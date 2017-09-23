@@ -15,7 +15,7 @@ public class OptionVariantDummy : OptionString
 
 	public OptionVariantDummy()
 	{
-		DefaultIniValue = "";
+		DefaultValue = "";
 		IsVariant = true;
 		VariantDefaultParameter = "Dummy";
 	}

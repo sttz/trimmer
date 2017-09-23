@@ -29,7 +29,7 @@ public abstract class OptionToggle : Option, IOption<bool>
 	public bool Parse(string input)
 	{
 		if (input.Length == 0)
-			input = DefaultIniValue ?? string.Empty;
+			input = DefaultValue ?? string.Empty;
 
 		return Array.FindIndex(trueStrings, s => s.Equals(input, StringComparison.OrdinalIgnoreCase)) >= 0;
 	}

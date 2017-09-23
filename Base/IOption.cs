@@ -31,7 +31,7 @@ public interface IOption
 	/// The default value for the option, used if there is no value defined
 	/// for the option in the ini file.
 	/// </summary>
-	string DefaultIniValue { get; }
+	string DefaultValue { get; }
 	/// <summary>
 	/// Parse a string and set the option's Value.
 	/// </summary>

@@ -30,7 +30,7 @@ public abstract class OptionAsset<TUnity> : Option, IOption<TUnity> where TUnity
 	public TUnity Parse(string input)
 	{
 		if (input.Length == 0)
-			input = DefaultIniValue ?? string.Empty;
+			input = DefaultValue ?? string.Empty;
 
 		var path = AssetDatabase.GUIDToAssetPath(input);
 		if (string.IsNullOrEmpty(path))

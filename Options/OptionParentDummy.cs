@@ -15,7 +15,7 @@ public class OptionParentDummy : OptionToggle
 
 	public OptionParentDummy()
 	{
-		DefaultIniValue = "";
+		DefaultValue = "";
 		CreateChildren();
 	}
 
@@ -39,7 +39,7 @@ public class OptionParentDummy : OptionToggle
 
 		public OptionParentDummyChild1()
 		{
-			DefaultIniValue = "";
+			DefaultValue = "";
 		}
 	}
 
@@ -49,7 +49,7 @@ public class OptionParentDummy : OptionToggle
 
 		public OptionParentDummyChild2()
 		{
-			DefaultIniValue = "";
+			DefaultValue = "";
 			IsVariant = true;
 			VariantDefaultParameter = "Child2Variant";
 			CreateChildren();
@@ -61,7 +61,7 @@ public class OptionParentDummy : OptionToggle
 
 			public OptionParentDummyChild3()
 			{
-				DefaultIniValue = "";
+				DefaultValue = "";
 			}
 		}
 	}

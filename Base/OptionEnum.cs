@@ -45,7 +45,7 @@ public abstract class OptionEnum<TEnum> : Option, IOption<TEnum>
 	public TEnum Parse(string input)
 	{
 		if (input.Length == 0)
-			input = DefaultIniValue ?? string.Empty;
+			input = DefaultValue ?? string.Empty;
 
 		if (string.IsNullOrEmpty(input)) {
 			return default(TEnum);

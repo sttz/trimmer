@@ -25,7 +25,7 @@ public abstract class OptionFloat : Option, IOption<float>
 	public float Parse(string input)
 	{
 		if (input.Length == 0)
-			input = DefaultIniValue ?? string.Empty;
+			input = DefaultValue ?? string.Empty;
 
 		float result;
 		if (float.TryParse(input, out result)) {

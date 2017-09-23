@@ -585,7 +585,7 @@ public class BuildProfileEditor : Editor
 			name = option.VariantDefaultParameter + (i++ == 0 ? "" : i.ToString());
 		} while (node.GetVariant(name) != null);
 
-		node.AddVariant(name, option.DefaultIniValue ?? string.Empty);
+		node.AddVariant(name, option.DefaultValue ?? string.Empty);
 	}
 }
 
