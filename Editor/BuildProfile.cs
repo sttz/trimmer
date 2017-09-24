@@ -146,7 +146,7 @@ public class BuildProfile : EditableProfile
 	/// <summary>
 	/// Check if there are any options included in the build.
 	/// </summary>
-	public bool HasAvailableOptions(bool developerBuild)
+	public bool HasAvailableOptions()
 	{
 		foreach (var option in AllOptions) {
 			if (IncludeInBuild(option.Name))

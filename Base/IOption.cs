@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -158,8 +159,9 @@ public interface IOption
 	/// are set. Parameter options are called at least once for their
 	/// default parameter and once more for every additional parameter.
 	/// </remarks>
-	// TODO: Make more generic?
-	void Remove();
+	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile);
+
+	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile);
 
 	/// <summary>
 	/// Order the individual option's PostprocessBuild is getting called.
@@ -173,7 +175,7 @@ public interface IOption
 	/// Called after the build is complete, gives the option a chance
 	/// to edit or supplement the build.
 	/// </summary>
-	void PostprocessBuild(BuildTarget target, string pathToBuiltProject, bool optionRemoved, Profile profile);
+	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile);
 
 	/// <summary>
 	/// The scripting define symbols that should be set when the option is included.

@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEditor.Build;
+using UnityEngine.SceneManagement;
 
 namespace sttz.Workbench {
 
@@ -15,7 +17,7 @@ namespace sttz.Workbench {
 /// manages the build process.
 /// </summary>
 [InitializeOnLoad]
-public class BuildManager
+public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 {
 	// -------- Active Profile --------
 
@@ -208,64 +210,28 @@ public class BuildManager
 		}
 	}
 
-	// -------- Postprocessing --------
+	// -------- Processing --------
 
 	/// <summary>
-	/// Unity callback for each scene, allowing to edit the scene before it's built.
+	/// Create and configure the <see cref="Workbench"/> instance in the current scene.
 	/// </summary>
-	/// <remarks>
-	/// Workbench uses the <see cref="PostProcessScene"/> callback to apply the options'
-	/// default values or to remove them during a build.
-	/// </remarks>
-	[PostProcessScene]
-	private static void OnPostprocessScene()
+	private static void InjectWorkbench(EditableProfile profile)
 	{
-		var buildProfile = CurrentProfile;
-
-		// Playing in editor
-		if (!BuildPipeline.isBuildingPlayer) {
-			if (!EditorApplication.isPlaying || Workbench.Instance == null) {
-				if (EditorDefaultsProfile != null) {
-					InjectWorkbench(EditorDefaultsProfile);
-				} else {
-					InjectWorkbench(EditorProfile.SharedInstance);
-				}
-			}
-			return;
-		}
-
-		// Actual building
-		var devBuild = EditorUserBuildSettings.development;
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions(devBuild));
-
-		// Create runtime profile so it applies its options
-		Profile profile = new Profile(buildProfile != null ? buildProfile.store : null);
-
-		if (!removeAll) {
-			InjectWorkbench(buildProfile);
-		}
-
-		foreach (var option in profile) {
-			if (removeAll || !buildProfile.IncludeInBuild(option.Name)) {
-				option.Remove();
-			}
-		}
+		var go = new GameObject("Workbench");
+		var bench = go.AddComponent<Workbench>();
+		bench.Store = profile.Store;
 	}
 
-	/// <summary>
-	/// Unity callback after the build has completed.
-	/// </summary>
-	/// <remarks>
-	/// Workbench uses the <see cref="PostProcessBuild"/> callback to warn the user 
-	/// if no profile is set (there is unfortunately no pre-build callback) and to
-	/// copy the ini file to the build, if enabled.
-	/// </remarks>
-	[PostProcessBuild(100)]
-	private static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
-	{
-		if (!BuildPipeline.isBuildingPlayer)
-			return;
+	public int callbackOrder { get { return 0; } }
 
+	public void OnPreprocessBuild(BuildTarget target, string path)
+	{
+		throw new BuildFailedException("Uh oh!");
+	}
+	
+	public void OnPostprocessBuild(BuildTarget target, string path)
+	{
+		// TODO: Do in OnPreprocessBuild and abort?
 		// Warn if no profile is set
 		var buildProfile = CurrentProfile;
 		if (buildProfile == null) {
@@ -294,24 +260,51 @@ public class BuildManager
 		}*/
 
 		// Run options' PostprocessBuild
-		var devBuild = EditorUserBuildSettings.development;
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions(devBuild));
+		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		Profile profile = new Profile(buildProfile != null ? buildProfile.store : null);
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-			var removeOption = removeAll || !buildProfile.IncludeInBuild(option.Name);
-			option.PostprocessBuild(target, pathToBuiltProject, removeOption, profile);
+			var included = (!removeAll && buildProfile.IncludeInBuild(option.Name));
+			option.PostprocessBuild(target, path, included, profile);
 		}
 	}
 
-	/// <summary>
-	/// Create and configure the <see cref="Workbench"/> instance in the current scene.
-	/// </summary>
-	private static void InjectWorkbench(EditableProfile profile)
+	public void OnProcessScene(Scene scene)
 	{
-		var go = new GameObject("Workbench");
-		var bench = go.AddComponent<Workbench>();
-		bench.Store = profile.Store;
+		Profile profile;
+		var buildProfile = CurrentProfile;
+
+		// Playing in editor
+		if (!BuildPipeline.isBuildingPlayer) {
+			if (!EditorApplication.isPlaying || Workbench.Instance == null) {
+				if (EditorDefaultsProfile != null) {
+					InjectWorkbench(EditorDefaultsProfile);
+				} else {
+					InjectWorkbench(EditorProfile.SharedInstance);
+				}
+			}
+
+			profile = Workbench.Instance.Profile;
+			foreach (var option in Workbench.Instance.Profile) {
+				option.PostprocessScene(scene, false, true, profile);
+			}
+			return;
+		}
+
+		// Actual building
+		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
+
+		// Create runtime profile so it applies its options
+		profile = new Profile(buildProfile != null ? buildProfile.store : null);
+
+		if (!removeAll) {
+			InjectWorkbench(buildProfile);
+		}
+
+		foreach (var option in profile) {
+			var include = (!removeAll && buildProfile.IncludeInBuild(option.Name));
+			option.PostprocessScene(scene, true, include, profile);
+		}
 	}
 }
 

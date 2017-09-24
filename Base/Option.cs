@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.SceneManagement;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -34,18 +35,22 @@ public abstract class Option : IOption
 
 	public bool BuildOnly { get; private set; }
 
-	public virtual void Remove()
+	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile)
 	{
 		// NOP
 	}
 
 	public int PostprocessOrder { get; protected set; }
 
-	public virtual void PostprocessBuild(BuildTarget target, string pathToBuiltProject, bool optionRemoved, Profile profile)
+	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile)
 	{
 		// NOP
 	}
 
+	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile)
+	{
+		// NOP
+	}
 	public virtual IEnumerable<string> GetSctiptingDefineSymbols(bool includedInBuild, string parameter, string value)
 	{
 		if (includedInBuild) {
@@ -123,7 +128,10 @@ public abstract class Option : IOption
 	public Option()
 	{
 		Parent = null;
+
+		#if UNITY_EDITOR
 		BuildOnly = GetType().GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length > 0;
+		#endif
 		
 		Configure();
 		

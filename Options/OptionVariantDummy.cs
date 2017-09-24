@@ -1,6 +1,7 @@
 ﻿#if OPTION_Dummy || UNITY_EDITOR
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -27,9 +28,9 @@ public class OptionVariantDummy : OptionString
 
 #if UNITY_EDITOR
 
-	public override void Remove()
+	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile)
 	{
-		base.Remove();
+		base.PostprocessScene(scene, isBuild, includedInBuild, profile);
 	}
 
 #endif
