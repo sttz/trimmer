@@ -149,8 +149,12 @@ public class EditorProfile : EditableProfile
 		} else if (editModeProfile != null && editModeProfile.GetOption(option.Name) != null) {
 			// TODO: What about variant/child options?
 			var editModeOption = editModeProfile.GetOption(option.Name);
-			var newValue = editModeOption.EditGUI(label, editModeOption.Save());
-			editModeOption.Load(newValue);
+			var oldValue = editModeOption.Save();
+			var newValue = editModeOption.EditGUI(label, oldValue);
+			if (oldValue != newValue) {
+				editModeOption.Load(newValue);
+				editModeOption.Apply();
+			}
 			node.Value = newValue;
 		
 		} else {
@@ -186,6 +190,7 @@ public class EditorProfile : EditableProfile
 	private void InitEditModeProfile()
 	{
 		editModeProfile = new EditModeProfile(store);
+		editModeProfile.Apply();
 	}
 
 	/// <summary>
