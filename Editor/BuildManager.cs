@@ -97,8 +97,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			return _editorDefaultsProfile;
 		}
 		set {
-			// TODO: Check applying of values when changing profile or the profile's defaults
-			Debug.Log("EditorDefaultsProfile = " + value);
+			if (_editorDefaultsProfile == value)
+				return;
+			
 			_editorDefaultsProfile = value;
 
 			var guid = string.Empty;
@@ -106,6 +107,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 				guid = BuildManager.GetAssetGUID(value);
 
 			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey, guid);
+
+			if (Application.isPlaying) {
+				ApplyStore();
+			}
 		}
 	}
 	private static BuildProfile _editorDefaultsProfile;
@@ -217,9 +222,22 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	private static void InjectWorkbench(EditableProfile profile)
 	{
+		if (!Application.isPlaying) throw new InvalidOperationException();
+
 		var go = new GameObject("Workbench");
 		var bench = go.AddComponent<Workbench>();
-		bench.Store = profile.Store;
+		ApplyStore();
+	}
+
+	private static void ApplyStore()
+	{
+		if (!Application.isPlaying) throw new InvalidOperationException();
+
+		if (EditorDefaultsProfile != null) {
+			Workbench.Instance.Store = EditorDefaultsProfile.Store;
+		} else {
+			Workbench.Instance.Store = EditorProfile.SharedInstance.Store;
+		}
 	}
 
 	public int callbackOrder { get { return 0; } }
