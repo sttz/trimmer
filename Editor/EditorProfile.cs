@@ -99,7 +99,8 @@ public class EditorProfile : EditableProfile
 	/// </summary>
 	public override void SaveIfNeeded()
 	{
-		if (store.IsDirty(true)) {
+		if (store.IsDirty(true) || expandedDirty) {
+			expandedDirty = false;
 			UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
 				new UnityEngine.Object[] { this },
 				EDITOR_PROFILE_PATH,
@@ -211,6 +212,7 @@ public class EditorProfile : EditableProfile
 	/// Used to track expanded state in editors.
 	/// </summary>
 	[SerializeField] List<int> expanded = new List<int>();
+	bool expandedDirty = false;
 
 	public void SetExpanded(string identifier, bool isExpanded)
 	{
@@ -218,8 +220,10 @@ public class EditorProfile : EditableProfile
 		var index = expanded.BinarySearch(hash);
 		if (isExpanded && index < 0) {
 			expanded.Insert(~index, hash);
+			expandedDirty = true;
 		} else if (!isExpanded && index >= 0) {
-			expanded.Remove(index);
+			expanded.RemoveAt(index);
+			expandedDirty = true;
 		}
 	}
 
@@ -227,6 +231,11 @@ public class EditorProfile : EditableProfile
 	{
 		var hash = identifier.GetHashCode();
 		return expanded.BinarySearch(hash) >= 0;
+	}
+
+	void OnDisable()
+	{
+		SaveIfNeeded();
 	}
 }
 
