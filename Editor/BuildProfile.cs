@@ -165,7 +165,7 @@ public class BuildProfile : EditableProfile
 		return AllOptions;
 	}
 
-	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
+	public override void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node)
 	{
 		// For build profiles, the store is always directly edited.
 		node.Value = option.EditGUI(label, node.Value);

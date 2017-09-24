@@ -36,7 +36,7 @@ public abstract class EditableProfile : ScriptableObject
     public abstract void SaveIfNeeded();
     public abstract ValueStore.Node GetStoreRoot(IOption option);
     public abstract IEnumerable<IOption> GetAllOptions();
-    public abstract void EditOption(GUIContent label, IOption option, ValueStore.Node node);
+    public abstract void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node);
 }
 
 }

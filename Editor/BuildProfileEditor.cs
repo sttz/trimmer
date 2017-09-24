@@ -424,7 +424,7 @@ public class BuildProfileEditor : Editor
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
-				profile.EditOption(GUIContent.none, option, node);
+				profile.EditOption(path, GUIContent.none, option, node);
 				EditorGUI.indentLevel = level;
 
 				if (variantType != VariantType.DefaultVariant) {
@@ -444,7 +444,7 @@ public class BuildProfileEditor : Editor
 			} else {
 				path += option.Name + "/";
 				tempContent.text = displayName;
-				profile.EditOption(tempContent, option, node);
+				profile.EditOption(path, tempContent, option, node);
 			}
 
 			if (buildProfile != null && node != null && node != parentNode && node is ValueStore.RootNode) {

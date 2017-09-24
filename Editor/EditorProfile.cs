@@ -137,7 +137,7 @@ public class EditorProfile : EditableProfile
 	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
-	public override void EditOption(GUIContent label, IOption option, ValueStore.Node node)
+	public override void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node)
 	{
 		if (Application.isPlaying) {
 			var oldValue = option.Save();
@@ -146,10 +146,15 @@ public class EditorProfile : EditableProfile
 				option.Load(newValue);
 				option.Apply();
 			}
+			return;
+		}
 		
-		} else if (editModeProfile != null && editModeProfile.GetOption(option.Name) != null) {
-			// TODO: What about variant/child options?
-			var editModeOption = editModeProfile.GetOption(option.Name);
+		IOption editModeOption = null;
+		if (editModeProfile != null) {
+			editModeOption = editModeProfile.GetOption(path);
+		}
+
+		if (editModeOption != null) {
 			var oldValue = editModeOption.Save();
 			var newValue = editModeOption.EditGUI(label, oldValue);
 			if (oldValue != newValue) {
@@ -172,7 +177,6 @@ public class EditorProfile : EditableProfile
 	/// This profile only creates the options that have the <see cref="ExecuteInEditMode"/>
 	/// attribute, avoiding other options to interfere outside of playmode.
 	/// </remarks>
-	// TODO: Check if edit mode options still work...
 	private class EditModeProfile : Profile
 	{
 		public EditModeProfile(ValueStore store) : base(store) { }
