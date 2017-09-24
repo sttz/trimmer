@@ -181,6 +181,10 @@ public class BuildProfileEditor : Editor
 				return string.CompareOrdinal(o1.Name, o2.Name);
 			}
 		});
+
+		// Invalidate defaults profile dropdown
+		defaultsProfiles = null;
+		defaultsProfilesNames = null;
 	}
 
 	protected void OnDisable()
@@ -237,7 +241,6 @@ public class BuildProfileEditor : Editor
 		if (editorProfile != null) {
 			EditorGUILayout.BeginHorizontal();
 			{
-				// TODO: Invalidate
 				if (defaultsProfiles == null) {
 					defaultsProfiles = BuildProfile.AllBuildProfiles.Prepend(null).ToArray();
 					defaultsProfilesNames = defaultsProfiles.Select(p => p == null ? "Editor" : p.name).ToArray();

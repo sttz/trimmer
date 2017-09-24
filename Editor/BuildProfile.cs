@@ -56,15 +56,21 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public static IEnumerable<BuildProfile> AllBuildProfiles {
 		get {
-			// TODO: Invalidate
-			if (_buildProfiles == null) {
-				_buildProfiles = new List<BuildProfile>();
+			if (_buildProfiles == null || _buildProfiles.Any(p => p == null)) {
+				_buildProfiles = null;
+
+				var profiles = new List<BuildProfile>();
 				var guids = AssetDatabase.FindAssets("t:BuildProfile");
 				foreach (var guid in guids) {
 					var path = AssetDatabase.GUIDToAssetPath(guid);
 					var profile = AssetDatabase.LoadAssetAtPath(path, typeof(BuildProfile));
-					_buildProfiles.Add((BuildProfile)profile);
+					profiles.Add((BuildProfile)profile);
 				}
+
+				// Assign _buildProfiles only here because LoadAssetAtPath will cause
+				// the newly loaded profile's OnEnable to be called, which will check
+				// to invalidate _buildProfiles.
+				_buildProfiles = profiles;
 			}
 			return _buildProfiles;
 		}
@@ -125,6 +131,8 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public override void SaveIfNeeded()
 	{
+		if (this == null) return;
+
 		if (store.IsDirty(true)) {
 			EditorUtility.SetDirty(this);
 		}
@@ -354,6 +362,14 @@ public class BuildProfile : EditableProfile
 	}
 
 	// -------- Internals --------
+
+	protected virtual void OnEnable()
+	{
+		// Invalidate AllBuildProfiles when a new one is created
+		if (_buildProfiles != null && !_buildProfiles.Contains(this)) {
+			_buildProfiles = null;
+		}
+	}
 
 	/// <summary>
 	/// Gets the build target group for the given build target.
