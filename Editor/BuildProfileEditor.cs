@@ -358,14 +358,26 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	protected void ShowOption(IOption option, ValueStore.Node node, ValueStore.Node parentNode = null, bool variantChild = false, IOption parentVariant = null)
+	protected enum VariantType
+	{
+		None,
+		VariantContainer,
+		DefaultVariant,
+		VariantChild
+	}
+
+	protected void ShowOption(IOption option, ValueStore.Node node, IOption parentOption = null, ValueStore.Node parentNode = null, VariantType variantType = VariantType.None)
 	{
 		var displayName = OptionDisplayName(option.Name);
 		var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
 
+		if (variantType == VariantType.None && option.IsVariant) {
+			variantType = VariantType.VariantContainer;
+		}
+
 		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
 		{
-			if (option.IsVariant && !variantChild) {
+			if (variantType == VariantType.VariantContainer) {
 				EditorGUILayout.LabelField(displayName, width);
 				if (GUILayout.Button(GUIContent.none, plusStyle)) {
 					AddNewVariant(option, node);
@@ -374,15 +386,10 @@ public class BuildProfileEditor : Editor
 
 			} else if (option.IsVariant) {
 				// Disable when editing the default variant
-				// TODO: Clean this shit up
-				var defaultVariant = (
-					(node == null && parentVariant == null)
-					|| (node != null && node == parentNode)
-				);
-				EditorGUI.BeginDisabledGroup(defaultVariant);
+				EditorGUI.BeginDisabledGroup(variantType == VariantType.DefaultVariant);
 				{
 					if (node != null) {
-						if (defaultVariant) {
+						if (variantType == VariantType.DefaultVariant) {
 							EditorGUILayout.TextField(option.VariantDefaultParameter, width);
 						} else {
 							GUI.SetNextControlName(option.Name);
@@ -409,7 +416,7 @@ public class BuildProfileEditor : Editor
 				profile.EditOption(GUIContent.none, option, node);
 				EditorGUI.indentLevel = level;
 
-				if (!defaultVariant) {
+				if (variantType != VariantType.DefaultVariant) {
 					if (GUILayout.Button(GUIContent.none, minusStyle)) {
 						if (node != null) {
 							delayedRemovals.Add(() => {
@@ -417,7 +424,7 @@ public class BuildProfileEditor : Editor
 							});
 						} else {
 							delayedRemovals.Add(() => {
-								parentVariant.RemoveVariant(option);
+								parentOption.RemoveVariant(option);
 							});
 						}
 					}
@@ -447,38 +454,36 @@ public class BuildProfileEditor : Editor
 		// TODO: Better place to save expanded state?
 		var isExpanded = (node != null ? node.IsExpanded : option.IsExpanded);
 
-		if ((option.IsVariant && !variantChild) || option.HasChildren) {
+		if (variantType == VariantType.VariantContainer || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
 			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 		}
 
 		if (isExpanded) {
-			if (option.IsVariant && !variantChild) {
+			if (variantType == VariantType.VariantContainer) {
 				EditorGUI.indentLevel++;
 				if (node == null) {
-					ShowOption(option, null, null, true, null);
-					foreach (var variant in option.Variants) {
-						ShowOption(variant, null, null, true, option);
+					ShowOption(option, null, variantType: VariantType.DefaultVariant);
+					foreach (var variantOption in option.Variants) {
+						ShowOption(variantOption, null, option, null, variantType: VariantType.VariantChild);
 					}
 				} else if (node.Variants != null) {
-					ShowOption(option, node, node, true);
+					ShowOption(option, node, variantType: VariantType.DefaultVariant);
 					foreach (var variantNode in node.Variants) {
-						// We pass in option twice here to signal the node
-						// is a variant child but that's not really nice...
-						ShowOption(option, variantNode, node, true);
+						ShowOption(option, variantNode, null, node, variantType: VariantType.VariantChild);
 					}
 				}
 				EditorGUI.indentLevel--;
 			}
 
-			if (option.HasChildren && (!option.IsVariant || variantChild)) {
+			if (option.HasChildren && variantType != VariantType.VariantContainer) {
 				EditorGUI.indentLevel++;
 				foreach (var childOption in option.Children) {
 					ValueStore.Node childNode = null;
 					if (node != null) {
 						childNode = node.GetOrCreateChild(childOption.Name);
 					}
-					ShowOption(childOption, childNode, node);
+					ShowOption(childOption, childNode, option, node);
 				}
 				EditorGUI.indentLevel--;
 			}
