@@ -13,10 +13,9 @@ public class OptionPrompt : OptionToggle
 {
 	public override string Name { get { return "Prompt"; } }
 
-	public OptionPrompt()
+	protected override void Configure()
 	{
 		DefaultValue = "";
-		CreateChildren();
 	}
 
 	public override void Apply()
@@ -37,7 +36,7 @@ public class OptionPrompt : OptionToggle
 	{
 		public override string Name { get { return "Size"; } }
 
-		public OptionPromptSize()
+		protected override void Configure()
 		{
 			DefaultValue = "";
 		}
@@ -47,7 +46,7 @@ public class OptionPrompt : OptionToggle
 	{
 		public override string Name { get { return "Position"; } }
 
-		public OptionPromptPosition()
+		protected override void Configure()
 		{
 			DefaultValue = "";
 		}
@@ -57,7 +56,7 @@ public class OptionPrompt : OptionToggle
 	{
 		public override string Name { get { return "Activation"; } }
 
-		public OptionPromptActivation()
+		protected override void Configure()
 		{
 			DefaultValue = "O-O-O";
 		}

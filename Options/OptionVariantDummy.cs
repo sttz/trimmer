@@ -13,7 +13,7 @@ public class OptionVariantDummy : OptionString
 {
 	public override string Name { get { return "VariantDummy"; } }
 
-	public OptionVariantDummy()
+	protected override void Configure()
 	{
 		DefaultValue = "";
 		IsVariant = true;

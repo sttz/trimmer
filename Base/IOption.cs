@@ -27,12 +27,13 @@ public interface IOption
 	/// be a valid C# identifier.
 	/// </remarks>
 	string Name { get; }
+	IOption Parent { get; set; }
+	string Path { get; }
 	/// <summary>
 	/// The default value for the option, used if there is no value defined
 	/// for the option in the ini file.
 	/// </summary>
 	string DefaultValue { get; }
-	void InitRoot();
 	/// <summary>
 	/// Parse a string and set the option's Value.
 	/// </summary>
@@ -87,7 +88,6 @@ public interface IOption
 	/// Add a new variant to the main variant option. Only used if <see cref="IsVariant"/>
 	/// is true and can only be called on the main variant option (<see cref="IsDefaultVariant"/>).
 	/// </summary>
-	void AddVariant(IOption variant);
 	IOption AddVariant(string parameter);
 	/// <summary>
 	/// Get a variant option by its parameter. Only used if <see cref="IsVariant"/>

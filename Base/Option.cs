@@ -20,6 +20,11 @@ public abstract class Option : IOption
 {
 	// -------- Implement / Override in Sub-Classes --------
 
+	/// <summary>
+	/// Overwrite this method to set up your option class (don't do it in the constructor).
+	/// </summary>
+	protected abstract void Configure();
+
 	#if UNITY_EDITOR
 
 	/// <summary>
@@ -52,20 +57,38 @@ public abstract class Option : IOption
 
 	public abstract string EditGUI(GUIContent label, string input);
 
+	public bool IsExpanded { get; set; }
+
 	#endif
 
 	/// <summary>
-	/// Init a root node, i.e. a non-default-variant and non-child node.
 	/// </summary>
-	public virtual void InitRoot()
-	{
-		if (IsVariant) {
-			IsDefaultVariant = true;
-			VariantParameter = VariantDefaultParameter;
+	public abstract string Name { get; }
+
+	public IOption Parent {
+		get {
+			return _parent;
+		}
+		set {
+			_parent = value;
+			if (Parent == null) {
+				Path = Name;
+			} else {
+				var own = Name;
+				if (IsVariant && !IsDefaultVariant) {
+					own = VariantParameter;
+				}
+				Path = Parent.Path + "/" + own;
+ 			}
 		}
 	}
+	private IOption _parent;
 
-	public abstract string Name { get; }
+	/// <summary>
+	/// The path to this option, given by the name of the root option and
+	/// the parmeters of its variants or names of its children, separated by "/".
+	/// </summary>
+	public string Path { get; private set; }
 
 	/// <summary>
 	/// The default value of the option.
@@ -97,12 +120,28 @@ public abstract class Option : IOption
 		}
 	}
 
+	// -------- Init --------
+
+	public Option()
+	{
+		Parent = null;
+		
+		Configure();
+		
+		if (IsVariant) {
+			IsDefaultVariant = true;
+			VariantParameter = VariantDefaultParameter;
+		}
+
+		CreateChildren();
+	}
+
 	// -------- Variants --------
 
 	public bool IsVariant { get; protected set; }
 	public string VariantParameter { get; set; }
 	public string VariantDefaultParameter { get; protected set; }
-	public bool IsDefaultVariant { get; protected set; }
+	public bool IsDefaultVariant { get; set; }
 
 	private Dictionary<string, IOption> variants;
 
@@ -116,25 +155,8 @@ public abstract class Option : IOption
 		}
 	}
 
-	public void AddVariant(IOption variant)
-	{
-		Assert.IsTrue(IsVariant, "Invalid call to AddVariant, option is not variant.");
-		Assert.IsTrue(IsDefaultVariant, "Invalid call to AddVariant, option is not the default variant.");
-
-		Assert.IsNotNull(variant);
-		Assert.IsNotNull(variant.VariantParameter, "Variant's parameter is null.");
-		Assert.IsTrue(variant.GetType() == GetType(), "Variants must be of the same type.");
-		Assert.IsFalse(string.Equals(variant.VariantParameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase), "Cannot add variant with default parameter.");
-		Assert.IsTrue(variants == null || !variants.ContainsKey(variant.VariantParameter), "Variant with paramter already exists.");
-
-		if (variants == null)
-			variants = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
-
-		variants[variant.VariantParameter] = variant;
-	}
-
 	/// <summary>
-	/// Like <see cref="AddVariant(IOption)"/> but creates and returns the instance.
+	/// Add a new variant option.
 	/// </summary>
 	public IOption AddVariant(string parameter)
 	{
@@ -145,10 +167,15 @@ public abstract class Option : IOption
 		Assert.IsFalse(string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase), "Cannot add variant with default parameter.");
 		Assert.IsTrue(variants == null || !variants.ContainsKey(parameter), "Variant with paramter already exists.");
 
-		var instance = (IOption)Activator.CreateInstance(GetType());
+		var instance = (Option)Activator.CreateInstance(GetType());
+		instance.Parent = this;
 		instance.VariantParameter = parameter;
+		instance.IsDefaultVariant = false;
 
-		AddVariant(instance);
+		if (variants == null)
+			variants = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
+		variants[parameter] = instance;
+
 		return instance;
 	}
 
@@ -185,6 +212,7 @@ public abstract class Option : IOption
 		Assert.IsTrue(variants != null || variants.ContainsValue(option), "Invalid call to RemoveVariant, option is not a variant of this instance.");
 
 		variants.Remove(option.VariantParameter);
+		option.Parent = null;
 	}
 
 	// -------- Children --------
@@ -222,6 +250,7 @@ public abstract class Option : IOption
 				children = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
 
 			var child = (IOption)Activator.CreateInstance(nestedType);
+			child.Parent = this;
 			children[child.Name] = child;
 		}
 	}
@@ -300,12 +329,12 @@ public abstract class Option : IOption
 		}
 
 		if (File.Exists(pathToBuiltProject)) {
-			pathToBuiltProject = Path.GetDirectoryName(pathToBuiltProject);
+			pathToBuiltProject = System.IO.Path.GetDirectoryName(pathToBuiltProject);
 		}
 
 		foreach (var pathTemplate in desc.deployPaths) {
 			var path = pathTemplate.Replace("{Product}", PlayerSettings.productName);
-			path = Path.Combine(pathToBuiltProject, path);
+			path = System.IO.Path.Combine(pathToBuiltProject, path);
 
 			if (!Directory.Exists(path)) {
 				Debug.Log("Plugin path does not exist: " + path);
@@ -313,13 +342,13 @@ public abstract class Option : IOption
 			}
 
 			foreach (var entry in Directory.GetFileSystemEntries(path)) {
-				var extension = Path.GetExtension(entry);
+				var extension = System.IO.Path.GetExtension(entry);
 				if (!desc.extensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) {
 					Debug.Log("Extension does not match: " + entry);
 					continue;
 				}
 
-				var fileName = Path.GetFileNameWithoutExtension(entry);
+				var fileName = System.IO.Path.GetFileNameWithoutExtension(entry);
 				if (!pluginNameMatch.IsMatch(fileName)) {
 					Debug.Log("Name does not match: " + entry);
 					continue;

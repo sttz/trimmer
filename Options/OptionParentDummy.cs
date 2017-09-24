@@ -13,11 +13,10 @@ public class OptionParentDummy : OptionToggle
 {
 	public override string Name { get { return "ParentDummy"; } }
 
-	public OptionParentDummy()
+	protected override void Configure()
 	{
 		DefaultValue = "";
 		Category = "Debug";
-		CreateChildren();
 	}
 
 	public override void Apply()
@@ -38,7 +37,7 @@ public class OptionParentDummy : OptionToggle
 	{
 		public override string Name { get { return "Child1"; } }
 
-		public OptionParentDummyChild1()
+		protected override void Configure()
 		{
 			DefaultValue = "";
 		}
@@ -48,19 +47,19 @@ public class OptionParentDummy : OptionToggle
 	{
 		public override string Name { get { return "Child2"; } }
 
-		public OptionParentDummyChild2()
+		protected override void Configure()
 		{
 			DefaultValue = "";
 			IsVariant = true;
 			VariantDefaultParameter = "Child2Variant";
-			CreateChildren();
+		}
 		}
 
 		public class OptionParentDummyChild3 : OptionString
 		{
 			public override string Name { get { return "Child3"; } }
 
-			public OptionParentDummyChild3()
+			protected override void Configure()
 			{
 				DefaultValue = "";
 			}

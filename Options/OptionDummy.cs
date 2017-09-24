@@ -13,7 +13,7 @@ public class OptionDummy : OptionToggle
 {
 	public override string Name { get { return "Dummy"; } }
 
-	public OptionDummy()
+	protected override void Configure()
 	{
 		DefaultValue = "";
 		Category = "Debug";

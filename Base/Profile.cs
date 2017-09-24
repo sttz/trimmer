@@ -98,7 +98,6 @@ public class Profile : IEnumerable<IOption>
 			// TODO: Profile shouldn't create build-only options?
 			if (ShouldCreateOption(optionType)) {
 				var option = (IOption)Activator.CreateInstance(optionType);
-				option.InitRoot();
 				options[option.Name] = option;
 			}
 		}
@@ -108,9 +107,34 @@ public class Profile : IEnumerable<IOption>
 	}
 
 	/// <summary>
-	/// Get an option by name or null if no option with this name exists.
+	/// Try to find an option by its path, allowing to get nested
+	/// child and variant options.
 	/// </summary>
-	public IOption GetOption(string name)
+	public IOption GetOption(string path)
+	{
+		if (!path.Contains('/')) {
+			return GetRootOption(path);
+		}
+
+		var parts = path.Split('/');
+		var current = GetRootOption(parts[0]);
+		for (int i = 1; i < parts.Length && current != null; i++) {
+			if (current.HasChildren) {
+				current = current.GetChild(parts[i]);
+			} else if (current.IsDefaultVariant) {
+				current = current.GetVariant(parts[i]);
+			} else {
+				current = null;
+			}
+		}
+
+		return current;
+	}
+
+	/// <summary>
+	/// Get a root option by name (no nested child or variant options).
+	/// </summary>
+	public IOption GetRootOption(string name)
 	{
 		if (options.ContainsKey(name)) {
 			return options[name];
