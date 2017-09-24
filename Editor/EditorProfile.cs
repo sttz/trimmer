@@ -204,6 +204,30 @@ public class EditorProfile : EditableProfile
 			SharedInstance.InitEditModeProfile();
 		};
 	}
+
+	// -------- Expanded --------
+
+	/// <summary>
+	/// Used to track expanded state in editors.
+	/// </summary>
+	[SerializeField] List<int> expanded = new List<int>();
+
+	public void SetExpanded(string identifier, bool isExpanded)
+	{
+		var hash = identifier.GetHashCode();
+		var index = expanded.BinarySearch(hash);
+		if (isExpanded && index < 0) {
+			expanded.Insert(~index, hash);
+		} else if (!isExpanded && index >= 0) {
+			expanded.Remove(index);
+		}
+	}
+
+	public bool IsExpanded(string identifier)
+	{
+		var hash = identifier.GetHashCode();
+		return expanded.BinarySearch(hash) >= 0;
+	}
 }
 
 }

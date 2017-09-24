@@ -187,11 +187,6 @@ public interface IOption
 	/// </summary>
 	string EditGUI(GUIContent label, string input);
 
-	/// <summary>
-	/// Used to track expanded state in play mode in the editor.
-	/// </summary>
-	bool IsExpanded { get; set; }
-
 	#endif
 }
 

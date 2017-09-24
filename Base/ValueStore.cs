@@ -23,7 +23,6 @@ public class ValueStore : ISerializationCallbackReceiver
 	{
 		[SerializeField] internal string name;
 		[SerializeField] internal string value = string.Empty;
-		[SerializeField] internal bool isExpanded;
 
 		[NonSerialized] internal List<Node> variants;
 		[NonSerialized] internal List<Node> children;
@@ -65,19 +64,6 @@ public class ValueStore : ISerializationCallbackReceiver
 			}
 			set {
 				this.value = value;
-				isDirty = true;
-			}
-		}
-
-		/// <summary>
-		/// Used in the editor to track expanded state.
-		/// </summary>
-		public bool IsExpanded {
-			get {
-				return isExpanded;
-			}
-			set {
-				isExpanded = value;
 				isDirty = true;
 			}
 		}
@@ -274,7 +260,6 @@ public class ValueStore : ISerializationCallbackReceiver
 			var clone = new T() {
 				name = name,
 				value = value,
-				isExpanded = isExpanded,
 				numChildren = numChildren,
 				numVariants = numVariants
 			};

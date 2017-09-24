@@ -292,7 +292,13 @@ public class BuildProfileEditor : Editor
 				lastCategory = option.Category;
 			}
 
-			ShowOption(option, profile.GetStoreRoot(option));
+			string root;
+			if (editorProfile != null) {
+				root = "EditorProfile/";
+			} else {
+				root = BuildManager.GetAssetGUID(buildProfile) + "/";
+			}
+			ShowOption(root, option, profile.GetStoreRoot(option));
 		}
 
 		if (Event.current.type != EventType.Layout) {
@@ -366,7 +372,7 @@ public class BuildProfileEditor : Editor
 		VariantChild
 	}
 
-	protected void ShowOption(IOption option, ValueStore.Node node, IOption parentOption = null, ValueStore.Node parentNode = null, VariantType variantType = VariantType.None)
+	protected void ShowOption(string path, IOption option, ValueStore.Node node, IOption parentOption = null, ValueStore.Node parentNode = null, VariantType variantType = VariantType.None)
 	{
 		var displayName = OptionDisplayName(option.Name);
 		var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
@@ -378,6 +384,8 @@ public class BuildProfileEditor : Editor
 		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
 		{
 			if (variantType == VariantType.VariantContainer) {
+				path += option.Name + "/";
+
 				EditorGUILayout.LabelField(displayName, width);
 				if (GUILayout.Button(GUIContent.none, plusStyle)) {
 					AddNewVariant(option, node);
@@ -390,8 +398,10 @@ public class BuildProfileEditor : Editor
 				{
 					if (node != null) {
 						if (variantType == VariantType.DefaultVariant) {
+							path += option.VariantDefaultParameter + "/";
 							EditorGUILayout.TextField(option.VariantDefaultParameter, width);
 						} else {
+							path += node.Name + "/";
 							GUI.SetNextControlName(option.Name);
 							node.Name = EditorGUILayout.TextField(node.Name, width);
 							// Prevent naming the node the same as the default parameter
@@ -401,6 +411,7 @@ public class BuildProfileEditor : Editor
 							}
 						}
 					} else {
+						path += option.VariantParameter + "/";
 						// TODO: Rename in play mode?
 						EditorGUI.BeginDisabledGroup(true);
 						{
@@ -431,6 +442,7 @@ public class BuildProfileEditor : Editor
 				}
 
 			} else {
+				path += option.Name + "/";
 				tempContent.text = displayName;
 				profile.EditOption(tempContent, option, node);
 			}
@@ -451,8 +463,8 @@ public class BuildProfileEditor : Editor
 		}
 		EditorGUILayout.EndHorizontal();
 
-		// TODO: Better place to save expanded state?
-		var isExpanded = (node != null ? node.IsExpanded : option.IsExpanded);
+		var wasExpanded = EditorProfile.SharedInstance.IsExpanded(path);
+		var isExpanded = wasExpanded;
 
 		if (variantType == VariantType.VariantContainer || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
@@ -463,14 +475,14 @@ public class BuildProfileEditor : Editor
 			if (variantType == VariantType.VariantContainer) {
 				EditorGUI.indentLevel++;
 				if (node == null) {
-					ShowOption(option, null, variantType: VariantType.DefaultVariant);
+					ShowOption(path, option, null, variantType: VariantType.DefaultVariant);
 					foreach (var variantOption in option.Variants) {
-						ShowOption(variantOption, null, option, null, variantType: VariantType.VariantChild);
+						ShowOption(path, variantOption, null, option, null, variantType: VariantType.VariantChild);
 					}
 				} else if (node.Variants != null) {
-					ShowOption(option, node, variantType: VariantType.DefaultVariant);
+					ShowOption(path, option, node, variantType: VariantType.DefaultVariant);
 					foreach (var variantNode in node.Variants) {
-						ShowOption(option, variantNode, null, node, variantType: VariantType.VariantChild);
+						ShowOption(path, option, variantNode, null, node, variantType: VariantType.VariantChild);
 					}
 				}
 				EditorGUI.indentLevel--;
@@ -483,16 +495,14 @@ public class BuildProfileEditor : Editor
 					if (node != null) {
 						childNode = node.GetOrCreateChild(childOption.Name);
 					}
-					ShowOption(childOption, childNode, option, node);
+					ShowOption(path, childOption, childNode, option, node);
 				}
 				EditorGUI.indentLevel--;
 			}
 		}
 
-		if (node != null) {
-			node.IsExpanded = isExpanded;
-		} else {
-			option.IsExpanded = isExpanded;
+		if (wasExpanded != isExpanded) {
+			EditorProfile.SharedInstance.SetExpanded(path, isExpanded);
 		}
 	}
 

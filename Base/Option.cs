@@ -57,8 +57,6 @@ public abstract class Option : IOption
 
 	public abstract string EditGUI(GUIContent label, string input);
 
-	public bool IsExpanded { get; set; }
-
 	#endif
 
 	/// <summary>
