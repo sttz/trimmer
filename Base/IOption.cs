@@ -9,6 +9,17 @@ using UnityEditor;
 namespace sttz.Workbench {
 
 /// <summary>
+/// Attribute indicating the given option has no runtime part
+/// and is only applicable to the build process.
+/// </summary>
+/// <remarks>
+/// Build-only options never appear in the editor profile and
+/// are always removed at build-time. Their Apply method is only
+/// called during the build process when processing scenes.
+/// </remarks>
+public class BuildOnlyAttribute : Attribute {}
+
+/// <summary>
 /// Interface for Workbench options.
 /// </summary>
 /// <remarks>

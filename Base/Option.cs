@@ -32,7 +32,7 @@ public abstract class Option : IOption
 	/// </summary>
 	public const string DEFINE_PREFIX = "OPTION_";
 
-	public bool BuildOnly { get; protected set; }
+	public bool BuildOnly { get; private set; }
 
 	public virtual void Remove()
 	{
@@ -125,6 +125,7 @@ public abstract class Option : IOption
 	public Option()
 	{
 		Parent = null;
+		BuildOnly = GetType().GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length > 0;
 		
 		Configure();
 		

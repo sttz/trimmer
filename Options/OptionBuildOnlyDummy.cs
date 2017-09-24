@@ -9,6 +9,7 @@ using UnityEditor;
 namespace sttz.Workbench
 {
 
+[BuildOnly]
 public class OptionBuildOnlyDummy : OptionToggle
 {
 	public override string Name { get { return "BuildOnlyDummy"; } }
@@ -17,7 +18,6 @@ public class OptionBuildOnlyDummy : OptionToggle
 	{
 		DefaultValue = "";
 		Category = "Debug";
-		BuildOnly = true;
 	}
 
 	public override void Apply()

@@ -6,6 +6,8 @@ using UnityEditor;
 namespace sttz.Workbench
 {
 
+// TODO: It's not BuildOnly but AlwaysRemove?
+
 /// <summary>
 /// Option base class with a Unity asset as value.
 /// </summary>
@@ -18,11 +20,6 @@ public abstract class OptionAsset<TUnity> : Option, IOption<TUnity> where TUnity
 	public override string EditGUI(GUIContent label, string input)
 	{
 		return Save((TUnity)EditorGUILayout.ObjectField(label, Parse(input), typeof(TUnity), false));
-	}
-
-	public OptionAsset() : base()
-	{
-		BuildOnly = true;
 	}
 
 	public TUnity Value { get; set; }

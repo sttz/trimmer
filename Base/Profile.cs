@@ -95,7 +95,6 @@ public class Profile : IEnumerable<IOption>
 	{
 		// Create option instances
 		foreach (var optionType in AllOptionTypes) {
-			// TODO: Profile shouldn't create build-only options?
 			if (ShouldCreateOption(optionType)) {
 				var option = (IOption)Activator.CreateInstance(optionType);
 				options[option.Name] = option;
@@ -177,7 +176,7 @@ public class Profile : IEnumerable<IOption>
 	/// </summary>
 	protected virtual bool ShouldCreateOption(Type optionType)
 	{
-		return true;
+		return optionType.GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length == 0;
 	}
 
 	/// <summary>
