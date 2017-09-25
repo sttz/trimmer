@@ -34,7 +34,7 @@ public abstract class EditableProfile : ScriptableObject
 
     public abstract ValueStore Store { get; }
     public abstract void SaveIfNeeded();
-    public abstract ValueStore.Node GetStoreRoot(IOption option);
+	public abstract Recursion.RecursionType GetRecursionType();
     public abstract IEnumerable<IOption> GetAllOptions();
     public abstract void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node);
 }

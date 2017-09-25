@@ -144,10 +144,6 @@ public class BuildProfileEditor : Editor
 
 		InitializeGUI();
 
-		/*if (recordingActivationSequence) {
-			RecordActivationSequence();
-		}*/
-
 		DefaultsGUI();
 
 		EditorGUILayout.Space();
@@ -202,12 +198,9 @@ public class BuildProfileEditor : Editor
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
 
+	string lastCategory;
+	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
-
-	/*bool recordingActivationSequence;
-	KeyCode[] newSequence;
-	KeyCode lastRecordedCode;
-	Rect recordingButtonRect;*/
 	
 	[NonSerialized] BuildProfile[] defaultsProfiles;
 	[NonSerialized] string[] defaultsProfilesNames;
@@ -285,24 +278,14 @@ public class BuildProfileEditor : Editor
 		EditorGUILayout.EndHorizontal();
 
 		// Option list
-		string lastCategory = null;
-		foreach (var option in options) {
-			if (option.Category != lastCategory) {
-				if (!string.IsNullOrEmpty(option.Category)) {
-					EditorGUILayout.Space();
-					EditorGUILayout.LabelField(option.Category, EditorStyles.boldLabel);
-				}
-				lastCategory = option.Category;
-			}
-
-			string root;
-			if (editorProfile != null) {
-				root = "EditorProfile/";
-			} else {
-				root = BuildManager.GetAssetGUID(buildProfile) + "/";
-			}
-			ShowOption(root, option, profile.GetStoreRoot(option));
+		lastCategory = null;
+		if (editorProfile != null) {
+			pathBase = "EditorProfile/";
+		} else {
+			pathBase = BuildManager.GetAssetGUID(buildProfile) + "/";
 		}
+
+		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
 
 		if (Event.current.type != EventType.Layout) {
 			foreach (var action in delayedRemovals) {
@@ -367,54 +350,60 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	protected enum VariantType
+	protected bool OptionGUI(Recursion.RecurseOptionsContext context)
 	{
-		None,
-		VariantContainer,
-		DefaultVariant,
-		VariantChild
-	}
-
-	protected void ShowOption(string path, IOption option, ValueStore.Node node, IOption parentOption = null, ValueStore.Node parentNode = null, VariantType variantType = VariantType.None)
-	{
+		var option = context.option;
 		var displayName = OptionDisplayName(option.Name);
 		var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
 
-		if (variantType == VariantType.None && option.IsVariant) {
-			variantType = VariantType.VariantContainer;
+		var lastDepth = EditorGUI.indentLevel;
+		EditorGUI.indentLevel = context.depth;
+
+		// Category headers
+		if (context.IsRoot) {
+			if (option.Category != lastCategory) {
+				if (!string.IsNullOrEmpty(option.Category)) {
+					EditorGUILayout.Space();
+					EditorGUILayout.LabelField(option.Category, EditorStyles.boldLabel);
+				}
+				lastCategory = option.Category;
+			}
 		}
 
+		// Option GUI
 		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
 		{
-			if (variantType == VariantType.VariantContainer) {
-				path += option.Name + "/";
-
+			// Variant container
+			if (context.variantType == Recursion.VariantType.VariantContainer) {
 				EditorGUILayout.LabelField(displayName, width);
 				if (GUILayout.Button(GUIContent.none, plusStyle)) {
-					AddNewVariant(option, node);
+					AddNewVariant(option, context.node);
 				}
 				GUILayout.FlexibleSpace();
 
-			} else if (option.IsVariant) {
+			// Variant child
+			} else if (
+				context.variantType == Recursion.VariantType.DefaultVariant
+				|| context.variantType == Recursion.VariantType.VariantChild
+			) {
+				var isDefault = (context.variantType == Recursion.VariantType.DefaultVariant);
+
 				// Disable when editing the default variant
-				EditorGUI.BeginDisabledGroup(variantType == VariantType.DefaultVariant);
+				EditorGUI.BeginDisabledGroup(isDefault);
 				{
-					if (node != null) {
-						if (variantType == VariantType.DefaultVariant) {
-							path += option.VariantDefaultParameter + "/";
+					if (context.type == Recursion.RecursionType.Nodes) {
+						if (isDefault) {
 							EditorGUILayout.TextField(option.VariantDefaultParameter, width);
 						} else {
-							path += node.Name + "/";
 							GUI.SetNextControlName(option.Name);
-							node.Name = EditorGUILayout.TextField(node.Name, width);
+							context.node.Name = EditorGUILayout.TextField(context.node.Name, width);
 							// Prevent naming the node the same as the default parameter
-							if (node.Name == option.VariantDefaultParameter
+							if (context.node.Name == option.VariantDefaultParameter
 									&& GUI.GetNameOfFocusedControl() != option.Name) {
-								node.Name = FindUniqueVariantName(option, parentNode);
+								context.node.Name = FindUniqueVariantName(option, context.parentNode);
 							}
 						}
 					} else {
-						path += option.VariantParameter + "/";
 						// TODO: Rename in play mode?
 						EditorGUI.BeginDisabledGroup(true);
 						{
@@ -427,37 +416,43 @@ public class BuildProfileEditor : Editor
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
-				profile.EditOption(path, GUIContent.none, option, node);
+				profile.EditOption(context.path, GUIContent.none, option, context.node);
 				EditorGUI.indentLevel = level;
 
-				if (variantType != VariantType.DefaultVariant) {
+				if (!isDefault) {
 					if (GUILayout.Button(GUIContent.none, minusStyle)) {
-						if (node != null) {
+						if (context.type == Recursion.RecursionType.Nodes) {
 							delayedRemovals.Add(() => {
-								parentNode.RemoveVariant(node.Name);
+								context.parentNode.RemoveVariant(context.node.Name);
 							});
 						} else {
 							delayedRemovals.Add(() => {
-								parentOption.RemoveVariant(option);
+								context.parentOption.RemoveVariant(option);
 							});
 						}
 					}
 				}
 
+			// Regular option
 			} else {
-				path += option.Name + "/";
 				tempContent.text = displayName;
-				profile.EditOption(path, tempContent, option, node);
+				profile.EditOption(context.path, tempContent, option, context.node);
 			}
 
-			if (buildProfile != null && node != null && node != parentNode && node is ValueStore.RootNode) {
-				var root = (ValueStore.RootNode)node;
+			// Include in build toggle
+			if (
+				buildProfile != null
+				&& context.type == Recursion.RecursionType.Nodes
+				&& context.IsRoot
+			) {
+				var root = (ValueStore.RootNode)context.node;
 				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
 				{
-					if (option == null || !option.BuildOnly) {
+					if (!option.BuildOnly) {
 						root.IncludeInBuild = EditorGUILayout.Toggle(root.IncludeInBuild, GUILayout.Width(toggleWidth));
-					} else
+					} else {
 						EditorGUILayout.Space();
+					}
 				}
 				EditorGUILayout.EndHorizontal();
 			} else {
@@ -466,47 +461,24 @@ public class BuildProfileEditor : Editor
 		}
 		EditorGUILayout.EndHorizontal();
 
-		var wasExpanded = EditorProfile.SharedInstance.IsExpanded(path);
-		var isExpanded = wasExpanded;
+		// Expansion toggle
+		var isExpanded = true;
+		if (context.IsRecursable) {
+			var expansionPath = pathBase + context.path;
+			var wasExpanded = EditorProfile.SharedInstance.IsExpanded(expansionPath);
+			isExpanded = wasExpanded;
 
-		if (variantType == VariantType.VariantContainer || option.HasChildren) {
 			rect.y += EditorStyles.foldout.padding.top;
 			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
-		}
 
-		if (isExpanded) {
-			if (variantType == VariantType.VariantContainer) {
-				EditorGUI.indentLevel++;
-				if (node == null) {
-					ShowOption(path, option, null, variantType: VariantType.DefaultVariant);
-					foreach (var variantOption in option.Variants) {
-						ShowOption(path, variantOption, null, option, null, variantType: VariantType.VariantChild);
-					}
-				} else if (node.Variants != null) {
-					ShowOption(path, option, node, variantType: VariantType.DefaultVariant);
-					foreach (var variantNode in node.Variants) {
-						ShowOption(path, option, variantNode, null, node, variantType: VariantType.VariantChild);
-					}
-				}
-				EditorGUI.indentLevel--;
-			}
-
-			if (option.HasChildren && variantType != VariantType.VariantContainer) {
-				EditorGUI.indentLevel++;
-				foreach (var childOption in option.Children) {
-					ValueStore.Node childNode = null;
-					if (node != null) {
-						childNode = node.GetOrCreateChild(childOption.Name);
-					}
-					ShowOption(path, childOption, childNode, option, node);
-				}
-				EditorGUI.indentLevel--;
+			if (wasExpanded != isExpanded) {
+				EditorProfile.SharedInstance.SetExpanded(expansionPath, isExpanded);
 			}
 		}
 
-		if (wasExpanded != isExpanded) {
-			EditorProfile.SharedInstance.SetExpanded(path, isExpanded);
-		}
+		EditorGUI.indentLevel = lastDepth;
+
+		return isExpanded;
 	}
 
 	void AddNewVariant(IOption option, ValueStore.Node node)

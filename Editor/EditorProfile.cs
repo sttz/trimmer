@@ -109,17 +109,14 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	public override ValueStore.Node GetStoreRoot(IOption option)
+	public override Recursion.RecursionType GetRecursionType()
 	{
 		if (Application.isPlaying) {
-			// Force editor to edit options directly at runtime
-			return null;
+			return Recursion.RecursionType.Options;
 		} else {
-			return store.GetOrCreateRoot(option.Name);
+			return Recursion.RecursionType.Nodes;
 		}
+		
 	}
 
 	/// <summary>

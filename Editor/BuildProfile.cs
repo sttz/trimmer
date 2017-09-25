@@ -163,9 +163,9 @@ public class BuildProfile : EditableProfile
 		return false;
 	}
 
-	public override ValueStore.Node GetStoreRoot(IOption option)
+	public override Recursion.RecursionType GetRecursionType()
 	{
-		return store.GetOrCreateRoot(option.Name);
+		return Recursion.RecursionType.Nodes;
 	}
 
 	public override IEnumerable<IOption> GetAllOptions()
