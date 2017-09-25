@@ -105,6 +105,10 @@ public static class Recursion
 		/// The parent store node of the current node.
 		/// </summary>
 		public ValueStore.Node parentNode;
+		/// <summary>
+		/// Wether the current sub-tree is included in the build.
+		/// </summary>
+		public bool includeInBuild;
 
 		/// <summary>
 		/// Wether the current node is a root.
@@ -130,6 +134,39 @@ public static class Recursion
 		}
 
 		/// <summary>
+		/// The variant parameter of the current node.
+		/// </summary>
+		public string VariantParameter {
+			get {
+				if (variantType != VariantType.DefaultVariant && variantType != VariantType.VariantChild)
+					return null;
+				
+				if (type == RecursionType.Nodes) {
+					if (variantType == VariantType.DefaultVariant) {
+						return option.VariantDefaultParameter;
+					} else {
+						return node.Name;
+					}
+				} else {
+					return option.VariantParameter;
+				}
+			}
+		}
+
+		/// <summary>
+		/// The value of the current node.
+		/// </summary>
+		public string Value {
+			get {
+				if (type == RecursionType.Nodes) {
+					return node.Value;
+				} else {
+					return option.Save();
+				}
+			}
+		}
+
+		/// <summary>
 		/// Internal method used to set up the state when recursing into a node.
 		/// </summary>
 		internal RecurseOptionsContext Recurse(IOption childOption, ValueStore.Node childNode, bool defaultVariant = false)
@@ -141,6 +178,12 @@ public static class Recursion
 			child.parentNode = node;
 			child.option = childOption;
 			child.node = childNode;
+
+			if (child.type == RecursionType.Nodes && child.IsRoot) {
+				child.includeInBuild = ((ValueStore.RootNode)child.node).IncludeInBuild;
+			} else {
+				child.includeInBuild = includeInBuild;
+			}
 
 			// Determine the variant type
 			if (variantType == VariantType.None && child.option.IsVariant) {

@@ -33,6 +33,16 @@ public static class Extensions
 	}
 
 	/// <summary>
+	/// Add all elements from an enumerable to the collection.
+	/// </summary>
+	public static void AddRange<TSource>(this ICollection<TSource> collection, IEnumerable<TSource> elements)
+	{
+		foreach (var element in elements) {
+			collection.Add(element);
+		}
+	}
+
+	/// <summary>
 	/// Struct used in <see cref="IterateWith"/> to iterate two
 	/// IEnumerables together.
 	/// </summary>

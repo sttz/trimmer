@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using sttz.Workbench.Extensions;
 
 namespace sttz.Workbench
 {
@@ -407,8 +408,19 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	protected IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup, bool devBuild)
 	{
-		// TODO: Implement
-		return Enumerable.Empty<string>();
+		var symbols = new HashSet<string>();
+		
+		Recursion.Recurse(this, Recursion.RecursionType.Nodes, (context) => {
+			if (context.variantType != Recursion.VariantType.VariantContainer) {
+				var current = context.option.GetSctiptingDefineSymbols(
+					context.includeInBuild, context.Value, context.VariantParameter
+				);
+				symbols.AddRange(current);
+			}
+			return true;
+		});
+
+		return symbols;
 	}
 }
 
