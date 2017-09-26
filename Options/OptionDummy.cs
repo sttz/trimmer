@@ -27,7 +27,7 @@ public class OptionDummy : OptionToggle
 
 #if UNITY_EDITOR
 
-	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile)
+	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
 	{
 		base.PostprocessScene(scene, isBuild, includedInBuild, profile);
 	}

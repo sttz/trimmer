@@ -23,7 +23,7 @@ public abstract class EditableProfile : ScriptableObject
 		get {
 			if (_allOptions == null) {
 				_allOptions = new List<IOption>();
-				foreach (var optionType in Profile.AllOptionTypes) {
+				foreach (var optionType in RuntimeProfile.AllOptionTypes) {
 					_allOptions.Add((IOption)Activator.CreateInstance(optionType));
 				}
 			}

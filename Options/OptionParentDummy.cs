@@ -27,7 +27,7 @@ public class OptionParentDummy : OptionToggle
 
 #if UNITY_EDITOR
 
-	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile)
+	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
 	{
 		base.PostprocessScene(scene, isBuild, includedInBuild, profile);
 	}
@@ -53,7 +53,6 @@ public class OptionParentDummy : OptionToggle
 			DefaultValue = "";
 			IsVariant = true;
 			VariantDefaultParameter = "Child2Variant";
-		}
 		}
 
 		public class OptionParentDummyChild3 : OptionString

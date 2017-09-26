@@ -51,7 +51,7 @@ public abstract class Option : IOption
 	/// option is not included in a build. This method gets called
 	/// during each built scene's <c>OnPostprocessScene</c>.
 	/// </remarks>
-	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile)
+	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
 	{
 		// NOP
 	}
@@ -74,7 +74,7 @@ public abstract class Option : IOption
 	/// <param name="path">Path to the built project</param>
 	/// <param name="includedInBuild">Wether this option should be included in build</param>
 	/// <param name="profile">The profile used in the build</param>
-	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile)
+	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile)
 	{
 		// NOP
 	}
@@ -86,7 +86,7 @@ public abstract class Option : IOption
 	/// <param name="path">Path to the built project</param>
 	/// <param name="includedInBuild">Wether this option should be included in build</param>
 	/// <param name="profile">The profile used in the build</param>
-	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile)
+	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile)
 	{
 		// NOP
 	}

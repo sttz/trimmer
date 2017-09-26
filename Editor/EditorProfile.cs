@@ -125,7 +125,7 @@ public class EditorProfile : EditableProfile
 	public override IEnumerable<IOption> GetAllOptions()
 	{
 		if (Application.isPlaying) {
-			return Workbench.Instance.Profile;
+			return RuntimeProfile.Main;
 		} else {
 			return AllOptions.Where(o => !o.BuildOnly);
 		}
@@ -174,7 +174,7 @@ public class EditorProfile : EditableProfile
 	/// This profile only creates the options that have the <see cref="ExecuteInEditMode"/>
 	/// attribute, avoiding other options to interfere outside of playmode.
 	/// </remarks>
-	private class EditModeProfile : Profile
+	private class EditModeProfile : RuntimeProfile
 	{
 		public EditModeProfile(ValueStore store) : base(store) { }
 

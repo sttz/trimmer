@@ -109,7 +109,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey, guid);
 
 			if (Application.isPlaying) {
-				ApplyStore();
+				CreateOrUpdateMainRuntimeProfile();
 			}
 		}
 	}
@@ -218,25 +218,28 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	// -------- Processing --------
 
 	/// <summary>
-	/// Create and configure the <see cref="Workbench"/> instance in the current scene.
+	/// Create and configure the <see cref="ProfileContainer"/> during the build.
 	/// </summary>
-	private static void InjectWorkbench(EditableProfile profile)
+	private static void InjectProfileContainer(ValueStore store)
 	{
 		if (!Application.isPlaying) throw new InvalidOperationException();
 
 		var go = new GameObject("Workbench");
-		var bench = go.AddComponent<Workbench>();
-		ApplyStore();
+		var container = go.AddComponent<ProfileContainer>();
+		container.store = store;
 	}
 
-	private static void ApplyStore()
+	/// <summary>
+	/// Create or udpate the main runtime profile with the apropriate value store.
+	/// </summary>
+	private static void CreateOrUpdateMainRuntimeProfile()
 	{
 		if (!Application.isPlaying) throw new InvalidOperationException();
 
 		if (EditorDefaultsProfile != null) {
-			Workbench.Instance.Store = EditorDefaultsProfile.Store;
+			RuntimeProfile.CreateMain(EditorDefaultsProfile.Store);
 		} else {
-			Workbench.Instance.Store = EditorProfile.SharedInstance.Store;
+			RuntimeProfile.CreateMain(EditorProfile.SharedInstance.Store);
 		}
 	}
 
@@ -279,7 +282,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
-		Profile profile = new Profile(buildProfile != null ? buildProfile.store : null);
+		RuntimeProfile profile = new RuntimeProfile(buildProfile != null ? buildProfile.store : null);
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 			var included = (!removeAll && buildProfile.IncludeInBuild(option.Name));
@@ -289,21 +292,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	public void OnProcessScene(Scene scene)
 	{
-		Profile profile;
+		RuntimeProfile profile;
 		var buildProfile = CurrentProfile;
 
 		// Playing in editor
 		if (!BuildPipeline.isBuildingPlayer) {
-			if (!EditorApplication.isPlaying || Workbench.Instance == null) {
-				if (EditorDefaultsProfile != null) {
-					InjectWorkbench(EditorDefaultsProfile);
-				} else {
-					InjectWorkbench(EditorProfile.SharedInstance);
-				}
+			if (RuntimeProfile.Main == null) {
+				CreateOrUpdateMainRuntimeProfile();
+				RuntimeProfile.Main.Apply();
 			}
 
-			profile = Workbench.Instance.Profile;
-			foreach (var option in Workbench.Instance.Profile) {
+			profile = RuntimeProfile.Main;
+			foreach (var option in profile) {
 				option.PostprocessScene(scene, false, true, profile);
 			}
 			return;
@@ -313,11 +313,16 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 
 		// Create runtime profile so it applies its options
-		profile = new Profile(buildProfile != null ? buildProfile.store : null);
+		// TODO: Remove unused values from the store on build?
+		var store = buildProfile != null ? buildProfile.store : null;
+		RuntimeProfile.CreateMain(store);
 
 		if (!removeAll) {
-			InjectWorkbench(buildProfile);
+			InjectProfileContainer(store);
 		}
+
+		profile = RuntimeProfile.Main;
+		profile.Apply();
 
 		foreach (var option in profile) {
 			var include = (!removeAll && buildProfile.IncludeInBuild(option.Name));

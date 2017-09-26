@@ -159,9 +159,9 @@ public interface IOption
 	/// are set. Parameter options are called at least once for their
 	/// default parameter and once more for every additional parameter.
 	/// </remarks>
-	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, Profile profile);
+	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile);
 
-	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile);
+	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile);
 
 	/// <summary>
 	/// Order the individual option's PostprocessBuild is getting called.
@@ -175,7 +175,7 @@ public interface IOption
 	/// Called after the build is complete, gives the option a chance
 	/// to edit or supplement the build.
 	/// </summary>
-	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, Profile profile);
+	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile);
 
 	/// <summary>
 	/// The scripting define symbols that should be set when the option is included.

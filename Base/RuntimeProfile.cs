@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using sttz.Workbench.Extensions;
+using UnityEngine;
 
 namespace sttz.Workbench
 {
@@ -15,7 +16,7 @@ namespace sttz.Workbench
 /// <remarks>
 /// The profile can be enumerated to access the individual options.
 /// </remarks>
-public class Profile : IEnumerable<IOption>
+public class RuntimeProfile : IEnumerable<IOption>
 {
 	// -------- Static --------
 
@@ -47,6 +48,36 @@ public class Profile : IEnumerable<IOption>
 	}
 	private static List<Type> _options;
 
+	/// <summary>
+	/// Main runtime profile.
+	/// </summary>
+	/// <remarks>
+	/// The main runtime profile is available while playing in the editor,
+	/// during building when postprocessing scenes and in the player when
+	/// any options have been built in.
+	/// </remarks>
+	public static RuntimeProfile Main { get; protected set; }
+
+#if UNITY_EDITOR
+	[RuntimeInitializeOnLoadMethod]
+	static void LoadMainRuntimeProfile()
+	{
+		//
+	}
+#endif
+
+	/// <summary>
+	/// Create the main runtime profile with the given value store.
+	/// </summary>
+	public static void CreateMain(ValueStore store)
+	{
+		if (Main == null) {
+			Main = new RuntimeProfile(store);
+		} else {
+			Main.Store = store;
+		}
+	}
+
 	// -------- Profile --------
 
 	/// <summary>
@@ -69,6 +100,8 @@ public class Profile : IEnumerable<IOption>
 			return _store;
 		}
 		set {
+			if (_store == value) return;
+
 			_store = value ?? new ValueStore();
 
 			// Apply values in store to options
@@ -86,12 +119,12 @@ public class Profile : IEnumerable<IOption>
 	/// <summary>
 	/// Create a new profile without any defaults.
 	/// </summary>
-	public Profile() : this(null) { }
+	public RuntimeProfile() : this(null) { }
 
 	/// <summary>
 	/// Create a new profile with given defaults.
 	/// </summary>
-	public Profile(ValueStore store)
+	public RuntimeProfile(ValueStore store)
 	{
 		// Create option instances
 		foreach (var optionType in AllOptionTypes) {
