@@ -168,15 +168,7 @@ public class BuildProfileEditor : Editor
 
 		buildTarget = EditorUserBuildSettings.activeBuildTarget;
 
-		options = new List<IOption>(profile.GetAllOptions());
-		options.Sort((o1, o2) => {
-			var cat = string.CompareOrdinal(o1.Category, o2.Category);
-			if (cat != 0) {
-				return cat;
-			} else {
-				return string.CompareOrdinal(o1.Name, o2.Name);
-			}
-		});
+		options = Recursion.SortOptionsByCategoryAndName(profile);
 
 		// Invalidate defaults profile dropdown
 		defaultsProfiles = null;
@@ -190,7 +182,7 @@ public class BuildProfileEditor : Editor
 
 	// -------- Fields --------
 
-	List<IOption> options;
+	IEnumerable<IOption> options;
 
 	BuildTarget buildTarget;
 
