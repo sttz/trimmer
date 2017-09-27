@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using sttz.Workbench.Extensions;
 using UnityEditor;
 using UnityEngine;
@@ -254,11 +255,14 @@ public static class Recursion
 		if (!callback(context)) return;
 
 		if (context.variantType == VariantType.VariantContainer) {
-			// Recurse same option but with VarianType.DefaultVariant
-			RecurseNodesRecursive(context.Recurse(context.option, context.node, defaultVariant:true), callback);
+			// Find or create default variant node
+			var defaultNode = context.node.GetOrCreateVariant(context.option.VariantDefaultParameter);
+			RecurseNodesRecursive(context.Recurse(context.option, defaultNode, defaultVariant:true), callback);
 
 			// Recurse into variants, note that the same option instance is used
 			foreach (var variantNode in context.node.Variants) {
+				if (variantNode.Name == context.option.VariantDefaultParameter)
+					continue;
 				RecurseNodesRecursive(context.Recurse(context.option, variantNode), callback);
 			}
 		}

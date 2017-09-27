@@ -218,9 +218,14 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	private void LoadNode(IOption option, ValueStore.Node node)
 	{
-		option.Load(node.value ?? string.Empty);
-
 		if (option.IsDefaultVariant) {
+			// Load default variant sub-node into the main variant option
+			// (The container node's value is ignored)
+			var defaultNode = node.GetVariant(option.VariantDefaultParameter);
+			if (defaultNode != null) {
+				option.Load(defaultNode.Value ?? string.Empty);
+			}
+
 			// Reset variants since the node might not contain a value
 			foreach (var variantOption in option.Variants) {
 				variantOption.Load(string.Empty);
@@ -228,10 +233,14 @@ public class RuntimeProfile : IEnumerable<IOption>
 
 			if (node.variants != null) {
 				foreach (var variantNode in node.variants) {
+					if (variantNode.Name.EqualsIgnoringCase(option.VariantDefaultParameter))
+						continue;
 					var variantOption = option.GetVariant(variantNode.name);
 					LoadNode(variantOption, variantNode);
 				}
 			}
+		} else {
+			option.Load(node.value ?? string.Empty);
 		}
 
 		// Reset children since the node might not contain a value
@@ -255,30 +264,21 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	private void SaveNode(ValueStore.Node node, IOption option)
 	{
-		node.value = option.Save();
-
-		if (option.IsVariant) {
-			// Remove the variant sub-node matching the default variant parameter if it exists
-			// as there would be ambiguity between the main node and the variant sub-node
-			node.RemoveVariant(option.VariantDefaultParameter);
+		if (option.IsDefaultVariant) {
+			var defaultVariant = node.GetOrCreateVariant(option.VariantDefaultParameter);
+			defaultVariant.value = option.Save();
 
 			foreach (var variantOption in option.Variants) {
-				var variantNode = node.GetVariant(variantOption.VariantParameter);
-				if (variantNode == null) {
-					node.AddVariant(variantOption.VariantParameter, variantOption.Save());
-				} else {
-					variantNode.value = variantOption.Save();
-				}
+				var variantNode = node.GetOrCreateVariant(variantOption.VariantParameter);
+				variantNode.value = variantOption.Save();
 			}
+		} else {
+			node.value = option.Save();
 		}
 
 		foreach (var childOption in option.Children) {
-			var childNode = node.GetChild(childOption.Name);
-			if (childNode == null) {
-				node.AddChild(childOption.Name, childOption.Save());
-			} else {
-				childNode.value = childOption.Save();
-			}
+			var childNode = node.GetOrCreateChild(childOption.Name);
+			childNode.value = childOption.Save();
 		}
 	}
 
