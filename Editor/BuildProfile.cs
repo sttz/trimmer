@@ -180,6 +180,13 @@ public class BuildProfile : EditableProfile
 		node.Value = option.EditGUI(label, node.Value);
 	}
 
+	[ContextMenu("Copy As Ini File")]
+	public void CopyAsIniFile()
+	{
+		var ini = store.SaveIniFile();
+		EditorGUIUtility.systemCopyBuffer = ini;
+	}
+
 	/// <summary>
 	/// Check if the option scripting define symbols match those
 	/// that would be defined by this profile.

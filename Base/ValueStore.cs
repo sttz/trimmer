@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using sttz.Workbench.Extensions;
+using System.Text;
 
 namespace sttz.Workbench
 {
@@ -473,7 +474,40 @@ public class ValueStore : ISerializationCallbackReceiver
 	/// </summary>
 	public string SaveIniFile()
 	{
-		return null;
+		var output = new StringBuilder();
+		foreach (var node in nodes) {
+			SaveIniRecursive(output, "", node, false);
+		}
+		return output.ToString();
+	}
+
+	void SaveIniRecursive(StringBuilder output, string path, Node node, bool isVariantChild)
+	{
+		if (!isVariantChild) {
+			path += node.name;
+		} else {
+			path += "[" + node.name + "]";
+		}
+
+		if (!string.IsNullOrEmpty(node.value)) {
+			output.Append(path);
+			output.Append(" = ");
+			output.Append(node.value);
+			output.Append("\n");
+		}
+
+		if (node.VariantCount > 0) {
+			foreach (var variant in node.variants) {
+				SaveIniRecursive(output, path, variant, true);
+			}
+		}
+
+		if (node.ChildCount > 0) {
+			var childPath = path + ".";
+			foreach (var child in node.children) {
+				SaveIniRecursive(output, childPath, child, false);
+			}
+		}
 	}
 
 	// -------- Unity Serialization --------
