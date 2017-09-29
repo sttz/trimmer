@@ -418,7 +418,15 @@ public abstract class Option : IOption
 	/// Only the main option can have a category, the value is
 	/// ignored for child or variant options.
 	/// </remarks>
-	public string Category { get; protected set; }
+	public string Category {
+		get {
+			return _category;
+		}
+		protected set {
+			_category = value;
+		}
+	}
+	string _category = "General";
 
 	#if UNITY_EDITOR
 
