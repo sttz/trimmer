@@ -130,6 +130,29 @@ public class BuildProfileEditor : Editor
 		return newFoldout;
 	}
 
+	/// <summary>
+	/// Same as <see cref="Foldout"/> but stores the expanded state in the
+	/// <see cref="EditorProfile"/> based on the given path.
+	/// </summary>
+	public static bool Foldout(string path, bool def, string content, GUIStyle style = null)
+	{
+		EditorGUI.BeginChangeCheck();
+		
+		var wasExpanded = EditorProfile.SharedInstance.IsExpanded(path);
+		if (def) wasExpanded = !wasExpanded;
+		var isExpanded = wasExpanded;
+
+		isExpanded = Foldout(isExpanded, content, style);
+		
+		if (isExpanded != wasExpanded) {
+			var newValue = isExpanded;
+			if (def) newValue = !newValue;
+			EditorProfile.SharedInstance.SetExpanded(path, newValue);
+		}
+
+		return isExpanded;
+	}
+
 	// -------- API --------
 
 	private EditableProfile profile;
@@ -191,6 +214,7 @@ public class BuildProfileEditor : Editor
 	GUIStyle boldFoldout;
 
 	string lastCategory;
+	bool categoryExpanded;
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
 	
@@ -218,6 +242,9 @@ public class BuildProfileEditor : Editor
 		if (boldFoldout == null) {
 			boldFoldout = new GUIStyle(EditorStyles.foldout);
 			boldFoldout.font = EditorStyles.boldFont;
+			boldFoldout.fontSize = 13;
+			boldFoldout.alignment = TextAnchor.MiddleLeft;
+		}
 		}
 	}
 
@@ -277,6 +304,7 @@ public class BuildProfileEditor : Editor
 			pathBase = BuildManager.GetAssetGUID(buildProfile) + "/";
 		}
 
+		categoryExpanded = true;
 		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
 
 		if (Event.current.type != EventType.Layout) {
@@ -356,10 +384,13 @@ public class BuildProfileEditor : Editor
 			if (option.Category != lastCategory) {
 				if (!string.IsNullOrEmpty(option.Category)) {
 					EditorGUILayout.Space();
-					EditorGUILayout.LabelField(option.Category, EditorStyles.boldLabel);
+					var path = context.path + "/_" + option.Category;
+					categoryExpanded = Foldout(path, true, option.Category, boldFoldout);
+
+					lastCategory = option.Category;
 				}
-				lastCategory = option.Category;
 			}
+			if (!categoryExpanded) return false;
 		}
 
 		// Option GUI
