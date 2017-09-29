@@ -112,6 +112,8 @@ public class BuildProfile : EditableProfile
 	}
 	#endif
 
+	static BuildTarget[] activeBuildTarget;
+
 	// ------ Fields ------
 
 	/// <summary>
@@ -122,6 +124,24 @@ public class BuildProfile : EditableProfile
 	public override ValueStore Store {
 		get {
 			return store;
+		}
+	}
+
+	[SerializeField] List<BuildTarget> _buildTargets;
+
+	public IEnumerable<BuildTarget> BuildTargets {
+		get {
+			if (_buildTargets != null && _buildTargets.Count > 0) {
+				return _buildTargets;
+			} else {
+				if (activeBuildTarget == null 
+						|| activeBuildTarget[0] != EditorUserBuildSettings.activeBuildTarget) {
+					activeBuildTarget = new BuildTarget[] {
+						EditorUserBuildSettings.activeBuildTarget
+					};
+				}
+				return activeBuildTarget;
+			}
 		}
 	}
 
@@ -142,13 +162,13 @@ public class BuildProfile : EditableProfile
 	/// <summary>
 	/// Check if an option should be included in builds of this profile.
 	/// </summary>
-	public bool IncludeInBuild(string optionName)
+	public bool IncludeInBuild(IOption option)
 	{
-		var node = store.GetRoot(optionName);
+		var node = store.GetRoot(option.Name);
 		if (node == null) {
 			return false;
 		} else {
-			return node.IncludeInBuild;
+			return node.IncludeInBuild && option.IsAvailable(BuildTargets);
 		}
 	}
 
@@ -158,7 +178,7 @@ public class BuildProfile : EditableProfile
 	public bool HasAvailableOptions()
 	{
 		foreach (var option in AllOptions) {
-			if (IncludeInBuild(option.Name))
+			if (IncludeInBuild(option))
 				return true;
 		}
 		return false;

@@ -233,10 +233,10 @@ public static class Recursion
 	/// <summary>
 	/// Sort the root options in the given profile first by category and then by name.
 	/// </summary>
-	public static IEnumerable<IOption> SortOptionsByCategoryAndName(EditableProfile profile)
+	public static List<IOption> SortOptionsByCategoryAndName(IEnumerable<IOption> options)
 	{
-		var options = new List<IOption>(profile.GetAllOptions());
-		options.Sort((o1, o2) => {
+		var list = new List<IOption>(options);
+		list.Sort((o1, o2) => {
 			var cat = string.CompareOrdinal(o1.Category, o2.Category);
 			if (cat != 0) {
 				return cat;
@@ -244,7 +244,7 @@ public static class Recursion
 				return string.CompareOrdinal(o1.Name, o2.Name);
 			}
 		});
-		return options;
+		return list;
 	}
 
 	/// <summary>

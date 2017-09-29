@@ -140,6 +140,8 @@ public interface IOption
 
 	#if UNITY_EDITOR
 
+	bool IsAvailable(IEnumerable<BuildTarget> targets);
+
 	/// <summary>
 	/// Build-only options are options that configure part of the build 
 	/// process. Their value cannot be changed in the editor profile,

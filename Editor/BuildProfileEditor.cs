@@ -191,7 +191,7 @@ public class BuildProfileEditor : Editor
 
 		buildTarget = EditorUserBuildSettings.activeBuildTarget;
 
-		options = Recursion.SortOptionsByCategoryAndName(profile);
+		options = Recursion.SortOptionsByCategoryAndName(profile.GetAllOptions());
 
 		// Invalidate defaults profile dropdown
 		defaultsProfiles = null;
@@ -205,16 +205,19 @@ public class BuildProfileEditor : Editor
 
 	// -------- Fields --------
 
-	IEnumerable<IOption> options;
+	List<IOption> options;
 
 	BuildTarget buildTarget;
 
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
+	GUIStyle greyFoldout;
 
 	string lastCategory;
 	bool categoryExpanded;
+	bool hasUnavailable;
+	bool recurseUnavailable;
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
 	
@@ -245,6 +248,11 @@ public class BuildProfileEditor : Editor
 			boldFoldout.fontSize = 13;
 			boldFoldout.alignment = TextAnchor.MiddleLeft;
 		}
+
+		if (greyFoldout == null) {
+			greyFoldout = new GUIStyle(EditorStyles.foldout);
+			greyFoldout.font = EditorStyles.boldFont;
+			greyFoldout.normal.textColor = EditorStyles.centeredGreyMiniLabel.normal.textColor;
 		}
 	}
 
@@ -305,7 +313,20 @@ public class BuildProfileEditor : Editor
 		}
 
 		categoryExpanded = true;
+		hasUnavailable = false;
+		recurseUnavailable = false;
 		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
+
+		if (hasUnavailable) {
+			EditorGUILayout.Space();
+			var isExpanded = Foldout(pathBase + "/_Unavailable", false, "Unavailable", greyFoldout);
+
+			if (isExpanded) {
+				categoryExpanded = true;
+				recurseUnavailable = true;
+				Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
+			}
+		}
 
 		if (Event.current.type != EventType.Layout) {
 			foreach (var action in delayedRemovals) {
@@ -379,8 +400,17 @@ public class BuildProfileEditor : Editor
 		var lastDepth = EditorGUI.indentLevel;
 		EditorGUI.indentLevel = context.depth;
 
+		var optionEnabled = true;
+		if (buildProfile != null) {
+			optionEnabled = context.option.IsAvailable(buildProfile.BuildTargets);
+		}
+		if (optionEnabled == recurseUnavailable) {
+			hasUnavailable = true;
+			return false;
+		}
+
 		// Category headers
-		if (context.IsRoot) {
+		if (context.IsRoot && !recurseUnavailable) {
 			if (option.Category != lastCategory) {
 				if (!string.IsNullOrEmpty(option.Category)) {
 					EditorGUILayout.Space();
@@ -472,7 +502,13 @@ public class BuildProfileEditor : Editor
 				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
 				{
 					if (!option.BuildOnly) {
-						root.IncludeInBuild = EditorGUILayout.Toggle(root.IncludeInBuild, GUILayout.Width(toggleWidth));
+						var value = root.IncludeInBuild;
+						if (!optionEnabled) {
+							value = false;
+							GUI.enabled = false;
+						}
+						root.IncludeInBuild = EditorGUILayout.Toggle(value, GUILayout.Width(toggleWidth));
+						GUI.enabled = true;
 					} else {
 						EditorGUILayout.Space();
 					}

@@ -2,6 +2,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+using System.Linq;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -23,6 +25,11 @@ public class OptionDummy : OptionToggle
 	public override void Apply()
 	{
 		base.Apply();
+	}
+
+	public override bool IsAvailable(IEnumerable<BuildTarget> targets)
+	{
+		return targets.Contains(BuildTarget.iOS);
 	}
 
 #if UNITY_EDITOR
