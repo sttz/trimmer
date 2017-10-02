@@ -189,8 +189,6 @@ public class BuildProfileEditor : Editor
 		editorProfile = target as EditorProfile;
 		buildProfile = target as BuildProfile;
 
-		buildTarget = EditorUserBuildSettings.activeBuildTarget;
-
 		options = Recursion.SortOptionsByCategoryAndName(profile.GetAllOptions());
 
 		// Invalidate defaults profile dropdown
@@ -207,12 +205,12 @@ public class BuildProfileEditor : Editor
 
 	List<IOption> options;
 
-	BuildTarget buildTarget;
-
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
 	GUIStyle boldFoldout;
+	GUIStyle greyLabel;
 	GUIStyle greyFoldout;
+	GUIStyle boldLabel;
 
 	string lastCategory;
 	bool categoryExpanded;
@@ -247,6 +245,17 @@ public class BuildProfileEditor : Editor
 			boldFoldout.font = EditorStyles.boldFont;
 			boldFoldout.fontSize = 13;
 			boldFoldout.alignment = TextAnchor.MiddleLeft;
+		}
+
+		if (greyLabel == null) {
+			greyLabel = new GUIStyle(EditorStyles.label);
+			greyLabel.normal.textColor = EditorStyles.centeredGreyMiniLabel.normal.textColor;
+		}
+
+		if (boldLabel == null) {
+			boldLabel = new GUIStyle(EditorStyles.label);
+			boldLabel.font = EditorStyles.boldFont;
+			boldLabel.alignment = TextAnchor.MiddleLeft;
 		}
 
 		if (greyFoldout == null) {
@@ -328,13 +337,6 @@ public class BuildProfileEditor : Editor
 			}
 		}
 
-		if (Event.current.type != EventType.Layout) {
-			foreach (var action in delayedRemovals) {
-				action();
-			}
-			delayedRemovals.Clear();
-		}
-
 		if (buildProfile != null) {
 			EditorGUILayout.Space();
 
@@ -355,22 +357,66 @@ public class BuildProfileEditor : Editor
 			}
 		}
 
+		if (Event.current.type != EventType.Layout) {
+			foreach (var action in delayedRemovals) {
+				action();
+			}
+			delayedRemovals.Clear();
+		}
+
 		GUI.enabled = true;
 	}
 
 	protected void BuildGUI()
 	{
-		EditorGUILayout.LabelField("Build This Profile", EditorStyles.boldLabel);
-
 		EditorGUILayout.BeginHorizontal();
 		{
-			buildTarget = (BuildTarget)EditorGUILayout.EnumPopup(buildTarget);
-			if (GUILayout.Button("Build", EditorStyles.miniButton)) {
-				buildProfile.Build(buildTarget);
-				GUIUtility.ExitGUI();
+			GUILayout.Label("Build Targets", boldLabel);
+			if (GUILayout.Button(GUIContent.none, plusStyle)) {
+				var menu = new GenericMenu();
+				var type = typeof(BuildTarget);
+				var obsoleteType = typeof(ObsoleteAttribute);
+				foreach (BuildTarget target in Enum.GetValues(type)) {
+					var isObsolete = type.GetMember(target.ToString()).First().GetCustomAttributes(obsoleteType, true).Length > 0;
+					if (isObsolete || (int)target < 0 || buildProfile.BuildTargets.Contains(target))
+						continue;
+					menu.AddItem(new GUIContent(target.ToString()), false, AddBuildTarget, target);
+				}
+				menu.ShowAsContext();
 			}
+			GUILayout.FlexibleSpace();
 		}
 		EditorGUILayout.EndHorizontal();
+
+		var usesActive = buildProfile.UsesActiveBuildTarget();
+		foreach (var target in buildProfile.BuildTargets) {
+			EditorGUILayout.BeginHorizontal();
+			EditorGUI.BeginDisabledGroup(usesActive);
+			{
+				if (GUILayout.Button(GUIContent.none, minusStyle)) {
+					delayedRemovals.Add(() => {
+						buildProfile.RemoveBuildTarget(target);
+					});
+				}
+				EditorGUILayout.LabelField(target.ToString());
+			}
+			EditorGUI.EndDisabledGroup();
+			EditorGUILayout.EndHorizontal();
+		}
+
+		EditorGUILayout.Space();
+
+		var count = buildProfile.BuildTargets.Count();
+		if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
+			buildProfile.Build();
+			GUIUtility.ExitGUI();
+		}
+	}
+
+	protected void AddBuildTarget(object userData)
+	{
+		var target = (BuildTarget)userData;
+		buildProfile.AddBuildTarget(target);
 	}
 
 	protected void ActiveProfileGUI()

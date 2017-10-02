@@ -147,6 +147,28 @@ public class BuildProfile : EditableProfile
 
 	// -------- Methods --------
 
+	public bool UsesActiveBuildTarget()
+	{
+		return (_buildTargets == null || _buildTargets.Count == 0);
+	}
+
+	public void AddBuildTarget(BuildTarget target)
+	{
+		if (_buildTargets == null) {
+			_buildTargets = new List<BuildTarget>();
+		} else if (_buildTargets.Contains(target)) {
+			return;
+		}
+
+		_buildTargets.Add(target);
+	}
+
+	public void RemoveBuildTarget(BuildTarget target)
+	{
+		if (_buildTargets == null) return;
+		_buildTargets.Remove(target);
+	}
+
 	/// <summary>
 	/// Mark the scriptable object dirty when necessary.
 	/// </summary>
@@ -316,6 +338,15 @@ public class BuildProfile : EditableProfile
 	protected static string[] buildTargetRemoveSuffix = new string[] {
 		"Streamed", "Intel", "Intel64", "Universal", "64"
 	};
+
+	public string Build(string path = null, BuildOptions? options = null)
+	{
+		var result = "";
+		foreach (var target in BuildTargets) {
+			result += Build(target, path, options) + "\n";
+		}
+		return result;
+	}
 
 	/// <summary>
 	/// Build the project using this build profile.
