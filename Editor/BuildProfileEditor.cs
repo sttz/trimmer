@@ -455,6 +455,13 @@ public class BuildProfileEditor : Editor
 			return false;
 		}
 
+		var expansionPath = pathBase + context.path;
+		var isExpanded = true;
+		var wasExpanded = true;
+		if (context.IsRecursable) {
+			isExpanded = wasExpanded = EditorProfile.SharedInstance.IsExpanded(expansionPath);
+		}
+
 		// Category headers
 		if (context.IsRoot && !recurseUnavailable) {
 			if (option.Category != lastCategory) {
@@ -475,7 +482,7 @@ public class BuildProfileEditor : Editor
 			// Variant container
 			if (context.variantType == Recursion.VariantType.VariantContainer) {
 				EditorGUILayout.LabelField(displayName, width);
-				if (GUILayout.Button(GUIContent.none, plusStyle)) {
+				if (isExpanded && GUILayout.Button(GUIContent.none, plusStyle)) {
 					AddNewVariant(option, context.node);
 				}
 				GUILayout.FlexibleSpace();
@@ -567,12 +574,7 @@ public class BuildProfileEditor : Editor
 		EditorGUILayout.EndHorizontal();
 
 		// Expansion toggle
-		var isExpanded = true;
 		if (context.IsRecursable) {
-			var expansionPath = pathBase + context.path;
-			var wasExpanded = EditorProfile.SharedInstance.IsExpanded(expansionPath);
-			isExpanded = wasExpanded;
-
 			rect.y += EditorStyles.foldout.padding.top;
 			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 
