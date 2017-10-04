@@ -270,7 +270,7 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public IEnumerable<string> ScriptingDefineSymbolsDifference(BuildTarget target, bool devBuild)
 	{
-		var targetGroup = GetBuildTargetGroup(target);
+		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
 		if (targetGroup == BuildTargetGroup.Unknown) {
 			Debug.LogError("Could not find build target group for target " + target + ".");
 			return Enumerable.Empty<string>();
@@ -312,7 +312,7 @@ public class BuildProfile : EditableProfile
 	/// </remarks>
 	public void ApplyScriptingDefineSymbols(BuildTarget target, bool devBuild)
 	{
-		var targetGroup = GetBuildTargetGroup(target);
+		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
 		if (targetGroup == BuildTargetGroup.Unknown) {
 			Debug.LogError("Could not find build target group for target " + target + ".");
 			return;
@@ -428,27 +428,6 @@ public class BuildProfile : EditableProfile
 		if (_buildProfiles != null && !_buildProfiles.Contains(this)) {
 			_buildProfiles = null;
 		}
-	}
-
-	/// <summary>
-	/// Gets the build target group for the given build target.
-	/// </summary>
-	/// <remarks>
-	/// Unfortunately Unity doesn't provide a method for this so we have
-	/// to do this in a not very nice way.
-	/// </remarks>
-	protected BuildTargetGroup GetBuildTargetGroup(BuildTarget target)
-	{
-		var targetGroup = BuildTargetGroup.Unknown;
-		var targetName = target.ToString("G");
-		foreach (BuildTargetGroup grp in Enum.GetValues(typeof(BuildTargetGroup))) {
-			if (targetName.StartsWith(grp.ToString("G"))) {
-				targetGroup = grp;
-				break;
-			}
-		}
-
-		return targetGroup;
 	}
 
 	/// <summary>
