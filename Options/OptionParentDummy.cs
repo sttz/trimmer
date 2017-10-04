@@ -1,4 +1,4 @@
-﻿#if OPTION_Dummy || UNITY_EDITOR
+﻿#if OPTION_ParentDummy || UNITY_EDITOR
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
