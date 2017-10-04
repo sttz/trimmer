@@ -44,6 +44,14 @@ public abstract class Option : IOption
 	public bool BuildOnly { get; private set; }
 
 	/// <summary>
+	/// Override this method if you want to hide the option in some scenarios.
+	/// </summary>
+	public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
+	{
+		return true;
+	}
+
+	/// <summary>
 	/// Perform removal of option during build.
 	/// </summary>
 	/// <remarks>
@@ -151,14 +159,6 @@ public abstract class Option : IOption
 	/// the parmeters of its variants or names of its children, separated by "/".
 	/// </summary>
 	public string Path { get; private set; }
-
-	/// <summary>
-	/// Override this method if you want to hide the option in some scenarios.
-	/// </summary>
-	public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
-	{
-		return true;
-	}
 
 	/// <summary>
 	/// The default value of the option.
