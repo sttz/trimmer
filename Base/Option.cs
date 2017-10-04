@@ -76,6 +76,20 @@ public abstract class Option : IOption
 	public int PostprocessOrder { get; protected set; }
 
 	/// <summary>
+	/// Prepare the build options.
+	/// </summary>
+	/// <remarks>
+	/// This allows to change the build options, set a build path, add/remove
+	/// scenes or do anything else to set up the build process.<br/>
+	/// Note that this method won't be called for default Unity builds
+	/// triggered from the build settings window or the menu.
+	/// </remarks>
+	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile)
+	{
+		return options;
+	}
+
+	/// <summary>
 	/// Do custom processing before the build is started.
 	/// </summary>
 	/// <param name="target">Build target type</param>

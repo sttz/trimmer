@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditor.Build;
 using UnityEngine.SceneManagement;
+using System.Reflection;
 
 namespace sttz.Workbench {
 
@@ -215,6 +216,124 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 	}
 
+	// -------- Building --------
+
+	/// <summary>
+	/// Populate the <c>BuildPlayerOptions</c> with default values.
+	/// </summary>
+	public static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
+	{
+		// TODO: Use BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions in 2017.2?
+		var playerOptions = new BuildPlayerOptions();
+		playerOptions.target = target;
+		playerOptions.targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+		
+		playerOptions.locationPathName = EditorUserBuildSettings.GetBuildLocation(target);
+
+		playerOptions.scenes = EditorBuildSettings.scenes
+			.Where(s => s.enabled)
+			.Select(s => s.path)
+			.ToArray();
+
+		playerOptions.options = BuildOptions.None;
+
+		return playerOptions;
+	}
+
+	/// <summary>
+	/// Show a dialog to let the user pick a build location.
+	/// </summary>
+	/// <remarks>
+	/// Base on BuildPlayerWindow.PickBuildLocation in private Unity engine code.
+	/// </remarks>
+	public static string PickBuildLocation(BuildTarget target)
+	{
+		var buildLocation = EditorUserBuildSettings.GetBuildLocation(target);
+		
+		if (target == BuildTarget.Android && EditorUserBuildSettings.exportAsGoogleAndroidProject) {
+			var location = EditorUtility.SaveFolderPanel("Export Google Android Project", buildLocation, "");
+			EditorUserBuildSettings.SetBuildLocation(target, location);
+			return location;
+		}
+
+		string directory = "", filename = "";
+		if (!string.IsNullOrEmpty(buildLocation)) {
+			directory = Path.GetDirectoryName(buildLocation);
+			filename = Path.GetFileName(buildLocation);
+		}
+
+		// Call internal method:
+		// string SaveBuildPanel(BuildTarget target, string title, string directory, string defaultName, string extension, out bool updateExistingBuild)
+		var method = typeof(EditorUtility).GetMethod("SaveBuildPanel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+		if (method == null) {
+			Debug.LogError("Could no find SaveBuildPanel method on EditorUtility class.");
+			return null;
+		}
+
+		var args = new object[] { target, "Build " + target, directory, filename, "", null };
+		var path = (string)method.Invoke(null, args);
+
+		return path;
+	}
+
+	/// <summary>
+	/// Build a profile for its default target and with the default build options.
+	/// </summary>
+	public static string Build(BuildProfile profile)
+	{
+		foreach (var target in profile.BuildTargets) {
+			var options = GetDefaultOptions(target);
+			var error = Build(profile, options);
+			if (!string.IsNullOrEmpty(error)) {
+				return error;
+			}
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Build a profile with the given build options.
+	/// </summary>
+	/// <remarks>
+	/// Note that the <c>BuildPlayerOptions</c> will be passed through the profile's
+	/// options' <see cref="IOption.PrepareBuild()"/>, which can modify it before
+	/// the build is started.<br />
+	/// Note that if you do not set <c>options.locationPathName</c> and no option sets
+	/// it in the <c>PrepareBuild</c> callback, then a save dialog will be shown.
+	/// </remarks>
+	public static string Build(BuildProfile buildProfile, BuildPlayerOptions options)
+	{
+		// Prepare build
+		BuildManager.CurrentProfile = buildProfile;
+		buildProfile.ApplyScriptingDefineSymbols(options.target);
+
+		// Run options' PrepareBuild
+		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
+		
+		CreateOrUpdateMainRuntimeProfile();
+		var profile = RuntimeProfile.Main;
+
+		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+			var included = !removeAll && buildProfile.IncludeInBuild(option);
+			options = option.PrepareBuild(options, included, profile);
+		}
+
+		// Ask for location if none has been set
+		if (string.IsNullOrEmpty(options.locationPathName)) {
+			options.locationPathName = PickBuildLocation(options.target);
+			if (string.IsNullOrEmpty(options.locationPathName)) {
+				return null;
+			}
+			EditorUserBuildSettings.SetBuildLocation(options.target, options.locationPathName);
+		}
+
+		// Run the build
+		var error = BuildPipeline.BuildPlayer(options);
+
+		BuildManager.CurrentProfile = null;
+		return error;
+	}
+
 	// -------- Processing --------
 
 	/// <summary>
@@ -222,8 +341,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	private static void InjectProfileContainer(ValueStore store)
 	{
-		if (!Application.isPlaying) throw new InvalidOperationException();
-
 		var go = new GameObject("Workbench");
 		var container = go.AddComponent<ProfileContainer>();
 		container.store = store;
@@ -234,31 +351,52 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	private static void CreateOrUpdateMainRuntimeProfile()
 	{
-		if (!Application.isPlaying) throw new InvalidOperationException();
+		ValueStore store = null;
 
-		if (EditorDefaultsProfile != null) {
-			RuntimeProfile.CreateMain(EditorDefaultsProfile.Store);
+		// During playback in the editor
+		if (Application.isPlaying) {
+			if (EditorDefaultsProfile != null) {
+				store = EditorDefaultsProfile.Store;
+			} else {
+				store = EditorProfile.SharedInstance.Store;
+			}
+
+		// During the build process
 		} else {
-			RuntimeProfile.CreateMain(EditorProfile.SharedInstance.Store);
+			if (CurrentProfile != null) {
+				store = CurrentProfile.Store;
+			}
 		}
+		
+		RuntimeProfile.CreateMain(store);
 	}
 
 	public int callbackOrder { get { return 0; } }
 
 	public void OnPreprocessBuild(BuildTarget target, string path)
 	{
-		throw new BuildFailedException("Uh oh!");
-	}
-	
-	public void OnPostprocessBuild(BuildTarget target, string path)
-	{
-		// TODO: Do in OnPreprocessBuild and abort?
 		// Warn if no profile is set
 		var buildProfile = CurrentProfile;
 		if (buildProfile == null) {
 			Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
 			return;
 		}
+
+		// Run options' PostprocessBuild
+		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
+		
+		CreateOrUpdateMainRuntimeProfile();
+		var profile = RuntimeProfile.Main;
+
+		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+			var included = !removeAll && buildProfile.IncludeInBuild(option);
+			option.PostprocessBuild(target, path, included, profile);
+		}
+	}
+	
+	public void OnPostprocessBuild(BuildTarget target, string path)
+	{
+		var buildProfile = CurrentProfile;
 
 		// Copy ini file to built project directory
 		/*var addIniFile = buildProfile.GetSetting(BuildProfile.OPTION_ADD_INI_FILE);
@@ -282,7 +420,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
-		RuntimeProfile profile = new RuntimeProfile(buildProfile != null ? buildProfile.store : null);
+		
+		CreateOrUpdateMainRuntimeProfile();
+		var profile = RuntimeProfile.Main;
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 			var included = !removeAll && buildProfile.IncludeInBuild(option);
@@ -293,7 +433,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	public void OnProcessScene(Scene scene)
 	{
 		RuntimeProfile profile;
-		var buildProfile = CurrentProfile;
 
 		// Playing in editor
 		if (!BuildPipeline.isBuildingPlayer) {
@@ -306,27 +445,26 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			foreach (var option in profile) {
 				option.PostprocessScene(scene, false, true, profile);
 			}
-			return;
-		}
 
-		// Actual building
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
+		// Building
+		} else {
+			var buildProfile = CurrentProfile;
+			var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 
-		// Create runtime profile so it applies its options
-		// TODO: Remove unused values from the store on build?
-		var store = buildProfile != null ? buildProfile.store : null;
-		RuntimeProfile.CreateMain(store);
+			// TODO: Remove unused values from the store on build?
+			CreateOrUpdateMainRuntimeProfile();
+			profile = RuntimeProfile.Main;
 
-		if (!removeAll) {
-			InjectProfileContainer(store);
-		}
+			if (!removeAll) {
+				InjectProfileContainer(profile.Store);
+			}
 
-		profile = RuntimeProfile.Main;
-		profile.Apply();
+			profile.Apply();
 
-		foreach (var option in profile) {
-			var include = !removeAll && buildProfile.IncludeInBuild(option);
-			option.PostprocessScene(scene, true, include, profile);
+			foreach (var option in profile) {
+				var include = !removeAll && buildProfile.IncludeInBuild(option);
+				option.PostprocessScene(scene, true, include, profile);
+			}
 		}
 	}
 }

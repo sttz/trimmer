@@ -408,7 +408,7 @@ public class BuildProfileEditor : Editor
 
 		var count = buildProfile.BuildTargets.Count();
 		if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
-			buildProfile.Build();
+			BuildManager.Build(buildProfile);
 			GUIUtility.ExitGUI();
 		}
 	}

@@ -151,6 +151,8 @@ public interface IOption
 	/// </summary>
 	bool BuildOnly { get; }
 
+	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile);
+
 	/// <summary>
 	/// Remove the option from the build.
 	/// </summary>
