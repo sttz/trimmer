@@ -236,16 +236,14 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public bool ScriptingDefineSymbolsUpToDate()
 	{
-		return ScriptingDefineSymbolsUpToDate(
-			EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.development
-		);
+		return ScriptingDefineSymbolsUpToDate(EditorUserBuildSettings.activeBuildTarget);
 	}
 
 	/// <summary>
 	/// Check if the option scripting define symbols match those
 	/// that would be defined by this profile.
 	/// </summary>
-	public bool ScriptingDefineSymbolsUpToDate(BuildTarget target, bool devBuild)
+	public bool ScriptingDefineSymbolsUpToDate(BuildTarget target)
 	{
 		return !ScriptingDefineSymbolsDifference().Any();
 	}
@@ -258,9 +256,7 @@ public class BuildProfile : EditableProfile
 	/// </summary>
 	public IEnumerable<string> ScriptingDefineSymbolsDifference()
 	{
-		return ScriptingDefineSymbolsDifference(
-			EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.development
-		);
+		return ScriptingDefineSymbolsDifference(EditorUserBuildSettings.activeBuildTarget);
 	}
 
 	/// <summary>
@@ -268,7 +264,7 @@ public class BuildProfile : EditableProfile
 	/// to match those in this profile. Symbols to remove are prefixed with "-"
 	/// and symbols to add with "+".
 	/// </summary>
-	public IEnumerable<string> ScriptingDefineSymbolsDifference(BuildTarget target, bool devBuild)
+	public IEnumerable<string> ScriptingDefineSymbolsDifference(BuildTarget target)
 	{
 		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
 		if (targetGroup == BuildTargetGroup.Unknown) {
@@ -278,7 +274,7 @@ public class BuildProfile : EditableProfile
 
 		var current = GetCurrentScriptingDefineSymbols(targetGroup)
 			.Where(s => s.StartsWith(Option.DEFINE_PREFIX));
-		var needed = GetProfileScriptingDefineSymbols(targetGroup, devBuild);
+		var needed = GetProfileScriptingDefineSymbols(targetGroup);
 
 		var toRemove = current.Except(needed).Select(d => "-" + d);
 		var toAdd = needed.Except(current).Select(d => "+" + d);
@@ -297,9 +293,7 @@ public class BuildProfile : EditableProfile
 	/// </remarks>
 	public void ApplyScriptingDefineSymbols()
 	{
-		ApplyScriptingDefineSymbols(
-			EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.development
-		);
+		ApplyScriptingDefineSymbols(EditorUserBuildSettings.activeBuildTarget);
 	}
 
 	/// <summary>
@@ -310,7 +304,7 @@ public class BuildProfile : EditableProfile
 	/// build target. While not necessary, this cannot be avoided due to
 	/// Unity's API.
 	/// </remarks>
-	public void ApplyScriptingDefineSymbols(BuildTarget target, bool devBuild)
+	public void ApplyScriptingDefineSymbols(BuildTarget target)
 	{
 		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
 		if (targetGroup == BuildTargetGroup.Unknown) {
@@ -320,7 +314,7 @@ public class BuildProfile : EditableProfile
 
 		var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
 		symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
-		foreach (var symbol in GetProfileScriptingDefineSymbols(targetGroup, devBuild)) {
+		foreach (var symbol in GetProfileScriptingDefineSymbols(targetGroup)) {
 			symbols.Add(symbol);
 		}
 
@@ -394,7 +388,7 @@ public class BuildProfile : EditableProfile
 		}*/
 
 		BuildManager.CurrentProfile = this;
-		ApplyScriptingDefineSymbols(target, EditorUserBuildSettings.development);
+		ApplyScriptingDefineSymbols(target);
 
 		var buildOptions = BuildOptions.None;
 		if (options != null) {
@@ -443,7 +437,7 @@ public class BuildProfile : EditableProfile
 	/// <summary>
 	/// The scripting define symbols set by this profile.
 	/// </summary>
-	protected IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup, bool devBuild)
+	protected IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup)
 	{
 		var symbols = new HashSet<string>();
 		
