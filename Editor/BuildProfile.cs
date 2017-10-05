@@ -229,6 +229,13 @@ public class BuildProfile : EditableProfile
 		EditorGUIUtility.systemCopyBuffer = ini;
 	}
 
+	[ContextMenu("Paste From Ini File")]
+	public void PasteFromIniFile()
+	{
+		Undo.RecordObject(this, "Paste From Ini File");
+		store.LoadIniFile(EditorGUIUtility.systemCopyBuffer);
+	}
+
 	/// <summary>
 	/// Check if the option scripting define symbols match those
 	/// that would be defined by this profile.
