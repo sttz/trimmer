@@ -197,6 +197,11 @@ public abstract class Option : IOption
 	public abstract string Save();
 
 	/// <summary>
+	/// Control the order options get applied (lower values get applied first).
+	/// </summary>
+	public int ApplyOrder { get; protected set; }
+
+	/// <summary>
 	/// Apply the option to the current environment.
 	/// </summary>
 	/// <remarks>

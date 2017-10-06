@@ -55,6 +55,10 @@ public interface IOption
 	/// </summary>
 	string Save();
 	/// <summary>
+	/// Control the order options get applied (lower values get applied first).
+	/// </summary>
+	int ApplyOrder { get; }
+	/// <summary>
 	/// Apply the option's current value to the scene.
 	/// </summary>
 	/// <remarks>

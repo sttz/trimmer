@@ -36,6 +36,7 @@ public class OptionIniFile : OptionString
 	{
         Category = "Player";
 		DefaultValue = "wb.ini";
+        ApplyOrder = -1000;
 	}
 
 	public override void Apply()

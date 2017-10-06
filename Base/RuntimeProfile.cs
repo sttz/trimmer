@@ -81,9 +81,13 @@ public class RuntimeProfile : IEnumerable<IOption>
 	// -------- Profile --------
 
 	/// <summary>
+	/// Options sorted by <see cref="IOption.ApplyOrder"/>.
+	/// </summary>
+	protected List<IOption> options = new List<IOption>();
+	/// <summary>
 	/// Options by name.
 	/// </summary>
-	protected Dictionary<string, IOption> options
+	protected Dictionary<string, IOption> optionsByName
 		= new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
@@ -123,9 +127,11 @@ public class RuntimeProfile : IEnumerable<IOption>
 		foreach (var optionType in AllOptionTypes) {
 			if (ShouldCreateOption(optionType)) {
 				var option = (IOption)Activator.CreateInstance(optionType);
-				options[option.Name] = option;
+				options.Add(option);
+				optionsByName[option.Name] = option;
 			}
 		}
+		options.Sort((a, b) => a.ApplyOrder.CompareTo(b.ApplyOrder));
 
 		// Set store, which sets its values on the options
 		Store = store;
@@ -161,8 +167,8 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	public IOption GetRootOption(string name)
 	{
-		if (options.ContainsKey(name)) {
-			return options[name];
+		if (optionsByName.ContainsKey(name)) {
+			return optionsByName[name];
 		} else {
 			return null;
 		}
@@ -176,7 +182,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 		// Apply values in store to options
 		foreach (var node in Store.Roots) {
 			IOption option;
-			if (!options.TryGetValue(node.name, out option))
+			if (!optionsByName.TryGetValue(node.name, out option))
 				continue;
 
 			LoadNode(option, node);
@@ -202,7 +208,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </remarks>
 	public void SaveToStore()
 	{
-		foreach (var option in options.Values) {
+		foreach (var option in optionsByName.Values) {
 			var rootNode = Store.GetRoot(option.Name);
 			if (rootNode == null) {
 				rootNode = Store.AddRoot(option.Name, null);
@@ -294,7 +300,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 
 	public IEnumerator<IOption> GetEnumerator()
 	{
-		return options.Values.GetEnumerator();
+		return options.GetEnumerator();
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
