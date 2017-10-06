@@ -432,7 +432,9 @@ public abstract class Option : IOption
 		if (children == null)
 			return null;
 
-		return children[name];
+		IOption child;
+		children.TryGetValue(name, out child);
+		return child;
 	}
 
 	/// <summary>

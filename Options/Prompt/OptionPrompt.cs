@@ -1,11 +1,6 @@
-﻿#if OPTION_Dummy || UNITY_EDITOR
+﻿#if OPTION_Prompt || UNITY_EDITOR
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace sttz.Workbench.Prompt
 {
@@ -22,20 +17,43 @@ public class OptionPrompt : OptionToggle
 	public override void Apply()
 	{
 		base.Apply();
+
+		// TODO: Fix this
+		var isBuilding = false;
+		#if UNITY_EDITOR
+		isBuilding = UnityEditor.BuildPipeline.isBuildingPlayer;
+		#endif
+
+		if (!isBuilding) {
+			var prompt = Prompt.Instance;
+			if (prompt == null) {
+				if (!Value)
+					return;
+
+				var go = new GameObject("Prompt");
+				prompt = go.AddComponent<Prompt>();
+			}
+
+			prompt.enabled = Value;
+			prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
+			prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
+			prompt.position = GetChild<OptionPromptPosition>().Value;
+		}
 	}
 
-#if UNITY_EDITOR
-
-	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
+	public Prompt GetOrCreatePrompt()
 	{
-		base.PostprocessScene(scene, isBuild, includedInBuild, profile);
+		var prompt = Prompt.Instance;
+		if (prompt == null) {
+			var go = new GameObject("Prompt");
+			prompt = go.AddComponent<Prompt>();
+		}
+		return prompt;
 	}
 
-#endif
-
-	public class OptionPromptSize : OptionInt
+	public class OptionPromptFontSize : OptionInt
 	{
-		public override string Name { get { return "Size"; } }
+		public override string Name { get { return "FontSize"; } }
 
 		protected override void Configure()
 		{
