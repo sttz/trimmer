@@ -104,14 +104,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 
 			_store = value ?? new ValueStore();
 
-			// Apply values in store to options
-			foreach (var node in _store.Roots) {
-				IOption option;
-				if (!options.TryGetValue(node.name, out option))
-					continue;
-
-				LoadNode(option, node);
-			}
+			Load();
 		}
 	}
 	private ValueStore _store;
@@ -172,6 +165,21 @@ public class RuntimeProfile : IEnumerable<IOption>
 			return options[name];
 		} else {
 			return null;
+		}
+	}
+
+	/// <summary>
+	/// Load the data in the store into the option instances.
+	/// </summary>
+	public void Load()
+	{
+		// Apply values in store to options
+		foreach (var node in Store.Roots) {
+			IOption option;
+			if (!options.TryGetValue(node.name, out option))
+				continue;
+
+			LoadNode(option, node);
 		}
 	}
 

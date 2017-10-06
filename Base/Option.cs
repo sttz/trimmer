@@ -430,6 +430,21 @@ public abstract class Option : IOption
 		return children[name];
 	}
 
+	/// <summary>
+	/// Get a child option instance by its name.
+	/// </summary>
+	public TOption GetChild<TOption>() where TOption : IOption
+	{
+		if (children != null) {
+			foreach (var child in children.Values) {
+				if (child is TOption)
+					return (TOption)child;
+			}
+		}
+
+		return default(TOption);
+	}
+
 	// -------- Category --------
 
 	/// <summary>
