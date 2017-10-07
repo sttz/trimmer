@@ -215,15 +215,18 @@ public class Prompt : MonoBehaviour
 		if (completions.Count == 0 || moveIndex == 0) {
 			completions.Clear();
 
-			// TODO: Complete children/variants
-			foreach (var option in RuntimeProfile.Main) {
-				#if UNITY_EDITOR
-				if (option.BuildOnly)
-					continue;
-				#endif
+			var path = IniAdapter.NameToPath(input);
+			if (path != null) {
+				foreach (var option in RuntimeProfile.Main) {
+					#if UNITY_EDITOR
+					if (option.BuildOnly)
+						continue;
+					#endif
 
-				if (option.Name.StartsWith(input, StringComparison.OrdinalIgnoreCase)) {
-					completions.Add(option.Name + " = " + option.Save());
+					// TODO: Fix completion not working properly
+					if (option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase)) {
+						CompleteOptionRecursive(path, option, "");
+					}
 				}
 			}
 			if (completions.Count > 0) {
@@ -244,6 +247,35 @@ public class Prompt : MonoBehaviour
 		}
 	}
 
+	protected void CompleteOptionRecursive(string path, IOption option, string baseInput)
+	{
+		if (!option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+			return;
+
+		if (option.Parent == null || option.IsDefaultVariant || !option.IsVariant) {
+			if (option.Parent != null) {
+				baseInput += ".";
+			}
+			baseInput += option.Name;
+		}
+
+		if (option.IsDefaultVariant) {
+			completions.Add(baseInput + "[" + option.VariantParameter + "] = " + option.Save());
+		} else if (option.IsVariant) {
+			baseInput += "[" + option.VariantParameter + "]";
+		}
+		
+		completions.Add(baseInput + " = " + option.Save());
+
+		foreach (var variant in option.Variants) {
+			CompleteOptionRecursive(path, variant, baseInput);
+		}
+
+		foreach (var child in option.Children) {
+			CompleteOptionRecursive(path, child, baseInput);
+		}
+	}
+
 	protected void ExecutePrompt()
 	{
 		// Enter on empty prompt closes it
@@ -252,20 +284,24 @@ public class Prompt : MonoBehaviour
 
 		// Set a option value
 		} else if (input.Contains("=")) {
-			// TODO: Set option
-			/*var parsed = Defaults.ScanLine(input);
-			var option = profile.GetOption(parsed.name, parsed.parameter);
-			if (option != null) {
-				option.Load(parsed.value);
-				input = "";
-			}*/
+			var path = IniAdapter.NameToPath(input);
+			if (path != null) {
+				var option = RuntimeProfile.Main.GetOption(path);
+				var value = IniAdapter.GetValue(input);
+				if (option != null && value != null) {
+					option.Load(value);
+					input = "";
+				}
+			}
 		
 		// Enter on an option shows it's value
 		} else {
-			// TODO: Show children/variants
-			var option = RuntimeProfile.Main.GetOption(input);
-			if (option != null) {
-				input += " = " + option.Save();
+			var path = IniAdapter.NameToPath(input);
+			if (path != null) {
+				var option = RuntimeProfile.Main.GetOption(path);
+				if (option != null) {
+					input += " = " + option.Save();
+				}
 			}
 		}
 	}

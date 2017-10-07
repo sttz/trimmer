@@ -622,7 +622,7 @@ public static class IniAdapter
 			if (commentedLineRegex.IsMatch(line) || line.Trim().Length == 0)
 				continue;
 			
-			var match = iniLineRegex.Match(line);
+			var match = LineRegex.Match(line);
 			if (!match.Success) {
 				Debug.LogWarning("Failed to read line in Ini file: " + line);
 				continue;
@@ -653,7 +653,7 @@ public static class IniAdapter
 	}
 
 	/// <summary>
-	/// Match identifiers based on valid C# identifiers.
+	/// Regex fragment matching identifiers based on valid C# identifiers.
 	/// L = All letter characters (upper, lower, title, modifier and other)
 	/// Nl = Number, Letter, Mn = Mark, Nonspacing, Mc = Mark, Combining
 	/// Nd = Number, Decimal Digit, Pc = Punctuation, Connector, Cf = Other, Format
@@ -662,7 +662,7 @@ public static class IniAdapter
 	const string IdentifierRegex = @"([\p{L}|\p{Nl}|\p{Mn}|\p{Mc}|\p{Nd}|\p{Pc}|\p{Cf}]+)";
 
 	/// <summary>
-	/// Regex matching an optionally quoted string containing escape sequences.
+	/// Regex fragment matching an optionally quoted string containing escape sequences.
 	/// E.g. Unquoted String, "Quoted String", "Quoted with \"Escaped\" Quotes", "Quoted Double Escape \\"
 	/// </summary>
 	const string QuotedStringRegex = @"
@@ -678,16 +678,32 @@ public static class IniAdapter
 	";
 
 	/// <summary>
-	/// Regex matching a line in a Ini file.
+	/// Regex fragment matching the name part of a ini line.
 	/// </summary>
-	static readonly Regex iniLineRegex = new Regex(@"
-		^\s*									# Any leading whitespce
+	const string IniNameRegex = @"
+		\s*										# Any leading whitespce
 		" + IdentifierRegex + @"				# The name of the root option
 		(?:										# Start of name part
 		  \." + IdentifierRegex + @"			# A child name starting with .
 		  | \[ " + QuotedStringRegex + @" \]	# Or a paramter in []
 		)*
-		\s*=\s*									# Assignment =
+		\s*										# Any trailing whitespace
+	";
+
+	/// <summary>
+	/// Regex matching only the name part of an ini line.
+	/// </summary>
+	static readonly Regex NameRegex = new Regex(
+		"^" + IniNameRegex, 
+		RegexOptions.IgnorePatternWhitespace
+	);
+
+	/// <summary>
+	/// Regex matching a line in a Ini file.
+	/// </summary>
+	public static readonly Regex LineRegex = new Regex(@"
+		^" + IniNameRegex + @"					# Name part
+		=\s*									# Assignment =
 		" + QuotedStringRegex + @"				# Value part
 		\s*$									# Any trailing whitespace
 	", RegexOptions.IgnorePatternWhitespace);
@@ -697,39 +713,46 @@ public static class IniAdapter
 	/// </summary>
 	static readonly Regex commentedLineRegex = new Regex(@"^\s*(?:#|//)");
 
+	/// <summary>
+	/// Find the next capture in the match and return the group index
+	/// or <c>-1</c> if no capture was found.
+	/// </summary>
+	static int FindNextCapture(Match match, int startIndex, out Capture capture)
+	{
+		capture = null;
+		var index = -1;
+		for (int i = 0; i < match.Groups.Count; i++) {
+			foreach (Capture candidate in match.Groups[i].Captures) {
+				if (candidate.Index >= startIndex) {
+					if (capture == null || candidate.Index < capture.Index) {
+						capture = candidate;
+						index = i;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+		return index;
+	}
+
 	static ValueStore.Node GetNodeRecursive(ValueStore.Node current, Match match, int index)
 	{
-		Capture nextChild = null, nextVariant = null;
-		var isQuoted = false;
-		foreach (Capture capture in match.Groups[2].Captures) {
-			if (capture.Index > index) {
-				nextChild = capture;
-				break;
-			}
-		}
-		foreach (Capture capture in match.Groups[3].Captures) {
-			if (capture.Index > index) {
-				nextVariant = capture;
-				isQuoted = true;
-				break;
-			}
-		}
-		foreach (Capture capture in match.Groups[4].Captures) {
-			if (capture.Index > index && (nextVariant == null || nextVariant.Index > capture.Index)) {
-				nextVariant = capture;
-				isQuoted = true;
-				break;
-			}
-		}
+		Capture next;
+		var groupIndex = FindNextCapture(match, index, out next);
 
-		if (nextChild == null && nextVariant == null) {
+		if (groupIndex < 0) {
+			Debug.LogWarning("Unexpected end of captures in match: " + match);
 			return current;
-		} else if (nextChild != null && (nextVariant == null || nextChild.Index < nextVariant.Index)) {
-			var child = current.GetOrCreateChild(nextChild.Value);
-			return GetNodeRecursive(child, match, nextChild.Index + nextChild.Length - 1);
+		} else if (groupIndex == 2) {
+			var child = current.GetOrCreateChild(next.Value);
+			return GetNodeRecursive(child, match, next.Index + next.Length);
+		} else if (groupIndex == 3 || groupIndex == 4) {
+			var isQuoted = (groupIndex == 3);
+			var variant = current.GetOrCreateVariant(ProcessQuotedString(next.Value, isQuoted));
+			return GetNodeRecursive(variant, match, next.Index + next.Length);
 		} else {
-			var variant = current.GetOrCreateVariant(ProcessQuotedString(nextVariant.Value, isQuoted));
-			return GetNodeRecursive(variant, match, nextVariant.Index + nextVariant.Length - 1);
+			return current;
 		}
 	}
 
@@ -740,6 +763,54 @@ public static class IniAdapter
 		} else {
 			return input.Replace("\\\"", "\"").Replace("\\\\", "\\");
 		}
+	}
+
+	// ------ Helpers ------
+
+	/// <summary>
+	/// Take the name part of an ini line and convert it to a option path
+	/// that then can be used with <see cref="RuntimeProfile.GetOption(string)"/>.
+	/// </summary>
+	public static string NameToPath(string name)
+	{
+		var match = NameRegex.Match(name);
+		if (!match.Success) return null;
+
+		var rootCapture = match.Groups[1];
+		return GetPathRecursive(rootCapture.Value, match, rootCapture.Index + rootCapture.Length - 1);
+	}
+
+	static string GetPathRecursive(string path, Match match, int index)
+	{
+		Capture next;
+		var groupIndex = FindNextCapture(match, index, out next);
+
+		if (groupIndex == 2) {
+			return GetPathRecursive(path + "/" + next.Value, match, next.Index + next.Length);
+		} else if (groupIndex == 3 || groupIndex == 4) {
+			var name = ProcessQuotedString(next.Value, groupIndex == 3);
+			return GetPathRecursive(path + "/" + name, match, next.Index + next.Length);
+		} else {
+			return path;
+		}
+	}
+
+	/// <summary>
+	/// Get the value part of an ini line, unquoting where necessary.
+	/// </summary>
+	public static string GetValue(string iniLine)
+	{
+		var match = LineRegex.Match(iniLine);
+		if (!match.Success) return null;
+
+		var isQuoted = true;
+		var valueCapture = match.Groups[5];
+		if (!valueCapture.Success) {
+			isQuoted = false;
+			valueCapture = match.Groups[6];
+		}
+
+		return ProcessQuotedString(valueCapture.Value, isQuoted);
 	}
 }
 
