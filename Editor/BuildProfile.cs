@@ -225,15 +225,14 @@ public class BuildProfile : EditableProfile
 	[ContextMenu("Copy As Ini File")]
 	public void CopyAsIniFile()
 	{
-		var ini = store.SaveIniFile();
-		EditorGUIUtility.systemCopyBuffer = ini;
+		EditorGUIUtility.systemCopyBuffer = IniAdapter.Save(store);
 	}
 
 	[ContextMenu("Paste From Ini File")]
 	public void PasteFromIniFile()
 	{
 		Undo.RecordObject(this, "Paste From Ini File");
-		store.LoadIniFile(EditorGUIUtility.systemCopyBuffer);
+		IniAdapter.Load(store, EditorGUIUtility.systemCopyBuffer);
 	}
 
 	/// <summary>

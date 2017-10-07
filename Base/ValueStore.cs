@@ -461,181 +461,6 @@ public class ValueStore : ISerializationCallbackReceiver
 		}
 	}
 
-	// -------- Ini Serialization --------
-
-	/// <summary>
-	/// Match identifiers based on valid C# identifiers.
-	/// L = All letter characters (upper, lower, title, modifier and other)
-	/// Nl = Number, Letter, Mn = Mark, Nonspacing, Mc = Mark, Combining
-	/// Nd = Number, Decimal Digit, Pc = Punctuation, Connector, Cf = Other, Format
-	/// Note that C# disallows leading numbers but this regex matches them.
-	/// </summary>
-	const string IdentifierRegex = @"([\p{L}|\p{Nl}|\p{Mn}|\p{Mc}|\p{Nd}|\p{Pc}|\p{Cf}]+)";
-
-	/// <summary>
-	/// Regex matching an optionally quoted string containing escape sequences.
-	/// E.g. Unquoted String, "Quoted String", "Quoted with \"Escaped\" Quotes", "Quoted Double Escape \\"
-	/// </summary>
-	const string QuotedStringRegex = @"
-		(?: 				# Group to make quotes optional
-			""(				# Opening quote
-				(?:
-					[^""\\]	# Anything but "" or \
-				  | \\.		# Or any escaped character
-				)*
-			)""				# Ending quote
-		  | (.*)			# Anything unqutoed
-		)
-	";
-
-	/// <summary>
-	/// Regex matching a line in a Ini file.
-	/// </summary>
-	Regex iniLineRegex = new Regex(@"
-		^\s*									# Any leading whitespce
-		" + IdentifierRegex + @"				# The name of the root option
-		(?:										# Start of name part
-		  \." + IdentifierRegex + @"			# A child name starting with .
-		  | \[ " + QuotedStringRegex + @" \]	# Or a paramter in []
-		)*
-		\s*=\s*									# Assignment =
-		" + QuotedStringRegex + @"				# Value part
-		\s*$									# Any trailing whitespace
-	", RegexOptions.IgnorePatternWhitespace);
-
-	/// <summary>
-	/// Regex matching a comment line starting with # or //
-	/// </summary>
-	Regex commentedLineRegex = new Regex(@"^\s*(?:#|//)");
-
-	/// <summary>
-	/// Load the values in an INI file into this value store instance,
-	/// replacing the value store's contents.
-	/// </summary>
-	public void LoadIniFile(string content)
-	{
-		// TODO: More input validation
-		var lines = content.Split('\n');
-		foreach (var line in lines) {
-			if (commentedLineRegex.IsMatch(line) || line.Trim().Length == 0)
-				continue;
-			
-			var match = iniLineRegex.Match(line);
-			if (!match.Success) {
-				Debug.LogWarning("Failed to read line in Ini file: " + line);
-				continue;
-			}
-
-			// Groups:
-			// 1 = Regular Name
-			// 2 = Child name
-			// 3 = Quoted Parameter
-			// 4 = Unquoted Parameter
-			// 5 = Quoted Value
-			// 6 = Unquoted Value
-
-			var rootCapture = match.Groups[1];
-			var rootNode = GetOrCreateRoot(rootCapture.Value);
-
-			var node = GetNodeRecursive(rootNode, match, rootCapture.Index + rootCapture.Length - 1);
-			
-			var isQuoted = true;
-			var valueCapture = match.Groups[5];
-			if (!valueCapture.Success) {
-				isQuoted = false;
-				valueCapture = match.Groups[6];
-			}
-
-			node.value = ProcessQuotedString(valueCapture.Value, isQuoted);
-		}
-	}
-
-	Node GetNodeRecursive(Node current, Match match, int index)
-	{
-		Capture nextChild = null, nextVariant = null;
-		var isQuoted = false;
-		foreach (Capture capture in match.Groups[2].Captures) {
-			if (capture.Index > index) {
-				nextChild = capture;
-				break;
-			}
-		}
-		foreach (Capture capture in match.Groups[3].Captures) {
-			if (capture.Index > index) {
-				nextVariant = capture;
-				isQuoted = true;
-				break;
-			}
-		}
-		foreach (Capture capture in match.Groups[4].Captures) {
-			if (capture.Index > index && (nextVariant == null || nextVariant.Index > capture.Index)) {
-				nextVariant = capture;
-				isQuoted = true;
-				break;
-			}
-		}
-
-		if (nextChild == null && nextVariant == null) {
-			return current;
-		} else if (nextChild != null && (nextVariant == null || nextChild.Index < nextVariant.Index)) {
-			var child = current.GetOrCreateChild(nextChild.Value);
-			return GetNodeRecursive(child, match, nextChild.Index + nextChild.Length - 1);
-		} else {
-			var variant = current.GetOrCreateVariant(ProcessQuotedString(nextVariant.Value, isQuoted));
-			return GetNodeRecursive(variant, match, nextVariant.Index + nextVariant.Length - 1);
-		}
-	}
-
-	string ProcessQuotedString(string input, bool isQuoted)
-	{
-		if (!isQuoted) {
-			return input;
-		} else {
-			return input.Replace("\\\"", "\"").Replace("\\\\", "\\");
-		}
-	}
-
-	/// <summary>
-	/// Save the content of this value store as a INI file formatted string.
-	/// </summary>
-	public string SaveIniFile()
-	{
-		var output = new StringBuilder();
-		foreach (var node in nodes) {
-			SaveIniRecursive(output, "", node, false);
-		}
-		return output.ToString();
-	}
-
-	void SaveIniRecursive(StringBuilder output, string path, Node node, bool isVariantChild)
-	{
-		if (!isVariantChild) {
-			path += node.name;
-		} else {
-			path += "[" + node.name + "]";
-		}
-
-		if (!string.IsNullOrEmpty(node.value)) {
-			output.Append(path);
-			output.Append(" = ");
-			output.Append(node.value);
-			output.Append("\n");
-		}
-
-		if (node.VariantCount > 0) {
-			foreach (var variant in node.variants) {
-				SaveIniRecursive(output, path, variant, true);
-			}
-		}
-
-		if (node.ChildCount > 0) {
-			var childPath = path + ".";
-			foreach (var child in node.children) {
-				SaveIniRecursive(output, childPath, child, false);
-			}
-		}
-	}
-
 	// -------- Unity Serialization --------
 
 	/// <summary>
@@ -730,6 +555,190 @@ public class ValueStore : ISerializationCallbackReceiver
 			foreach (var children in node.children) {
 				UnpackNode(children, takeFrom, ref offset);
 			}
+		}
+	}
+}
+
+/// <summary>
+/// Helper methods to save a <see cref="ValueStore"/> to an Ini file and loading it back again.
+/// </summary>
+public static class IniAdapter
+{
+	// -------- Ini Serialization --------
+
+	/// <summary>
+	/// Save the content of this value store as a Ini file formatted string.
+	/// </summary>
+	public static string Save(ValueStore store)
+	{
+		var output = new StringBuilder();
+		foreach (var node in store.Roots) {
+			SaveIniRecursive(output, "", node, false);
+		}
+		return output.ToString();
+	}
+
+	static void SaveIniRecursive(StringBuilder output, string path, ValueStore.Node node, bool isVariantChild)
+	{
+		// TODO: Quote and escape strings when necessary
+		if (!isVariantChild) {
+			path += node.name;
+		} else {
+			path += "[" + node.name + "]";
+		}
+
+		if (!string.IsNullOrEmpty(node.value)) {
+			output.Append(path);
+			output.Append(" = ");
+			output.Append(node.value);
+			output.Append("\n");
+		}
+
+		if (node.VariantCount > 0) {
+			foreach (var variant in node.variants) {
+				SaveIniRecursive(output, path, variant, true);
+			}
+		}
+
+		if (node.ChildCount > 0) {
+			var childPath = path + ".";
+			foreach (var child in node.children) {
+				SaveIniRecursive(output, childPath, child, false);
+			}
+		}
+	}
+
+	// ------ Ini Deserialization ------
+
+	/// <summary>
+	/// Load the values in an INI file into this value store instance,
+	/// replacing the value store's contents.
+	/// </summary>
+	public static void Load(ValueStore store, string content)
+	{
+		// TODO: More input validation
+		var lines = content.Split('\n');
+		foreach (var line in lines) {
+			if (commentedLineRegex.IsMatch(line) || line.Trim().Length == 0)
+				continue;
+			
+			var match = iniLineRegex.Match(line);
+			if (!match.Success) {
+				Debug.LogWarning("Failed to read line in Ini file: " + line);
+				continue;
+			}
+
+			// Groups:
+			// 1 = Regular Name
+			// 2 = Child name
+			// 3 = Quoted Parameter
+			// 4 = Unquoted Parameter
+			// 5 = Quoted Value
+			// 6 = Unquoted Value
+
+			var rootCapture = match.Groups[1];
+			var rootNode = store.GetOrCreateRoot(rootCapture.Value);
+
+			var node = GetNodeRecursive(rootNode, match, rootCapture.Index + rootCapture.Length - 1);
+			
+			var isQuoted = true;
+			var valueCapture = match.Groups[5];
+			if (!valueCapture.Success) {
+				isQuoted = false;
+				valueCapture = match.Groups[6];
+			}
+
+			node.value = ProcessQuotedString(valueCapture.Value, isQuoted);
+		}
+	}
+
+	/// <summary>
+	/// Match identifiers based on valid C# identifiers.
+	/// L = All letter characters (upper, lower, title, modifier and other)
+	/// Nl = Number, Letter, Mn = Mark, Nonspacing, Mc = Mark, Combining
+	/// Nd = Number, Decimal Digit, Pc = Punctuation, Connector, Cf = Other, Format
+	/// Note that C# disallows leading numbers but this regex matches them.
+	/// </summary>
+	const string IdentifierRegex = @"([\p{L}|\p{Nl}|\p{Mn}|\p{Mc}|\p{Nd}|\p{Pc}|\p{Cf}]+)";
+
+	/// <summary>
+	/// Regex matching an optionally quoted string containing escape sequences.
+	/// E.g. Unquoted String, "Quoted String", "Quoted with \"Escaped\" Quotes", "Quoted Double Escape \\"
+	/// </summary>
+	const string QuotedStringRegex = @"
+		(?: 				# Group to make quotes optional
+			""(				# Opening quote
+				(?:
+					[^""\\]	# Anything but "" or \
+				  | \\.		# Or any escaped character
+				)*
+			)""				# Ending quote
+		  | (.*)			# Anything unqutoed
+		)
+	";
+
+	/// <summary>
+	/// Regex matching a line in a Ini file.
+	/// </summary>
+	static readonly Regex iniLineRegex = new Regex(@"
+		^\s*									# Any leading whitespce
+		" + IdentifierRegex + @"				# The name of the root option
+		(?:										# Start of name part
+		  \." + IdentifierRegex + @"			# A child name starting with .
+		  | \[ " + QuotedStringRegex + @" \]	# Or a paramter in []
+		)*
+		\s*=\s*									# Assignment =
+		" + QuotedStringRegex + @"				# Value part
+		\s*$									# Any trailing whitespace
+	", RegexOptions.IgnorePatternWhitespace);
+
+	/// <summary>
+	/// Regex matching a comment line starting with # or //
+	/// </summary>
+	static readonly Regex commentedLineRegex = new Regex(@"^\s*(?:#|//)");
+
+	static ValueStore.Node GetNodeRecursive(ValueStore.Node current, Match match, int index)
+	{
+		Capture nextChild = null, nextVariant = null;
+		var isQuoted = false;
+		foreach (Capture capture in match.Groups[2].Captures) {
+			if (capture.Index > index) {
+				nextChild = capture;
+				break;
+			}
+		}
+		foreach (Capture capture in match.Groups[3].Captures) {
+			if (capture.Index > index) {
+				nextVariant = capture;
+				isQuoted = true;
+				break;
+			}
+		}
+		foreach (Capture capture in match.Groups[4].Captures) {
+			if (capture.Index > index && (nextVariant == null || nextVariant.Index > capture.Index)) {
+				nextVariant = capture;
+				isQuoted = true;
+				break;
+			}
+		}
+
+		if (nextChild == null && nextVariant == null) {
+			return current;
+		} else if (nextChild != null && (nextVariant == null || nextChild.Index < nextVariant.Index)) {
+			var child = current.GetOrCreateChild(nextChild.Value);
+			return GetNodeRecursive(child, match, nextChild.Index + nextChild.Length - 1);
+		} else {
+			var variant = current.GetOrCreateVariant(ProcessQuotedString(nextVariant.Value, isQuoted));
+			return GetNodeRecursive(variant, match, nextVariant.Index + nextVariant.Length - 1);
+		}
+	}
+
+	static string ProcessQuotedString(string input, bool isQuoted)
+	{
+		if (!isQuoted) {
+			return input;
+		} else {
+			return input.Replace("\\\"", "\"").Replace("\\\\", "\\");
 		}
 	}
 }
