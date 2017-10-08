@@ -154,25 +154,57 @@ public abstract class Option : IOption
 			return _parent;
 		}
 		set {
+			if (_parent == value) return;
+
 			_parent = value;
-			if (Parent == null) {
-				Path = Name;
-			} else {
-				var own = Name;
-				if (IsVariant && !IsDefaultVariant) {
-					own = VariantParameter;
-				}
-				Path = Parent.Path + "/" + own;
- 			}
+			
+			InvalidatePathRecursive();
 		}
 	}
 	private IOption _parent;
 
 	/// <summary>
-	/// The path to this option, given by the name of the root option and
-	/// the parmeters of its variants or names of its children, separated by "/".
+	/// The path to this option. The path consists of option names separated by «/»
+	/// and variants separated by «:» and their parameter.
 	/// </summary>
-	public string Path { get; private set; }
+	public string Path {
+		get {
+			if (_path == null) {
+				_path = GetPathRecursive(this);
+			}
+			return _path;
+		}
+	}
+	protected string _path;
+
+	protected string GetPathRecursive(IOption current)
+	{
+		if (current.IsVariant && !current.IsDefaultVariant) {
+			if (current.Parent != null) {
+				return GetPathRecursive(current.Parent) + ":" + current.VariantParameter;
+			} else {
+				throw new Exception("A non-default variant needs to have a parent.");
+			}
+		} else {
+			if (current.Parent != null) {
+				return GetPathRecursive(current.Parent) + "/" + current.Name;
+			} else {
+				return current.Name;
+			}
+		}
+	}
+
+	public void InvalidatePathRecursive()
+	{
+		_path = null;
+
+		foreach (var child in Children) {
+			child.InvalidatePathRecursive();
+		}
+		foreach (var variant in Variants) {
+			variant.InvalidatePathRecursive();
+		}
+	}
 
 	/// <summary>
 	/// The default value of the option.

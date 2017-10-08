@@ -143,19 +143,44 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	public IOption GetOption(string path)
 	{
-		if (!path.Contains('/')) {
+		// TODO: What happens with parameters that contain «:»?
+		
+		// Example paths:
+		// "Name"
+		// "Name:Parameter/ChildName"
+		// "Name/ChildName:Parameter/ChildName"
+
+		// Fast path for looking up a plain name
+		if (!path.Contains('/') && !path.Contains(':')) {
 			return GetRootOption(path);
 		}
 
 		var parts = path.Split('/');
-		var current = GetRootOption(parts[0]);
-		for (int i = 1; i < parts.Length && current != null; i++) {
-			if (current.HasChildren) {
-				current = current.GetChild(parts[i]);
-			} else if (current.IsDefaultVariant) {
-				current = current.GetVariant(parts[i]);
-			} else {
-				current = null;
+
+		// Resolve the root option / variant
+		var root = parts[0].Split(':');
+		var current = GetRootOption(root[0]);
+		if (root.Length > 1) {
+			current = current.GetVariant(root[1]);
+		}
+
+		if (current == null) return null;
+
+		for (int i = 1; i < parts.Length; i++) {
+			var part = parts[i].Split(':');
+
+			if (!current.HasChildren)
+				return null;
+
+			current = current.GetChild(part[0]);
+			if (current == null) return null;
+
+			if (part.Length > 1) {
+				if (!current.IsDefaultVariant)
+					return null;
+
+				current = current.GetVariant(part[1]);
+				if (current == null) return null;
 			}
 		}
 

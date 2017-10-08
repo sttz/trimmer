@@ -789,7 +789,7 @@ public static class IniAdapter
 			return GetPathRecursive(path + "/" + next.Value, match, next.Index + next.Length);
 		} else if (groupIndex == 3 || groupIndex == 4) {
 			var name = ProcessQuotedString(next.Value, groupIndex == 3);
-			return GetPathRecursive(path + "/" + name, match, next.Index + next.Length);
+			return GetPathRecursive(path + ":" + name, match, next.Index + next.Length);
 		} else {
 			return path;
 		}

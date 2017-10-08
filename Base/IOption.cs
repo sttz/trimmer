@@ -41,6 +41,7 @@ public interface IOption
 	string Name { get; }
 	IOption Parent { get; set; }
 	string Path { get; }
+	void InvalidatePathRecursive();
 	/// <summary>
 	/// The default value for the option, used if there is no value defined
 	/// for the option in the ini file.
