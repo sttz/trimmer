@@ -11,6 +11,7 @@ public class OptionPrompt : OptionToggle
 
 	protected override void Configure()
 	{
+		Category = "Configuration";
 		DefaultValue = "";
 	}
 
