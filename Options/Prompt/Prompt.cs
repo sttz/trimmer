@@ -259,9 +259,7 @@ public class Prompt : MonoBehaviour
 			baseInput += option.Name;
 		}
 
-		if (option.IsDefaultVariant) {
-			completions.Add(baseInput + "[" + option.VariantParameter + "] = " + option.Save());
-		} else if (option.IsVariant) {
+		if (option.IsVariant && !option.IsDefaultVariant) {
 			baseInput += "[" + option.VariantParameter + "]";
 		}
 		
