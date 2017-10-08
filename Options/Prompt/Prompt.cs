@@ -160,9 +160,13 @@ public class Prompt : MonoBehaviour
 				if (c == '\b') {
 					if (input.Length > 0)
 						input = input.Remove(input.Length - 1, 1);
+				
 				} else if (c == '\n' || c == '\r') {
 					ExecutePrompt();
-				} else {
+				
+				// Unity includes control keys as unicode characters in the Private Use category,
+				// and mess up the input. Don't add them to the input.
+				} else if (char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.PrivateUse) {
 					input += c;
 				}
 			}
