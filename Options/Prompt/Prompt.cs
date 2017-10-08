@@ -292,6 +292,7 @@ public class Prompt : MonoBehaviour
 				var value = IniAdapter.GetValue(input);
 				if (option != null && value != null) {
 					option.Load(value);
+					option.Apply();
 					input = "";
 				}
 			}
