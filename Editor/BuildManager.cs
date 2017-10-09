@@ -398,26 +398,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	{
 		var buildProfile = CurrentProfile;
 
-		// Copy ini file to built project directory
-		/*var addIniFile = buildProfile.GetSetting(BuildProfile.OPTION_ADD_INI_FILE);
-		if (!addIniFile.ShouldBeRemovedInBuild()) {
-			if (buildProfile.panelConfig.iniFilePaths.Length < 1) {
-				Debug.LogError("Cannot add ini file to build: No ini file paths defined.");
-			} else {
-				var path = buildProfile.panelConfig.iniFilePaths[0];
-				path = buildProfile.panelConfig.ResolveIniPath(path);
-				path = Path.Combine(path, buildProfile.panelConfig.iniFileName);
-
-				var iniFile = AssetDatabase.GetAssetPath(buildProfile.defaults);
-
-				try {
-					File.Copy(iniFile, path);
-				} catch (Exception e) {
-					Debug.LogError("Could not copy ini file to built project: " + e.Message);
-				}
-			}
-		}*/
-
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
