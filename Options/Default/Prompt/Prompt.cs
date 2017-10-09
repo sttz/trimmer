@@ -227,7 +227,6 @@ public class Prompt : MonoBehaviour
 						continue;
 					#endif
 
-					// TODO: Fix completion not working properly
 					if (option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase)) {
 						CompleteOptionRecursive(path, option, "");
 					}
