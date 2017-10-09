@@ -459,8 +459,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 				InjectProfileContainer(profile.Store);
 			}
 
-			profile.Apply();
-
 			foreach (var option in profile) {
 				var include = !removeAll && buildProfile.IncludeInBuild(option);
 				option.PostprocessScene(scene, true, include, profile);

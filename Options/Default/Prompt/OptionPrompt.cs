@@ -18,28 +18,20 @@ public class OptionPrompt : OptionToggle
 	public override void Apply()
 	{
 		base.Apply();
+		
+		var prompt = Prompt.Instance;
+		if (prompt == null) {
+			if (!Value)
+				return;
 
-		// TODO: Fix this
-		var isBuilding = false;
-		#if UNITY_EDITOR
-		isBuilding = UnityEditor.BuildPipeline.isBuildingPlayer;
-		#endif
-
-		if (!isBuilding) {
-			var prompt = Prompt.Instance;
-			if (prompt == null) {
-				if (!Value)
-					return;
-
-				var go = new GameObject("Prompt");
-				prompt = go.AddComponent<Prompt>();
-			}
-
-			prompt.enabled = Value;
-			prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
-			prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
-			prompt.position = GetChild<OptionPromptPosition>().Value;
+			var go = new GameObject("Prompt");
+			prompt = go.AddComponent<Prompt>();
 		}
+
+		prompt.enabled = Value;
+		prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
+		prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
+		prompt.position = GetChild<OptionPromptPosition>().Value;
 	}
 
 	public Prompt GetOrCreatePrompt()
