@@ -602,13 +602,21 @@ public class BuildProfileEditor : Editor
 		}
 	}
 
-	string FindUniqueVariantName(IOption option, ValueStore.Node node)
+	static Regex RemoveTrailingNumbersRegex = new Regex(@"^(.*?)\d*$");
+
+	string FindUniqueVariantName(IOption option, ValueStore.Node node, string baseParam = null)
 	{
-		var parameter = option.VariantDefaultParameter;
+		if (baseParam == null) {
+			baseParam = option.VariantDefaultParameter;
+		} else {
+			var match = RemoveTrailingNumbersRegex.Match(baseParam);
+			baseParam = match.Groups[1].Value;
+		}
 
 		int i = 1;
+		string parameter;
 		do {
-			parameter = option.VariantDefaultParameter + (i++).ToString();
+			parameter = baseParam + (i++).ToString();
 		} while (
 			(node == null && option.GetVariant(parameter) != null)
 			|| (node != null && node.GetVariant(parameter) != null)
