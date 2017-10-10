@@ -501,12 +501,15 @@ public class BuildProfileEditor : Editor
 						if (isDefault) {
 							EditorGUILayout.DelayedTextField(option.VariantDefaultParameter, width);
 						} else {
-							GUI.SetNextControlName(option.Name);
-							// Prevent naming the node the same as the default parameter
-							if (context.node.Name == option.VariantDefaultParameter
-									&& GUI.GetNameOfFocusedControl() != option.Name) {
-								context.node.Name = FindUniqueVariantName(option, context.parentNode);
 							var newParam = EditorGUILayout.DelayedTextField(context.node.Name, width);
+							if (newParam != context.node.Name) {
+								// Prevent naming the node the same as the default parameter
+								if (context.node.Name == option.VariantDefaultParameter
+										|| context.parentNode.GetVariant(newParam) != null) {
+									context.node.Name = FindUniqueVariantName(option, context.parentNode, newParam);
+								} else {
+									context.node.Name = newParam;
+								}
 							}
 						}
 					} else {
