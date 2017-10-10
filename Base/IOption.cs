@@ -9,16 +9,28 @@ using UnityEditor;
 
 namespace sttz.Workbench {
 
+#if UNITY_EDITOR
+
 /// <summary>
 /// Attribute indicating the given option has no runtime part
 /// and is only applicable to the build process.
 /// </summary>
 /// <remarks>
 /// Build-only options never appear in the editor profile and
-/// are always removed at build-time. Their Apply method is only
-/// called during the build process when processing scenes.
+/// are always removed at build-time. Build-only options' Apply
+/// method is never called.
 /// </remarks>
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 public class BuildOnlyAttribute : Attribute {}
+
+/// <summary>
+/// Attribute indicating the given option can only be used in
+/// the editor and will always be removed in builds.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+public class EditorOnlyAttribute : Attribute {}
+
+#endif
 
 /// <summary>
 /// Interface for Workbench options.
@@ -155,6 +167,7 @@ public interface IOption
 	/// removed).
 	/// </summary>
 	bool BuildOnly { get; }
+	bool EditorOnly { get; }
 
 	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile);
 

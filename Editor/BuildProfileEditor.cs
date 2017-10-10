@@ -557,7 +557,7 @@ public class BuildProfileEditor : Editor
 				var root = (ValueStore.RootNode)context.node;
 				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
 				{
-					if (!option.BuildOnly) {
+					if (!option.BuildOnly && !option.EditorOnly) {
 						var value = root.IncludeInBuild;
 						if (!optionEnabled) {
 							value = false;

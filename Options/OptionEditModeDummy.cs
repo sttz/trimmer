@@ -11,6 +11,7 @@ namespace sttz.Workbench
 {
 
 [ExecuteInEditMode]
+[EditorOnly]
 public class OptionEditModeDummy : OptionToggle
 {
 	public override string Name { get { return "EditModeDummy"; } }

@@ -42,6 +42,7 @@ public abstract class Option : IOption
 	/// and their <c>Apply</c> method is only called at build-time.
 	/// </remarks>
 	public bool BuildOnly { get; private set; }
+	public bool EditorOnly { get; private set; }
 
 	/// <summary>
 	/// Override this method if you want to hide the option in some scenarios.
@@ -265,6 +266,7 @@ public abstract class Option : IOption
 
 		#if UNITY_EDITOR
 		BuildOnly = GetType().GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length > 0;
+		EditorOnly = GetType().GetCustomAttributes(typeof(EditorOnlyAttribute), true).Length > 0;
 		#endif
 		
 		Configure();

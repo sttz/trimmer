@@ -248,7 +248,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	protected virtual bool ShouldCreateOption(Type optionType)
 	{
-		return optionType.GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length == 0;
+		return true;
 	}
 
 	/// <summary>
