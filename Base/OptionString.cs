@@ -16,7 +16,7 @@ public abstract class OptionString : Option, IOption<string>
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
 	{
-		return Save(EditorGUILayout.TextField(label, Parse(input)));
+		return Save(EditorGUILayout.DelayedTextField(label, Parse(input)));
 	}
 	#endif
 

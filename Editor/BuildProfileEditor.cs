@@ -499,21 +499,21 @@ public class BuildProfileEditor : Editor
 				{
 					if (context.type == Recursion.RecursionType.Nodes) {
 						if (isDefault) {
-							EditorGUILayout.TextField(option.VariantDefaultParameter, width);
+							EditorGUILayout.DelayedTextField(option.VariantDefaultParameter, width);
 						} else {
 							GUI.SetNextControlName(option.Name);
-							context.node.Name = EditorGUILayout.TextField(context.node.Name, width);
 							// Prevent naming the node the same as the default parameter
 							if (context.node.Name == option.VariantDefaultParameter
 									&& GUI.GetNameOfFocusedControl() != option.Name) {
 								context.node.Name = FindUniqueVariantName(option, context.parentNode);
+							var newParam = EditorGUILayout.DelayedTextField(context.node.Name, width);
 							}
 						}
 					} else {
 						// TODO: Rename in play mode?
 						EditorGUI.BeginDisabledGroup(true);
 						{
-							EditorGUILayout.TextField(option.VariantParameter, width);
+							EditorGUILayout.DelayedTextField(option.VariantParameter, width);
 						}
 						EditorGUI.EndDisabledGroup();
 					}
