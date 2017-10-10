@@ -190,7 +190,10 @@ public class BuildProfile : EditableProfile
 		if (node == null) {
 			return false;
 		} else {
-			return node.IncludeInBuild && option.IsAvailable(BuildTargets);
+			return node.IncludeInBuild 
+				&& !option.BuildOnly
+				&& !option.EditorOnly
+				&& option.IsAvailable(BuildTargets);
 		}
 	}
 
