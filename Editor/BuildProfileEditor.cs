@@ -523,34 +523,38 @@ public class BuildProfileEditor : Editor
 			) {
 				var isDefault = (context.variantType == Recursion.VariantType.DefaultVariant);
 
-				// Disable when editing the default variant
-				EditorGUI.BeginDisabledGroup(isDefault);
-				{
-					if (context.type == Recursion.RecursionType.Nodes) {
-						if (isDefault) {
-							EditorGUILayout.DelayedTextField(option.VariantDefaultParameter, width);
-						} else {
-							var newParam = EditorGUILayout.DelayedTextField(context.node.Name, width);
-							if (newParam != context.node.Name) {
-								// Prevent naming the node the same as the default parameter
-								if (context.node.Name == option.VariantDefaultParameter
-										|| context.parentNode.GetVariant(newParam) != null) {
-									context.node.Name = FindUniqueVariantName(option, context.parentNode, newParam);
-								} else {
-									context.node.Name = newParam;
+				if (!option.IsArrayVariant) {
+					// Disable when editing the default variant
+					EditorGUI.BeginDisabledGroup(isDefault);
+					{
+						if (context.type == Recursion.RecursionType.Nodes) {
+							if (isDefault) {
+								EditorGUILayout.DelayedTextField(option.VariantDefaultParameter, width);
+							} else {
+								var newParam = EditorGUILayout.DelayedTextField(context.node.Name, width);
+								if (newParam != context.node.Name) {
+									// Prevent naming the node the same as the default parameter
+									if (context.node.Name == option.VariantDefaultParameter
+											|| context.parentNode.GetVariant(newParam) != null) {
+										context.node.Name = FindUniqueVariantName(option, context.parentNode, newParam);
+									} else {
+										context.node.Name = newParam;
+									}
 								}
 							}
+						} else {
+							// TODO: Rename in play mode?
+							EditorGUI.BeginDisabledGroup(true);
+							{
+								EditorGUILayout.DelayedTextField(option.VariantParameter, width);
+							}
+							EditorGUI.EndDisabledGroup();
 						}
-					} else {
-						// TODO: Rename in play mode?
-						EditorGUI.BeginDisabledGroup(true);
-						{
-							EditorGUILayout.DelayedTextField(option.VariantParameter, width);
-						}
-						EditorGUI.EndDisabledGroup();
 					}
+					EditorGUI.EndDisabledGroup();
+				} else {
+					EditorGUILayout.PrefixLabel(" ");
 				}
-				EditorGUI.EndDisabledGroup();
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;

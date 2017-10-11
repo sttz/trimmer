@@ -286,6 +286,14 @@ public abstract class Option : IOption
 	/// </summary>
 	public bool IsVariant { get; protected set; }
 	/// <summary>
+	/// Treat the variants as an array.
+	/// </summary>
+	/// <remarks>
+	/// Array variants' parameters cannot be edited and are 
+	/// assigned automatically to numeric values.
+	/// </remarks>
+	public bool IsArrayVariant { get; protected set; }
+	/// <summary>
 	/// The parameter of a variant option, only valid if <c>IsVariant</c> is <c>true</c>.
 	/// </summary>
 	/// <remarks>

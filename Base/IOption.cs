@@ -90,6 +90,7 @@ public interface IOption
 	/// guaranteed to exist.
 	/// </remarks>
 	bool IsVariant { get; }
+	bool IsArrayVariant { get; }
 	/// <summary>
 	/// The variant parameter of a variant option. Not used if <see cref="IsVariant"/>
 	/// is false.
