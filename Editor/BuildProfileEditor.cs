@@ -31,7 +31,7 @@ public class BuildProfileEditor : Editor
 	/// <summary>
 	/// Width of columns with toggles on the right-hand side of the profile editor.
 	/// </summary>
-	const float buildColumnWidth = 17;
+	const float buildColumnWidth = 21;
 
 	// -------- Static --------
 
@@ -205,10 +205,13 @@ public class BuildProfileEditor : Editor
 
 	List<IOption> options;
 
+	GUIStyle categoryBackground;
+	GUIStyle categoryFoldout;
+	GUIStyle includeBackground;
+	GUIStyle separator;
+
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
-	GUIStyle boldFoldout;
-	GUIStyle greyLabel;
 	GUIStyle greyFoldout;
 	GUIStyle boldLabel;
 
@@ -224,8 +227,44 @@ public class BuildProfileEditor : Editor
 	
 	// -------- GUI --------
 
+	Texture2D CreateColorTexture(Color color)
+	{
+		var tex = new Texture2D(1, 1);
+		tex.SetPixel(0, 0, color);
+		tex.Apply(false, true);
+		return tex;
+	}
+
 	void InitializeGUI()
 	{
+		if (categoryBackground == null) {
+			categoryBackground = new GUIStyle();
+			categoryBackground.normal.background = CreateColorTexture(Color.white * 0.6f);
+			categoryBackground.overflow = new RectOffset(20, 20, -3, -3);
+			categoryBackground.margin = categoryBackground.padding = new RectOffset();
+		}
+
+		if (categoryFoldout == null) {
+			categoryFoldout = new GUIStyle(EditorStyles.foldout);
+			categoryFoldout.font = EditorStyles.boldFont;
+			categoryFoldout.alignment = TextAnchor.MiddleLeft;
+			categoryFoldout.margin = new RectOffset(0, 0, 5, 5);
+		}
+
+		if (includeBackground == null) {
+			includeBackground = new GUIStyle();
+			includeBackground.normal.background = CreateColorTexture(Color.white * 0.7f);
+			//includeBackground.overflow = new RectOffset(20, 20, -3, -3);
+			//includeBackground.margin = includeBackground.padding = new RectOffset();
+		}
+
+		if (separator == null) {
+			separator = new GUIStyle();
+			separator.fixedHeight = 1;
+			separator.normal.background = CreateColorTexture(Color.white * 0.8f);
+		}
+
+
 		if (plusStyle == null) {
 			plusStyle = new GUIStyle("OL Plus");
 			plusStyle.fixedWidth = 18;
@@ -238,18 +277,6 @@ public class BuildProfileEditor : Editor
 			minusStyle.fixedWidth = 18;
 			minusStyle.stretchWidth = false;
 			minusStyle.margin.top = 3;
-		}
-
-		if (boldFoldout == null) {
-			boldFoldout = new GUIStyle(EditorStyles.foldout);
-			boldFoldout.font = EditorStyles.boldFont;
-			boldFoldout.fontSize = 13;
-			boldFoldout.alignment = TextAnchor.MiddleLeft;
-		}
-
-		if (greyLabel == null) {
-			greyLabel = new GUIStyle(EditorStyles.label);
-			greyLabel.normal.textColor = EditorStyles.centeredGreyMiniLabel.normal.textColor;
 		}
 
 		if (boldLabel == null) {
@@ -303,15 +330,15 @@ public class BuildProfileEditor : Editor
 	{
 		GUI.enabled = (buildProfile != null || BuildManager.EditorDefaultsProfile == null);
 
-		// Options header
-		EditorGUILayout.BeginHorizontal();
-		{
-			EditorGUILayout.LabelField("Options", EditorStyles.boldLabel);
-			if (buildProfile != null) {
+		// Include column header
+		if (buildProfile != null) {
+			EditorGUILayout.BeginHorizontal();
+			{
+				GUILayout.FlexibleSpace();
 				EditorGUILayout.LabelField("Include in Builds", EditorStyles.boldLabel, GUILayout.Width(100));
 			}
+			EditorGUILayout.EndHorizontal();
 		}
-		EditorGUILayout.EndHorizontal();
 
 		// Option list
 		lastCategory = null;
@@ -464,14 +491,16 @@ public class BuildProfileEditor : Editor
 
 		// Category headers
 		if (context.IsRoot && !recurseUnavailable) {
-			if (option.Category != lastCategory) {
-				if (!string.IsNullOrEmpty(option.Category)) {
-					EditorGUILayout.Space();
+			if (option.Category != lastCategory && !string.IsNullOrEmpty(option.Category)) {
+				EditorGUILayout.BeginHorizontal(categoryBackground);
+				{
 					var path = context.path + "/_" + option.Category;
-					categoryExpanded = Foldout(path, true, option.Category, boldFoldout);
-
-					lastCategory = option.Category;
+					categoryExpanded = Foldout(path, true, option.Category, categoryFoldout);
 				}
+				EditorGUILayout.EndHorizontal();
+				lastCategory = option.Category;
+			} else if (categoryExpanded) {
+				GUILayout.Label(GUIContent.none, separator);
 			}
 			if (!categoryExpanded) return false;
 		}
@@ -549,15 +578,15 @@ public class BuildProfileEditor : Editor
 			}
 
 			// Include in build toggle
-			if (
-				buildProfile != null
-				&& context.type == Recursion.RecursionType.Nodes
-				&& context.IsRoot
-			) {
-				var root = (ValueStore.RootNode)context.node;
-				EditorGUILayout.BeginHorizontal(GUILayout.Width(buildColumnWidth));
+			if (buildProfile != null) {
+				EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.ExpandHeight(true));
 				{
-					if (!option.BuildOnly && !option.EditorOnly) {
+					if (
+						context.type == Recursion.RecursionType.Nodes
+						&& context.IsRoot
+						&& !option.BuildOnly && !option.EditorOnly
+					) {
+						var root = (ValueStore.RootNode)context.node;
 						var value = root.IncludeInBuild;
 						if (!optionEnabled) {
 							value = false;
@@ -570,8 +599,6 @@ public class BuildProfileEditor : Editor
 					}
 				}
 				EditorGUILayout.EndHorizontal();
-			} else {
-				GUILayout.Space(buildColumnWidth + 4);
 			}
 		}
 		EditorGUILayout.EndHorizontal();
