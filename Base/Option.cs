@@ -274,6 +274,13 @@ public abstract class Option : IOption
 		if (IsVariant) {
 			IsDefaultVariant = true;
 			VariantParameter = VariantDefaultParameter;
+			if (string.IsNullOrEmpty(VariantDefaultParameter)) {
+				if (IsArrayVariant) {
+					VariantDefaultParameter = "0";
+				} else {
+					VariantDefaultParameter = "Default";
+				}
+			}
 		}
 
 		CreateChildren();
