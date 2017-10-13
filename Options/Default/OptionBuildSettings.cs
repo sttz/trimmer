@@ -31,7 +31,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
 		protected override void Configure()
 		{
-			DefaultValue = "Export/%Target%";
+			DefaultValue = "Export/%Target%/%ProductName%";
 		}
 	}
 
@@ -48,10 +48,25 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 		}
 	}
 
+    /// <summary>
+    /// Replace special variables in a ini file path.
+    /// </summary>
+    public string ExpandPath(string path, BuildPlayerOptions options)
+    {
+        path = path.ReplaceCaseInsensitive("%Target%", options.target.ToString());
+        path = path.ReplaceCaseInsensitive("%Group%", options.targetGroup.ToString());
+        path = path.ReplaceCaseInsensitive("%Version%", Application.version);
+        path = path.ReplaceCaseInsensitive("%ProductName%", Application.productName);
+        path = path.ReplaceCaseInsensitive("%CompanyName%", Application.companyName);
+        path = path.ReplaceCaseInsensitive("%UnityVersion%", Application.unityVersion);
+        path = path.ReplaceCaseInsensitive("%Development%", (options.options & BuildOptions.Development) > 0 ? "dev" : "");
+        return path;
+    }
+
     override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile)
     {
         options.options |= Value;
-        options.locationPathName = GetChild<OptionBuildPath>().Value;
+        options.locationPathName = ExpandPath(GetChild<OptionBuildPath>().Value, options);
         
         var scenes = GetChild<OptionScenes>();
         if (scenes.Value != null || scenes.Variants.Any()) {
