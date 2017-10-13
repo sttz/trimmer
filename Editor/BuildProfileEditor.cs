@@ -566,6 +566,9 @@ public class BuildProfileEditor : Editor
 						if (context.type == Recursion.RecursionType.Nodes) {
 							delayedRemovals.Add(() => {
 								context.parentNode.RemoveVariant(context.node.Name);
+								if (option.IsArrayVariant) {
+									context.parentNode.NumberVariantsSequentially();
+								}
 							});
 						} else {
 							delayedRemovals.Add(() => {
@@ -631,6 +634,9 @@ public class BuildProfileEditor : Editor
 
 		if (node != null) {
 			node.AddVariant(parameter, option.DefaultValue ?? string.Empty);
+			if (option.IsArrayVariant) {
+				node.NumberVariantsSequentially();
+			}
 		} else {
 			option.AddVariant(parameter);
 		}

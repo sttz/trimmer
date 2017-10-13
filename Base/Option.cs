@@ -5,6 +5,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
+using sttz.Workbench.Extensions;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -372,6 +373,10 @@ public abstract class Option : IOption
 			variants = new List<IOption>();
 		variants.Add(instance);
 
+		if (IsArrayVariant) {
+			RenumberArrayVariants();
+		}
+
 		return instance;
 	}
 
@@ -419,6 +424,30 @@ public abstract class Option : IOption
 
 		variants.Remove(option);
 		option.Parent = null;
+
+		if (IsArrayVariant) {
+			RenumberArrayVariants();
+		}
+	}
+
+	/// <summary>
+	/// Ensures parameters in array variants are all numbers and sequential.
+	/// </summary>
+	protected void RenumberArrayVariants()
+	{
+		Assert.IsTrue(IsVariant, "Invalid call to RenumberArrayVariants, option is not variant.");
+		Assert.IsTrue(IsDefaultVariant, "Invalid call to RenumberArrayVariants, option is not the default variant.");
+		Assert.IsTrue(IsArrayVariant, "Invalid call to RenumberArrayVariants, option is not variant.");
+
+		// Default variant is always 0
+		VariantParameter = "0";
+
+		// First order parameters using natural sort, then assign sequential indices
+		var comparer = NumericStringComparer.Instance;
+		variants.Sort((a, b) => comparer.Compare(a.VariantParameter, b.VariantParameter));
+		for (int i = 0; i < variants.Count; i++) {
+			variants[i].VariantParameter = (i + 1).ToString();
+		}
 	}
 
 	// -------- Children --------

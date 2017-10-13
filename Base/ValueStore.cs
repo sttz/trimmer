@@ -159,6 +159,20 @@ public class ValueStore : ISerializationCallbackReceiver
 		}
 
 		/// <summary>
+		/// Set variants parameters to a sequential index,
+		/// assigned based on natural sort order of existing
+		/// parameters.
+		/// </summary>
+		public void NumberVariantsSequentially()
+		{
+			var comparer = NumericStringComparer.Instance;
+			variants.Sort((a, b) => comparer.Compare(a.name, b.name));
+			for (int i = 0; i < variants.Count; i++) {
+				variants[i].name = i.ToString();
+			}
+		}
+
+		/// <summary>
 		/// Enumerate the node's children.
 		/// </summary>
 		public IEnumerable<Node> Children {
