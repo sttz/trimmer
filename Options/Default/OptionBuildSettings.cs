@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System.Collections.Generic;
+using sttz.Workbench.Extensions;
 
 namespace sttz.Workbench
 {
@@ -86,6 +87,52 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
         return options;
     }
+
+    #if UNITY_EDITOR
+    static BuildOptions[] optionValues;
+    static Dictionary<int, string> pendingUpdates = new Dictionary<int, string>();
+
+    /// <summary>
+    /// Unity's EnumMaskPopup doesn't work with enums where the flags are not
+    /// neatly sorted and without gaps, so it doesn't work with BuildOptions.
+    /// We implement a custom menu here to work around this and can also hide
+    /// some obsolete options (which have been set to 0) and sort them alphabetically.
+    /// </summary>
+	public override string EditGUI(GUIContent label, string input)
+	{
+        EditorGUILayout.PrefixLabel(label);
+
+        var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
+        if (GUILayout.Button(input, EditorStyles.miniButton)) {
+            if (optionValues == null) {
+                optionValues = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
+                Array.Sort(optionValues, (a, b) => a.ToString().CompareTo(b.ToString()));
+            }
+
+            var options = Parse(input);
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Clear Options"), false, () => {
+                pendingUpdates[nextControlID] = Save(BuildOptions.None);
+            });
+            menu.AddSeparator("");
+            foreach (var value in optionValues) {
+                if ((int)value == 0) continue;
+                var selected = (options & value) == value;
+                menu.AddItem(new GUIContent(value.ToString()), selected, () => {
+                    options |= value;
+                    pendingUpdates[nextControlID] = Save(options);
+                });
+            }
+            menu.ShowAsContext();
+        
+        } else if (pendingUpdates.ContainsKey(nextControlID)) {
+            input = pendingUpdates[nextControlID];
+            pendingUpdates.Remove(nextControlID);
+        }
+
+		return input;
+	}
+	#endif
 }
 
 }
