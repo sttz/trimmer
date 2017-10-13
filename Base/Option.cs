@@ -399,7 +399,11 @@ public abstract class Option : IOption
 		if (!create && variants == null)
 			return null;
 
-		var variant = variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter));
+		IOption variant = null;
+		if (variants != null) {
+			variant = variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter));
+		}
+		
 		if (create && variant == null) {
 			variant = AddVariant(parameter);
 		}
