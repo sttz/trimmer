@@ -246,7 +246,7 @@ public abstract class Option : IOption
 	public virtual void Apply()
 	{
 		if (variants != null) {
-			foreach (var variant in variants.Values) {
+			foreach (var variant in variants) {
 				variant.Apply();
 			}
 		}
@@ -324,7 +324,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public bool IsDefaultVariant { get; set; }
 
-	private Dictionary<string, IOption> variants;
+	private List<IOption> variants;
 
 	/// <summary>
 	/// All the variants of this option currently known.
@@ -339,7 +339,7 @@ public abstract class Option : IOption
 			if (variants == null) {
 				return Enumerable.Empty<IOption>();
 			} else {
-				return variants.Values;
+				return variants;
 			}
 		}
 	}
@@ -361,7 +361,7 @@ public abstract class Option : IOption
 
 		Assert.IsNotNull(parameter);
 		Assert.IsFalse(string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase), "Cannot add variant with default parameter.");
-		Assert.IsTrue(variants == null || !variants.ContainsKey(parameter), "Variant with paramter already exists.");
+		Assert.IsTrue(variants == null || variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter)) == null, "Variant with paramter already exists.");
 
 		var instance = (Option)Activator.CreateInstance(GetType());
 		instance.Parent = this;
@@ -369,8 +369,8 @@ public abstract class Option : IOption
 		instance.IsDefaultVariant = false;
 
 		if (variants == null)
-			variants = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
-		variants[parameter] = instance;
+			variants = new List<IOption>();
+		variants.Add(instance);
 
 		return instance;
 	}
@@ -383,7 +383,7 @@ public abstract class Option : IOption
 	/// on the <c>IsDefaultVariant</c> instance that acts as the container for
 	/// the other variants.
 	/// </remarks>
-	public IOption GetVariant(string parameter)
+	public IOption GetVariant(string parameter, bool create = true)
 	{
 		Assert.IsTrue(IsVariant, "Invalid call to GetVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to GetVariant, option is not the default variant.");
@@ -391,9 +391,11 @@ public abstract class Option : IOption
 		if (string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase))
 			return this;
 
-		IOption variant = null;
-		if (variants == null 
-				|| !variants.TryGetValue(parameter, out variant)) {
+		if (!create && variants == null)
+			return null;
+
+		var variant = variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter));
+		if (create && variant == null) {
 			variant = AddVariant(parameter);
 		}
 
@@ -413,9 +415,9 @@ public abstract class Option : IOption
 		Assert.IsTrue(IsVariant, "Invalid call to RemoveVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to RemoveVariant, option is not the default variant.");
 
-		Assert.IsTrue(variants != null || variants.ContainsValue(option), "Invalid call to RemoveVariant, option is not a variant of this instance.");
+		Assert.IsTrue(variants != null && variants.Contains(option), "Invalid call to RemoveVariant, option is not a variant of this instance.");
 
-		variants.Remove(option.VariantParameter);
+		variants.Remove(option);
 		option.Parent = null;
 	}
 

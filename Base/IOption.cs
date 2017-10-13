@@ -123,7 +123,7 @@ public interface IOption
 	/// Get a variant option by its parameter. Only used if <see cref="IsVariant"/>
 	/// is true and can only be called on the main variant option (<see cref="IsDefaultVariant"/>).
 	/// </summary>
-	IOption GetVariant(string parameter);
+	IOption GetVariant(string parameter, bool create = true);
 	void RemoveVariant(IOption option);
 	/// <summary>
 	/// Enumerate all variants of this option.
