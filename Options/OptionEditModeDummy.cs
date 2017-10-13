@@ -1,11 +1,9 @@
-#if OPTION_EditModeDummy || UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
 
 namespace sttz.Workbench
 {
@@ -28,14 +26,10 @@ public class OptionEditModeDummy : OptionToggle
         Debug.Log("OptionEditModeDummy.Apply = " + Value);
 	}
 
-#if UNITY_EDITOR
-
 	public override void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
 	{
 		base.PostprocessScene(scene, isBuild, includedInBuild, profile);
 	}
-
-#endif
 }
 
 }
