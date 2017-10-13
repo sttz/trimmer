@@ -1,6 +1,7 @@
 #if OPTION_IniFile || UNITY_EDITOR
 using System;
 using System.IO;
+using sttz.Workbench.Extensions;
 using UnityEngine;
 
 namespace sttz.Workbench
@@ -91,10 +92,10 @@ public class OptionIniFile : OptionString
     /// </summary>
     public string ExpandPath(string path)
     {
-        path = path.Replace("%DataPath%", Application.dataPath);
-        path = path.Replace("%PersistentDataPath%", Application.persistentDataPath);
-        path = path.Replace("%Personal%", Environment.GetFolderPath(Environment.SpecialFolder.Personal));
-        path = path.Replace("%Desktop%", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+        path = path.ReplaceCaseInsensitive("%DataPath%", Application.dataPath);
+        path = path.ReplaceCaseInsensitive("%PersistentDataPath%", Application.persistentDataPath);
+        path = path.ReplaceCaseInsensitive("%Personal%", Environment.GetFolderPath(Environment.SpecialFolder.Personal));
+        path = path.ReplaceCaseInsensitive("%Desktop%", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
         return path;
     }
 

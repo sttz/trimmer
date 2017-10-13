@@ -81,6 +81,35 @@ public static class Extensions
 	{
 		return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
 	}
+
+	/// <summary>
+	/// Replace all occurences of a string by a new value, ignoring the case
+	/// of the original string and/or the search value.
+	/// </summary>
+	/// <remarks>
+	/// Based on this Stackoverflow anser by JeroenV: https://stackoverflow.com/a/25426773/202741
+	/// </remarks>
+	public static string ReplaceCaseInsensitive(this string str, string oldValue, string newValue)
+	{
+		int prevPos = 0;
+		string retval = str;
+		// find the first occurence of oldValue
+		int pos = retval.IndexOf(oldValue, StringComparison.InvariantCultureIgnoreCase);
+
+		while (pos > -1) {
+			// remove oldValue from the string
+			retval = retval.Remove(pos, oldValue.Length);
+
+			// insert newValue in its place
+			retval = retval.Insert(pos, newValue);
+
+			// check if oldValue is found further down
+			prevPos = pos + newValue.Length;
+			pos = retval.IndexOf(oldValue, prevPos, StringComparison.InvariantCultureIgnoreCase);
+		}
+
+		return retval;
+	}
 }
 
 /// <summary>
