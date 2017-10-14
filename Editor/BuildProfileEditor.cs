@@ -602,6 +602,10 @@ public class BuildProfileEditor : Editor
 					}
 				}
 				EditorGUILayout.EndHorizontal();
+			} else {
+				// Not including a layout group here somehow makes the parent group taller
+				EditorGUILayout.BeginHorizontal(GUILayout.Width(0));
+				EditorGUILayout.EndHorizontal();
 			}
 		}
 		EditorGUILayout.EndHorizontal();
