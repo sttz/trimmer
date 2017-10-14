@@ -103,7 +103,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         EditorGUILayout.PrefixLabel(label);
 
         var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
-        if (GUILayout.Button(input, EditorStyles.miniButton)) {
+        if (GUILayout.Button(input, "MiniPullDown")) {
             if (optionValues == null) {
                 optionValues = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
                 Array.Sort(optionValues, (a, b) => a.ToString().CompareTo(b.ToString()));
@@ -119,7 +119,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
                 if ((int)value == 0) continue;
                 var selected = (options & value) == value;
                 menu.AddItem(new GUIContent(value.ToString()), selected, () => {
-                    options |= value;
+                    options ^= value;
                     pendingUpdates[nextControlID] = Save(options);
                 });
             }
