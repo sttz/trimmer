@@ -153,7 +153,28 @@ public class BuildProfileEditor : Editor
 		return isExpanded;
 	}
 
-	// -------- API --------
+	// ------ Menu ------
+
+	const string SHOW_UNAVAILABLE_PATH = "CONTEXT/BuildProfile/Show Unavailable";
+	const string SHOW_UNAVAILABLE_KEY = "BuildProfile.ShowUnavailable";
+	static bool showUnavailable;
+
+	[MenuItem(SHOW_UNAVAILABLE_PATH)]
+	static void ToggleShowUnavailable(MenuCommand cmd)
+	{
+		showUnavailable = !showUnavailable;
+		Menu.SetChecked(SHOW_UNAVAILABLE_PATH, showUnavailable);
+		EditorPrefs.SetBool(SHOW_UNAVAILABLE_KEY, showUnavailable);
+	}
+
+	[InitializeOnLoadMethod]
+	static void InitMenu()
+	{
+		showUnavailable = EditorPrefs.GetBool(SHOW_UNAVAILABLE_KEY);
+		Menu.SetChecked(SHOW_UNAVAILABLE_PATH, showUnavailable);
+	}
+
+	// -------- Editor --------
 
 	private EditableProfile profile;
 	private EditorProfile editorProfile;
@@ -217,14 +238,12 @@ public class BuildProfileEditor : Editor
 
 	string lastCategory;
 	bool categoryExpanded;
-	bool hasUnavailable;
-	bool recurseUnavailable;
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
 	
 	[NonSerialized] BuildProfile[] defaultsProfiles;
 	[NonSerialized] string[] defaultsProfilesNames;
-	
+
 	// -------- GUI --------
 
 	Texture2D CreateColorTexture(Color color)
@@ -349,20 +368,7 @@ public class BuildProfileEditor : Editor
 		}
 
 		categoryExpanded = true;
-		hasUnavailable = false;
-		recurseUnavailable = false;
 		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
-
-		if (hasUnavailable) {
-			EditorGUILayout.Space();
-			var isExpanded = Foldout(pathBase + "/_Unavailable", false, "Unavailable", greyFoldout);
-
-			if (isExpanded) {
-				categoryExpanded = true;
-				recurseUnavailable = true;
-				Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
-			}
-		}
 
 		if (buildProfile != null) {
 			EditorGUILayout.Space();
@@ -477,8 +483,7 @@ public class BuildProfileEditor : Editor
 		if (buildProfile != null) {
 			optionEnabled = context.option.IsAvailable(buildProfile.BuildTargets);
 		}
-		if (optionEnabled == recurseUnavailable) {
-			hasUnavailable = true;
+		if (!showUnavailable && !optionEnabled) {
 			return false;
 		}
 
@@ -490,7 +495,7 @@ public class BuildProfileEditor : Editor
 		}
 
 		// Category headers
-		if (context.IsRoot && !recurseUnavailable) {
+		if (context.IsRoot) {
 			if (option.Category != lastCategory && !string.IsNullOrEmpty(option.Category)) {
 				EditorGUILayout.BeginHorizontal(categoryBackground);
 				{
