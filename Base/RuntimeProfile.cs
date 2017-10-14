@@ -141,8 +141,6 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </summary>
 	public IOption GetOption(string path)
 	{
-		// TODO: What happens with parameters that contain «:»?
-		
 		// Example paths:
 		// "Name"
 		// "Name:Parameter/ChildName"
@@ -156,33 +154,47 @@ public class RuntimeProfile : IEnumerable<IOption>
 		var parts = path.Split('/');
 
 		// Resolve the root option / variant
-		var root = parts[0].Split(':');
-		var current = GetRootOption(root[0]);
-		if (root.Length > 1) {
-			current = current.GetVariant(root[1]);
+		var part = parts[0];
+		string param;
+		ParseParameter(ref part, out param);
+
+		var current = GetRootOption(part);
+		if (param != null) {
+			current = current.GetVariant(param);
 		}
 
 		if (current == null) return null;
 
 		for (int i = 1; i < parts.Length; i++) {
-			var part = parts[i].Split(':');
+			part = parts[i];
+			ParseParameter(ref part, out param);
 
 			if (!current.HasChildren)
 				return null;
 
-			current = current.GetChild(part[0]);
+			current = current.GetChild(part);
 			if (current == null) return null;
 
-			if (part.Length > 1) {
+			if (param != null) {
 				if (!current.IsDefaultVariant)
 					return null;
 
-				current = current.GetVariant(part[1]);
+				current = current.GetVariant(param);
 				if (current == null) return null;
 			}
 		}
 
 		return current;
+	}
+
+	protected void ParseParameter(ref string part, out string parameter)
+	{
+		parameter = null;
+		var colon = part.IndexOf(':');
+		if (colon >= 0) {
+			parameter = part.Substring(colon + 1);
+			part = part.Substring(0, colon);
+		}
 	}
 
 	/// <summary>
