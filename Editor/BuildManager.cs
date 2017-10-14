@@ -322,7 +322,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		if (string.IsNullOrEmpty(options.locationPathName)) {
 			options.locationPathName = PickBuildLocation(options.target);
 			if (string.IsNullOrEmpty(options.locationPathName)) {
-				return null;
+				return "Cancelled build location dialog";
 			}
 			EditorUserBuildSettings.SetBuildLocation(options.target, options.locationPathName);
 		}
