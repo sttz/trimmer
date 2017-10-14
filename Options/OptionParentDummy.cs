@@ -63,6 +63,27 @@ public class OptionParentDummy : OptionToggle
 			{
 				DefaultValue = "";
 			}
+
+			public class OptionParentDummyChild4 : OptionString
+			{
+				public override string Name { get { return "Child4"; } }
+
+				protected override void Configure()
+				{
+					DefaultValue = "";
+				}
+
+				public class OptionParentDummyChild5 : OptionString
+				{
+					public override string Name { get { return "Child5"; } }
+
+					protected override void Configure()
+					{
+						IsVariant = true;
+						DefaultValue = "";
+					}
+				}
+			}
 		}
 	}
 
