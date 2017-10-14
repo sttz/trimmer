@@ -17,7 +17,6 @@ namespace sttz.Workbench {
 /// The build manager defines which profile is used for builds and 
 /// manages the build process.
 /// </summary>
-[InitializeOnLoad]
 public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 {
 	// -------- Active Profile --------
@@ -70,7 +69,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, guid);
 
 			_activeProfile = value;
-			_activeProfile.ApplyScriptingDefineSymbols();
 		}
 	}
 	private static BuildProfile _activeProfile;
@@ -193,43 +191,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	// -------- Build Settings Tracking --------
 
-	static BuildManager()
-	{
-		EditorApplication.update += Update;
-	}
-
 	private static BuildTarget lastBuildTarget;
 	private static bool lastDevelopmentBuild;
-
-	/// <summary>
-	/// Wait for changes of the build settings and prompt the
-	/// user to update the scripting define symbols when needed.
-	/// This will also prompt on startup or after recompiling scripts.
-	/// </summary>
-	private static void Update()
-	{
-		if (EditorApplication.isPlaying)
-			return;
-
-		// TODO: Better check when to ask
-		if (ActiveProfile != null
-				&& (EditorUserBuildSettings.activeBuildTarget != lastBuildTarget
-				|| EditorUserBuildSettings.development != lastDevelopmentBuild)) {
-			lastBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-			lastDevelopmentBuild = EditorUserBuildSettings.development;
-
-			var symbolsDifference = ActiveProfile.ScriptingDefineSymbolsDifference();
-			if (symbolsDifference.Any()) {
-				if (EditorUtility.DisplayDialog(
-					"Build Manager",
-					"The active build profile needs to update the scripting define symbols.",
-					"Update Now", "Later"
-				)) {
-					ActiveProfile.ApplyScriptingDefineSymbols();
-				}
-			}
-		}
-	}
 
 	// -------- Building --------
 
@@ -320,7 +283,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	{
 		// Prepare build
 		BuildManager.CurrentProfile = buildProfile;
-		buildProfile.ApplyScriptingDefineSymbols(options.target);
 
 		// Run options' PrepareBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
@@ -396,6 +358,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
 			return;
 		}
+
+		CurrentProfile.ApplyScriptingDefineSymbols(target);
 
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());

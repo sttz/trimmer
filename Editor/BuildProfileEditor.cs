@@ -379,24 +379,6 @@ public class BuildProfileEditor : Editor
 
 	protected void BuildGUI()
 	{
-		// Re-set compilation defines for active profile
-		if (profile == BuildManager.ActiveProfile
-				&& !buildProfile.ScriptingDefineSymbolsUpToDate()) {
-			EditorGUILayout.Space();
-
-			EditorGUILayout.BeginHorizontal();
-			{
-				if (GUILayout.Button("Update", GUILayout.Height(39))) {
-					buildProfile.ApplyScriptingDefineSymbols();
-				}
-				EditorGUILayout.HelpBox("Scripting define symbols need to be updated.\n"
-				+ "Updating them will trigger a recompile.", MessageType.Warning);
-			}
-			EditorGUILayout.EndHorizontal();
-
-			EditorGUILayout.Space();
-		}
-
 		ResurseOptionsGUI(showBuild:true);
 
 		if (EditorProfile.SharedInstance.IsExpanded(pathBase + "_Build")) {
