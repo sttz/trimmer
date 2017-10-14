@@ -346,6 +346,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 		
 		RuntimeProfile.CreateMain(store);
+		RuntimeProfile.Main.CleanStore();
 	}
 
 	public int callbackOrder { get { return 0; } }
@@ -410,7 +411,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			var buildProfile = CurrentProfile;
 			var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 
-			// TODO: Remove unused values from the store on build?
 			CreateOrUpdateMainRuntimeProfile();
 			profile = RuntimeProfile.Main;
 

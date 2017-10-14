@@ -256,6 +256,62 @@ public class RuntimeProfile : IEnumerable<IOption>
 	}
 
 	/// <summary>
+	/// Remove all entries from the store that don't have a matching option instance.
+	/// </summary>
+	public void CleanStore()
+	{
+		foreach (var root in Store.Roots.ToArray()) {
+			IOption option;
+			if (optionsByName.TryGetValue(root.name, out option)) {
+				CleanStoreRecursive(root, option);
+			} else {
+				Store.RemoveRoot(root.name);
+			}
+		}
+	}
+
+	protected void CleanStoreRecursive(ValueStore.Node node, IOption option, bool isDefaultNode = false)
+	{
+		if (!isDefaultNode && option.IsDefaultVariant) {
+			// Value and children are stored in the default parameter sub-node
+			node.value = null;
+			if (node.children != null) {
+				node.children.Clear();
+			}
+
+			if (node.variants != null && node.variants.Count > 0) {
+				foreach (var variant in node.variants.ToArray()) {
+					if (variant.name.EqualsIgnoringCase(option.VariantDefaultParameter)) {
+						CleanStoreRecursive(variant, option, isDefaultNode:true);
+						continue;
+					}
+					var variantOption = option.GetVariant(variant.name, create:false);
+					if (variantOption == null) {
+						node.RemoveVariant(variant.name);
+					} else {
+						CleanStoreRecursive(variant, variantOption);
+					}
+				}
+			}
+		} else {
+			if (node.variants != null) {
+				node.variants.Clear();
+			}
+		}
+
+		if (node.children != null && node.children.Count > 0) {
+			foreach (var child in node.children.ToArray()) {
+				var childOption = option.GetChild(child.name);
+				if (childOption == null) {
+					node.RemoveChild(child.name);
+				} else {
+					CleanStoreRecursive(child, childOption);
+				}
+			}
+		}
+	}
+
+	/// <summary>
 	/// Limit the options the profile creates (for subclasses).
 	/// </summary>
 	protected virtual bool ShouldCreateOption(Type optionType)
