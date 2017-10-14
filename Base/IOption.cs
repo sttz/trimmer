@@ -219,7 +219,6 @@ public interface IOption
 /// Value interface for options. This generic interface defines the value the option can 
 /// take as well as methods used in the editor to edit ini files.
 /// </summary>
-// TODO: Still needed?
 public interface IOption<TValue> : IOption
 {
 	/// <summary>

@@ -8,8 +8,6 @@ using UnityEngine;
 namespace sttz.Workbench
 {
 
-// TODO: Better handling of when values are applied
-
 /// <summary>
 /// A profile manages options and their default values at runtime.
 /// </summary>
