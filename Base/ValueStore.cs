@@ -605,17 +605,16 @@ public static class IniAdapter
 
 	static void SaveIniRecursive(StringBuilder output, string path, ValueStore.Node node, bool isVariantChild)
 	{
-		// TODO: Quote and escape strings when necessary
 		if (!isVariantChild) {
 			path += node.name;
 		} else {
-			path += "[" + node.name + "]";
+			path += "[" + QuoteParameterIfNeeded(node.name) + "]";
 		}
 
 		if (!string.IsNullOrEmpty(node.value)) {
 			output.Append(path);
 			output.Append(" = ");
-			output.Append(node.value);
+			output.Append(QuoteValueIfNeeded(node.value));
 			output.Append("\n");
 		}
 
@@ -631,6 +630,24 @@ public static class IniAdapter
 				SaveIniRecursive(output, childPath, child, false);
 			}
 		}
+	}
+
+	static string QuoteParameterIfNeeded(string parameter)
+	{
+		if (parameter.IndexOf('[') < 0 && parameter.IndexOf(']') < 0) {
+			return parameter;
+		}
+
+		return '"' + parameter.Replace("\\", "\\\\").Replace("\"", "\\\"") + '"';
+	}
+
+	static string QuoteValueIfNeeded(string value)
+	{
+		if (value.Trim() == value) {
+			return value;
+		}
+
+		return '"' + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + '"';
 	}
 
 	// ------ Ini Deserialization ------
