@@ -238,6 +238,7 @@ public class BuildProfileEditor : Editor
 
 	string lastCategory;
 	bool categoryExpanded;
+	bool buildCategory;
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
 	
@@ -359,17 +360,6 @@ public class BuildProfileEditor : Editor
 			EditorGUILayout.EndHorizontal();
 		}
 
-		// Option list
-		lastCategory = null;
-		if (editorProfile != null) {
-			pathBase = "EditorProfile/";
-		} else {
-			pathBase = BuildManager.GetAssetGUID(buildProfile) + "/";
-		}
-
-		categoryExpanded = true;
-		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
-
 		if (buildProfile != null) {
 			EditorGUILayout.Space();
 
@@ -389,6 +379,7 @@ public class BuildProfileEditor : Editor
 				EditorGUILayout.EndHorizontal();
 			}
 		}
+		ResurseOptionsGUI();
 
 		if (Event.current.type != EventType.Layout) {
 			foreach (var action in delayedRemovals) {
@@ -402,6 +393,14 @@ public class BuildProfileEditor : Editor
 
 	protected void BuildGUI()
 	{
+		ResurseOptionsGUI(showBuild:true);
+
+		if (EditorProfile.SharedInstance.IsExpanded(pathBase + "_Build")) {
+			return;
+		}
+
+		EditorGUILayout.Space();
+
 		EditorGUILayout.BeginHorizontal();
 		{
 			GUILayout.Label("Build Targets", boldLabel);
@@ -453,6 +452,7 @@ public class BuildProfileEditor : Editor
 	}
 
 	protected void ActiveProfileGUI()
+	protected void ResurseOptionsGUI(bool showBuild = false)
 	{
 		EditorGUILayout.LabelField("Profile Used In Regular Builds", EditorStyles.boldLabel);
 
@@ -467,7 +467,16 @@ public class BuildProfileEditor : Editor
 				&& BuildManager.ActiveProfile != buildProfile 
 				&& GUILayout.Button("Activate This Profile", EditorStyles.miniButton)) {
 			BuildManager.ActiveProfile = buildProfile;
+		if (editorProfile != null) {
+			pathBase = "EditorProfile/";
+		} else {
+			pathBase = BuildManager.GetAssetGUID(buildProfile) + "/";
 		}
+
+		lastCategory = null;
+		categoryExpanded = true;
+		buildCategory = showBuild;
+		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
 	}
 
 	protected bool OptionGUI(Recursion.RecurseOptionsContext context)
@@ -496,18 +505,28 @@ public class BuildProfileEditor : Editor
 
 		// Category headers
 		if (context.IsRoot) {
-			if (option.Category != lastCategory && !string.IsNullOrEmpty(option.Category)) {
+			var category = option.Category;
+			
+			var isBuildCategory = (!string.IsNullOrEmpty(category) && category.EqualsIgnoringCase("build"));
+			if (isBuildCategory != buildCategory) {
+				return false;
+			}
+
+			if (category != lastCategory) {
 				EditorGUILayout.BeginHorizontal(categoryBackground);
 				{
-					var path = context.path + "/_" + option.Category;
-					categoryExpanded = Foldout(path, true, option.Category, categoryFoldout);
+					var path = pathBase + "_" + category;
+					categoryExpanded = Foldout(path, true, category, categoryFoldout);
 				}
 				EditorGUILayout.EndHorizontal();
-				lastCategory = option.Category;
+				lastCategory = category;
 			} else if (categoryExpanded) {
 				GUILayout.Label(GUIContent.none, separator);
 			}
-			if (!categoryExpanded) return false;
+
+			if (!categoryExpanded) {
+				return false;
+			}
 		}
 
 		// Option GUI
