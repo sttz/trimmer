@@ -135,6 +135,21 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	}
 	private static BuildProfile _currentProfile;
 
+	/// <summary>
+	/// Show the active build profile in the inspector.
+	/// </summary>
+	[MenuItem("Window/Active Build Profile %&b")]
+	public static void OpenEditorProfile()
+	{
+		Selection.activeObject = ActiveProfile;
+	}
+
+	[MenuItem("Window/Active Build Profile %&b", true)]
+	static bool ValidateOpenEditorProfile()
+	{
+		return ActiveProfile != null;
+	}
+
 	// -------- GUID Helper Methods --------
 
 	/// <summary>

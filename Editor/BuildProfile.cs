@@ -238,6 +238,12 @@ public class BuildProfile : EditableProfile
 		IniAdapter.Load(store, EditorGUIUtility.systemCopyBuffer);
 	}
 
+	[ContextMenu("Activate Profile")]
+	public void ActivateProfile()
+	{
+		BuildManager.ActiveProfile = this;
+	}
+
 	/// <summary>
 	/// Check if the option scripting define symbols match those
 	/// that would be defined by this profile.

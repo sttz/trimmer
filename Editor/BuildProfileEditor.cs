@@ -198,10 +198,12 @@ public class BuildProfileEditor : Editor
 
 		if (buildProfile != null) {
 			BuildGUI();
-			EditorGUILayout.Space();
 		}
+	}
 
-		ActiveProfileGUI();
+	public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
+	{
+		return null;
 	}
 
 	protected void OnEnable()
@@ -354,31 +356,15 @@ public class BuildProfileEditor : Editor
 		if (buildProfile != null) {
 			EditorGUILayout.BeginHorizontal();
 			{
+				if (BuildManager.ActiveProfile == buildProfile) {
+					EditorGUILayout.LabelField("Active Profile", EditorStyles.boldLabel);
+				}
 				GUILayout.FlexibleSpace();
 				EditorGUILayout.LabelField("Include in Builds", EditorStyles.boldLabel, GUILayout.Width(100));
 			}
 			EditorGUILayout.EndHorizontal();
 		}
 
-		if (buildProfile != null) {
-			EditorGUILayout.Space();
-
-			// Re-set compilation defines for active profile
-			if (profile == BuildManager.ActiveProfile
-					&& !buildProfile.ScriptingDefineSymbolsUpToDate()) {
-				EditorGUILayout.Space();
-
-				EditorGUILayout.BeginHorizontal();
-				{
-					if (GUILayout.Button("Update", GUILayout.Height(39))) {
-						buildProfile.ApplyScriptingDefineSymbols();
-					}
-					EditorGUILayout.HelpBox("Scripting define symbols need to be updated.\n"
-					+ "Updating them will trigger a recompile.", MessageType.Warning);
-				}
-				EditorGUILayout.EndHorizontal();
-			}
-		}
 		ResurseOptionsGUI();
 
 		if (Event.current.type != EventType.Layout) {
@@ -393,6 +379,24 @@ public class BuildProfileEditor : Editor
 
 	protected void BuildGUI()
 	{
+		// Re-set compilation defines for active profile
+		if (profile == BuildManager.ActiveProfile
+				&& !buildProfile.ScriptingDefineSymbolsUpToDate()) {
+			EditorGUILayout.Space();
+
+			EditorGUILayout.BeginHorizontal();
+			{
+				if (GUILayout.Button("Update", GUILayout.Height(39))) {
+					buildProfile.ApplyScriptingDefineSymbols();
+				}
+				EditorGUILayout.HelpBox("Scripting define symbols need to be updated.\n"
+				+ "Updating them will trigger a recompile.", MessageType.Warning);
+			}
+			EditorGUILayout.EndHorizontal();
+
+			EditorGUILayout.Space();
+		}
+
 		ResurseOptionsGUI(showBuild:true);
 
 		if (EditorProfile.SharedInstance.IsExpanded(pathBase + "_Build")) {
@@ -451,22 +455,8 @@ public class BuildProfileEditor : Editor
 		buildProfile.AddBuildTarget(target);
 	}
 
-	protected void ActiveProfileGUI()
 	protected void ResurseOptionsGUI(bool showBuild = false)
 	{
-		EditorGUILayout.LabelField("Profile Used In Regular Builds", EditorStyles.boldLabel);
-
-		BuildManager.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
-			"Active Profile",
-			BuildManager.ActiveProfile,
-			typeof(BuildProfile),
-			false
-		);
-
-		if (buildProfile != null 
-				&& BuildManager.ActiveProfile != buildProfile 
-				&& GUILayout.Button("Activate This Profile", EditorStyles.miniButton)) {
-			BuildManager.ActiveProfile = buildProfile;
 		if (editorProfile != null) {
 			pathBase = "EditorProfile/";
 		} else {
