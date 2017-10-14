@@ -198,10 +198,23 @@ public class RuntimeProfile : IEnumerable<IOption>
 	}
 
 	/// <summary>
+	/// Clear the profile, resetting all options to their default values.
+	/// </summary>
+	public void Clear()
+	{
+		foreach (var option in optionsByName.Values) {
+			ClearOption(option);
+		}
+	}
+
+	/// <summary>
 	/// Load the data in the store into the option instances.
 	/// </summary>
 	public void Load()
 	{
+		// Clear first to remove entries not present in store
+		Clear();
+
 		// Apply values in store to options
 		foreach (var node in Store.Roots) {
 			IOption option;
@@ -226,11 +239,12 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// Save the options' current values to the store.
 	/// </summary>
 	/// <remarks>
-	/// The store will not be cleared, i.e. nodes and values for options that
-	/// do not exist will not be removed.
+	/// The store will be cleared of all entries with no maching option instance.
 	/// </remarks>
 	public void SaveToStore()
 	{
+		Store.Clear();
+
 		foreach (var option in optionsByName.Values) {
 			var rootNode = Store.GetRoot(option.Name);
 			if (rootNode == null) {
@@ -250,22 +264,33 @@ public class RuntimeProfile : IEnumerable<IOption>
 	}
 
 	/// <summary>
+	/// Clear the option recursively.
+	/// </summary>
+	private void ClearOption(IOption option)
+	{
+		option.Load(string.Empty);
+
+		foreach (var variant in option.Variants) {
+			ClearOption(variant);
+		}
+
+		foreach (var child in option.Children) {
+			ClearOption(child);
+		}
+	}
+
+	/// <summary>
 	/// Recursive method to apply a node with all its variants and
 	/// children to an option.
 	/// </summary>
-	private void LoadNode(IOption option, ValueStore.Node node)
+	private void LoadNode(IOption option, ValueStore.Node node, bool isDefaultNode = false)
 	{
-		if (option.IsDefaultVariant) {
+		if (!isDefaultNode && option.IsDefaultVariant) {
 			// Load default variant sub-node into the main variant option
 			// (The container node's value is ignored)
 			var defaultNode = node.GetVariant(option.VariantDefaultParameter);
 			if (defaultNode != null) {
-				option.Load(defaultNode.Value ?? string.Empty);
-			}
-
-			// Reset variants since the node might not contain a value
-			foreach (var variantOption in option.Variants) {
-				variantOption.Load(string.Empty);
+				LoadNode(option, defaultNode, isDefaultNode:true);
 			}
 
 			if (node.variants != null) {
@@ -277,19 +302,16 @@ public class RuntimeProfile : IEnumerable<IOption>
 				}
 			}
 		} else {
-			option.Load(node.value ?? string.Empty);
-		}
+			if (!string.IsNullOrEmpty(node.value)) {
+				option.Load(node.value);
+			}
 
-		// Reset children since the node might not contain a value
-		foreach (var childOption in option.Children) {
-			childOption.Load(string.Empty);
-		}
-
-		if (node.children != null) {
-			foreach (var childNode in node.children) {
-				var childOption = option.GetChild(childNode.name);
-				if (childOption != null) {
-					LoadNode(childOption, childNode);
+			if (node.children != null) {
+				foreach (var childNode in node.children) {
+					var childOption = option.GetChild(childNode.name);
+					if (childOption != null) {
+						LoadNode(childOption, childNode);
+					}
 				}
 			}
 		}
@@ -299,23 +321,23 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// Recursive method to save the option's value and its variants'
 	/// and children's values to the node.
 	/// </summary>
-	private void SaveNode(ValueStore.Node node, IOption option)
+	private void SaveNode(ValueStore.Node node, IOption option, bool isDefaultNode = false)
 	{
-		if (option.IsDefaultVariant) {
+		if (!isDefaultNode && option.IsDefaultVariant) {
 			var defaultVariant = node.GetOrCreateVariant(option.VariantDefaultParameter);
-			defaultVariant.value = option.Save();
+			SaveNode(defaultVariant, option, isDefaultNode:true);
 
 			foreach (var variantOption in option.Variants) {
 				var variantNode = node.GetOrCreateVariant(variantOption.VariantParameter);
-				variantNode.value = variantOption.Save();
+				SaveNode(variantNode, variantOption);
 			}
 		} else {
 			node.value = option.Save();
-		}
 
-		foreach (var childOption in option.Children) {
-			var childNode = node.GetOrCreateChild(childOption.Name);
-			childNode.value = childOption.Save();
+			foreach (var childOption in option.Children) {
+				var childNode = node.GetOrCreateChild(childOption.Name);
+				SaveNode(childNode, childOption);
+			}
 		}
 	}
 

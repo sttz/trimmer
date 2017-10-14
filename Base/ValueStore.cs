@@ -475,6 +475,17 @@ public class ValueStore : ISerializationCallbackReceiver
 		}
 	}
 
+	/// <summary>
+	/// Removes all content form the store.
+	/// </summary>
+	public void Clear()
+	{
+		if (nodes == null)
+			return;
+		
+		nodes.Clear();
+	}
+
 	// -------- Unity Serialization --------
 
 	/// <summary>
