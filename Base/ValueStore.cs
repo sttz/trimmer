@@ -698,7 +698,7 @@ public static class IniAdapter
 				  | \\.		# Or any escaped character
 				)*
 			)""				# Ending quote
-		  | (.*)			# Anything unqutoed
+		  | (.*?)			# Anything unqutoed
 		)
 	";
 
@@ -718,7 +718,7 @@ public static class IniAdapter
 	/// <summary>
 	/// Regex matching only the name part of an ini line.
 	/// </summary>
-	static readonly Regex NameRegex = new Regex(
+	public static readonly Regex NameRegex = new Regex(
 		"^" + IniNameRegex, 
 		RegexOptions.IgnorePatternWhitespace
 	);
