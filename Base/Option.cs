@@ -20,6 +20,9 @@ using System.Text.RegularExpressions;
 
 namespace sttz.Workbench {
 
+// TODO: Add OnEnable / OnDisable?
+// TODO: Name defaults to class name
+
 /// <summary>
 /// Base class for individual Workebnch options.
 /// </summary>
@@ -599,6 +602,8 @@ public abstract class Option : IOption
 	#if UNITY_EDITOR
 
 	// -------- Plugin Removal --------
+
+	// TODO: Move somewhere else?
 
 	class PluginDescription
 	{
