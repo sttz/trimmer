@@ -56,14 +56,6 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// </remarks>
 	public static RuntimeProfile Main { get; protected set; }
 
-#if UNITY_EDITOR
-	[RuntimeInitializeOnLoadMethod]
-	static void LoadMainRuntimeProfile()
-	{
-		//
-	}
-#endif
-
 	/// <summary>
 	/// Create the main runtime profile with the given value store.
 	/// </summary>
