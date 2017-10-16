@@ -275,7 +275,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	/// <remarks>
 	/// Note that the <c>BuildPlayerOptions</c> will be passed through the profile's
-	/// options' <see cref="IOption.PrepareBuild()"/>, which can modify it before
+	/// options' <see cref="IOption.PrepareBuild"/>, which can modify it before
 	/// the build is started.<br />
 	/// Note that if you do not set <c>options.locationPathName</c> and no option sets
 	/// it in the <c>PrepareBuild</c> callback, then a save dialog will be shown.

@@ -111,7 +111,7 @@ public abstract class Option : IOption
 	/// </summary>
 	/// <remarks>
 	/// This determines the order in which all options' <c>PostProcessBuild</c> 
-	/// method is called. Lower values are called first.<br>
+	/// method is called. Lower values are called first.<br/>
 	/// Note that this only orders the options between themselves, this does
 	/// not affect other <c>PostProcessBuild</c> callbacks.
 	/// </remarks>
@@ -280,7 +280,7 @@ public abstract class Option : IOption
 	/// </summary>
 	/// <remarks>
 	/// This method gets called when playing in the editor or at runtime,
-	/// on load and then every time the option's value changes.<br>
+	/// on load and then every time the option's value changes.<br/>
 	/// Options that have the [ExecuteInEditMode] attribute set will also
 	/// get called at edit-time.
 	/// </remarks>
@@ -356,7 +356,7 @@ public abstract class Option : IOption
 	/// <summary>
 	/// Wether this option instance represents the variant with the default parameter.
 	/// </summary>
-	/// </remarks>
+	/// <remarks>
 	/// Variant options can have an arbitrary number instances, each with
 	/// a different variant parameter to distinguish them. Variant options are
 	/// created on-demand when a new paramter appears. However, the one

@@ -138,10 +138,6 @@ public interface IOption
 	/// <summary>
 	/// Types of the option's child options.
 	/// </summary>
-	/// <remarks>
-	/// Child options are created together with their parent option when the
-	/// parent is instantiated and need to implement <see cref="IChildOption"/>.
-	/// </remarks>
 	Type[] ChildOptionTypes { get; }
 	/// <summary>
 	/// Wether the option has child options.
@@ -180,13 +176,6 @@ public interface IOption
 	/// <summary>
 	/// Remove the option from the build.
 	/// </summary>
-	/// <remarks>
-	/// This is part of the build system and allows the option to edit 
-	/// the scenes before they are built. When called, the option instance
-	/// is initialized, <see cref="Value"/> and <see cref="Parameter"/>
-	/// are set. Parameter options are called at least once for their
-	/// default parameter and once more for every additional parameter.
-	/// </remarks>
 	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile);
 
 	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile);
@@ -229,10 +218,6 @@ public interface IOption<TValue> : IOption
 	/// <summary>
 	/// The value of the option.
 	/// </summary>
-	/// <remarks>
-	/// Changing the value will not apply the option. <see cref="Apply"/> needs to be called
-	/// to apply the value change.
-	/// </remarks>
 	TValue Value { get; set; }
 	/// <summary>
 	/// Parse a value from an ini file.

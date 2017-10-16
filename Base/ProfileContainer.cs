@@ -11,7 +11,8 @@ namespace sttz.Workbench
 /// For the player, we need to get the <see cref="ValueStore"/> of the build
 /// profile, containing all the option values, into the build. We use this 
 /// container <c>MonoBehaviour</c> to contain the store and inject it into
-/// the build's scene using <see cref="BuildManager" /> and <see cref="IProcessScene" />.
+/// the build's scene using <see cref="Editor.BuildManager" /> and 
+/// [IProcessScene](https://docs.unity3d.com/ScriptReference/Build.IProcessScene.html).
 /// </remarks>
 public class ProfileContainer : MonoBehaviour
 {

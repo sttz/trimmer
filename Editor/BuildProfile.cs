@@ -31,12 +31,12 @@ namespace sttz.Workbench.Editor
 /// thos options using an ini file. Depending on the runtime configuration
 /// of the build profile, the values can be changed at runtime using
 /// a dynamically loaded ini file or using an in-game prompt
-/// (see <see cref="MaintenancePanel"/>). If the ini file or prompt are
+/// (see <see cref="Options.OptionPrompt"/>). If the ini file or prompt are
 /// disabled for a given build, their respective code won't be compiled.</para>
 /// 
 /// <para>For regular builds, the <see cref="BuildManager.ActiveProfile"/>
 /// defines which profile is used. Alternatively, builds can be made with
-/// non-active profiles using <see cref="BuildProfile.Build"/>.</para>
+/// non-active profiles using <see cref="BuildManager.Build"/>.</para>
 /// 
 /// <para>Changing if an option is included in the build for the active
 /// profile might require the scripting define symbols to be changed, which
@@ -298,8 +298,7 @@ public class BuildProfile : EditableProfile
 	}
 
 	/// <summary>
-	/// Update the scripting define symbols of the active build target, depending
-	/// on the current <see cref="EditorUserBuildSettings.development"/> value.
+	/// Update the scripting define symbols of the active build target.
 	/// </summary>
 	/// <remarks>
 	/// This triggers a rebuild if the defines are changed for the active
