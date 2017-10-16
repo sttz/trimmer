@@ -1,8 +1,9 @@
 ﻿#if OPTION_Prompt || UNITY_EDITOR
 using System;
+using sttz.Workbench.BaseOptions;
 using UnityEngine;
 
-namespace sttz.Workbench.Prompt
+namespace sttz.Workbench.Options
 {
 
 public class OptionPrompt : OptionToggle

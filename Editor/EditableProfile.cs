@@ -4,7 +4,7 @@ using sttz.Workbench.Extensions;
 using UnityEditor;
 using UnityEngine;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.Editor
 {
 
 /// <summary>

@@ -1,9 +1,14 @@
-﻿#if UNITY_EDITOR
+﻿// Workaround for docfx documentation building
+#if !UNITY_5 && !UNITY_2017 && !UNITY_2018
+#define UNITY_EDITOR
+#endif
+
+#if UNITY_EDITOR
 using System;
 using UnityEngine;
 using UnityEditor;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.BaseOptions
 {
 
 /// <summary>

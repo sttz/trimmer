@@ -6,8 +6,9 @@ using UnityEditor;
 using System.Linq;
 using System.Collections.Generic;
 using sttz.Workbench.Extensions;
+using sttz.Workbench.BaseOptions;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.Options
 {
 
 // BuildOptions

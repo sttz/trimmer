@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Workaround for docfx documentation building
+#if !UNITY_5 && !UNITY_2017 && !UNITY_2018
+#define UNITY_EDITOR
+#endif
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;

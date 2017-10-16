@@ -9,14 +9,14 @@ using UnityEditor;
 
 using sttz.Workbench.Extensions;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.Editor
 {
 
 /// <summary>
 /// Editor GUI for <see cref="BuildProfile"/> and <see cref="EditorProfile"/>.
 /// </summary>
 [CustomEditor(typeof(EditableProfile), true)]
-public class BuildProfileEditor : Editor
+public class BuildProfileEditor : UnityEditor.Editor
 {
 	// -------- Constants --------
 

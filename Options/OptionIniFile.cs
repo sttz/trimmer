@@ -2,9 +2,10 @@
 using System;
 using System.IO;
 using sttz.Workbench.Extensions;
+using sttz.Workbench.BaseOptions;
 using UnityEngine;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.Options
 {
 
 /// <summary>

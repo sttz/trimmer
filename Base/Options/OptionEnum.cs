@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace sttz.Workbench
+namespace sttz.Workbench.BaseOptions
 {
 
 /// <summary>

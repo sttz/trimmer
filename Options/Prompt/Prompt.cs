@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace sttz.Workbench.Prompt
+namespace sttz.Workbench.Options
 {
 
 /// <summary>

@@ -10,7 +10,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace sttz.Workbench {
+namespace sttz.Workbench.Editor
+{
 
 /// <summary>
 /// The editor profile is a special unique profile that sets the options'

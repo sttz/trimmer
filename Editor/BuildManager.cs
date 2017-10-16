@@ -11,7 +11,8 @@ using UnityEditor.Build;
 using UnityEngine.SceneManagement;
 using System.Reflection;
 
-namespace sttz.Workbench {
+namespace sttz.Workbench.Editor
+{
 
 /// <summary>
 /// The build manager defines which profile is used for builds and 

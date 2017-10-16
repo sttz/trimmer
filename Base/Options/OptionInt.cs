@@ -5,33 +5,33 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace sttz.Workbench
+namespace sttz.Workbench.BaseOptions
 {
 
 /// <summary>
-/// Option base class with a float as value.
+/// Option base class with an int as value.
 /// </summary>
-public abstract class OptionFloat : Option, IOption<float>
+public abstract class OptionInt : Option, IOption<int>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
 	{
-		return Save(EditorGUILayout.FloatField(label, Parse(input)));
+		return Save(EditorGUILayout.IntField(label, Parse(input)));
 	}
 	#endif
 
-	public float Value { get; set; }
+	public int Value { get; set; }
 
-	public float Parse(string input)
+	public int Parse(string input)
 	{
 		if (input.Length == 0)
 			input = DefaultValue ?? string.Empty;
 
-		float result;
-		if (float.TryParse(input, out result)) {
+		int result;
+		if (int.TryParse(input, out result)) {
 			return result;
 		} else {
-			return 0f;
+			return 0;
 		}
 	}
 
@@ -40,9 +40,9 @@ public abstract class OptionFloat : Option, IOption<float>
 		Value = Parse(input);
 	}
 
-	public string Save(float input)
+	public string Save(int input)
 	{
-		return input.ToString("R");
+		return input.ToString();
 	}
 
 	public override string Save()

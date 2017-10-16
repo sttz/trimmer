@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 using System.Reflection;
 using sttz.Workbench.Extensions;
 
-namespace sttz.Workbench
+namespace sttz.Workbench.Editor
 {
 
 /// <summary>

@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Workaround for docfx documentation building
+#if !UNITY_5 && !UNITY_2017 && !UNITY_2018
+#define UNITY_EDITOR
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,8 +21,43 @@ using System.Text.RegularExpressions;
 namespace sttz.Workbench {
 
 /// <summary>
-/// Base implementation of IOption.
+/// Base class for individual Workebnch options.
 /// </summary>
+/// <remarks>
+/// Options are the basic building blocks to integrate your project 
+/// into Workbench. Workbench detects all <see cref="IOption"/> classes
+/// in your project, so there's no additional configuration necessary
+/// besides adding the option source files to your project.
+/// 
+/// Each option has a value, which you can edit in the editor and which
+/// can also be changed in the player using <see cref="RuntimeProfile"/>.
+/// The runtime profile is only a script API, use the bundled options to
+/// change option values in the player using configuration files 
+/// (<see cref="Options.OptionIniFile"/>) or using a simple GUI 
+/// (<see cref="Options.OptionPrompt"/>).
+/// 
+/// Options can model more complicated data than simple values in two ways:
+/// * <b>Variant options</b> allow to have multiple instances of the same
+///   option type that differ by their <see cref="IOption.VariantParameter"/>,
+///   e.g. to have a volume option, which can control multiple channels.
+/// * <b>Child options</b> allow options to group multiple different values
+///   together.
+/// 
+/// Child and variant options can be nested, with the only limitation that
+/// variant options cannot be directly nested (but a variant option can
+/// have a variant child option).
+/// 
+/// Most of the time, you want to extend one of the typed base classes
+/// that fit the type of option you want to create:
+/// * <see cref="BaseOptions.OptionAsset{TUnity}" />
+/// * <see cref="BaseOptions.OptionEnum{TEnum}" />
+/// * <see cref="BaseOptions.OptionFloat" />
+/// * <see cref="BaseOptions.OptionInt" />
+/// * <see cref="BaseOptions.OptionString" />
+/// * <see cref="BaseOptions.OptionToggle" />
+/// 
+/// 
+/// </remarks>
 public abstract class Option : IOption
 {
 	// -------- Implement / Override in Sub-Classes --------
