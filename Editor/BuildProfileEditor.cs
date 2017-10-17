@@ -155,23 +155,10 @@ public class BuildProfileEditor : UnityEditor.Editor
 
 	// ------ Menu ------
 
-	const string SHOW_UNAVAILABLE_PATH = "CONTEXT/BuildProfile/Show Unavailable";
-	const string SHOW_UNAVAILABLE_KEY = "BuildProfile.ShowUnavailable";
-	static bool showUnavailable;
-
-	[MenuItem(SHOW_UNAVAILABLE_PATH)]
+	[MenuItem("CONTEXT/BuildProfile/Toggle Show Unavailable")]
 	static void ToggleShowUnavailable(MenuCommand cmd)
 	{
-		showUnavailable = !showUnavailable;
-		Menu.SetChecked(SHOW_UNAVAILABLE_PATH, showUnavailable);
-		EditorPrefs.SetBool(SHOW_UNAVAILABLE_KEY, showUnavailable);
-	}
-
-	[InitializeOnLoadMethod]
-	static void InitMenu()
-	{
-		showUnavailable = EditorPrefs.GetBool(SHOW_UNAVAILABLE_KEY);
-		Menu.SetChecked(SHOW_UNAVAILABLE_PATH, showUnavailable);
+		WorkbenchPrefs.ShowUnavailableOptions = !WorkbenchPrefs.ShowUnavailableOptions;
 	}
 
 	// -------- Editor --------
@@ -464,7 +451,7 @@ public class BuildProfileEditor : UnityEditor.Editor
 		if (buildProfile != null) {
 			optionEnabled = context.option.IsAvailable(buildProfile.BuildTargets);
 		}
-		if (!showUnavailable && !optionEnabled) {
+		if (!WorkbenchPrefs.ShowUnavailableOptions && !optionEnabled) {
 			return false;
 		}
 
