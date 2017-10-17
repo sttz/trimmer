@@ -50,7 +50,7 @@ public class EditorProfile : EditableProfile
 	[MenuItem("Window/Editor Profile %e")]
 	public static void OpenEditorProfile()
 	{
-		Selection.activeObject = EditorProfile.SharedInstance;
+		Selection.activeObject = SharedInstance;
 	}
 
 	/// <summary>
@@ -73,6 +73,48 @@ public class EditorProfile : EditableProfile
 		}
 	}
 	private static EditorProfile _editorProfile;
+
+	[InitializeOnLoadMethod]
+	static void ListenForPlayModeStateChanges()
+	{
+		#if UNITY_2017_2_OR_NEWER
+		EditorApplication.playModeStateChanged += PlayModeStateChange;
+		#else
+		EditorApplication.playmodeStateChanged += PlayModeStateChange;
+		#endif
+	}
+
+	#if UNITY_2017_2_OR_NEWER
+	static void PlayModeStateChange(PlayModeStateChange change)
+	{
+		if (change == PlayModeStateChange.ExitingPlayMode) {
+			OnExitingPlayMode();
+		}
+	}
+	#else
+	static void PlayModeStateChange()
+	{
+		if (EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode) {
+			OnExitingPlayMode();
+		}
+	}
+	#endif
+
+	static void OnExitingPlayMode()
+	{
+		if (WorkbenchPrefs.PlaymodeExitSave) {
+			// Changes were made directly to the options, save them to the store
+			RuntimeProfile.Main.SaveToStore();
+			// Apply the store to the editor profile and save it out
+			SharedInstance.store = RuntimeProfile.Main.Store;
+			SharedInstance.Save();
+			// Force reloading of the editor profile and reopen it
+			_editorProfile = null;
+			if (Selection.activeObject is EditorProfile) {
+				OpenEditorProfile();
+			}
+		}
+	}
 
 	// -------- Fields --------
 
@@ -101,13 +143,18 @@ public class EditorProfile : EditableProfile
 	public override void SaveIfNeeded()
 	{
 		if (store.IsDirty(true) || expandedDirty) {
-			expandedDirty = false;
-			UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
-				new UnityEngine.Object[] { this },
-				EDITOR_PROFILE_PATH,
-				true
-			);
+			Save();
 		}
+	}
+
+	public void Save()
+	{
+		expandedDirty = false;
+		UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
+			new UnityEngine.Object[] { this },
+			EDITOR_PROFILE_PATH,
+			true
+		);
 	}
 
 	public override Recursion.RecursionType GetRecursionType()
