@@ -16,7 +16,7 @@ namespace sttz.Workbench.Editor
 /// Editor GUI for <see cref="BuildProfile"/> and <see cref="EditorProfile"/>.
 /// </summary>
 [CustomEditor(typeof(EditableProfile), true)]
-public class BuildProfileEditor : UnityEditor.Editor
+public class ProfileEditor : UnityEditor.Editor
 {
 	// -------- Constants --------
 
