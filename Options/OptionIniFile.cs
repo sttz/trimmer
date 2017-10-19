@@ -1,4 +1,4 @@
-#if OPTION_IniFile || UNITY_EDITOR
+#if OptionIniFile || UNITY_EDITOR
 using System;
 using System.IO;
 using sttz.Workbench.Extensions;
@@ -32,8 +32,6 @@ namespace sttz.Workbench.Options
 /// </remarks>
 public class OptionIniFile : OptionString
 {
-	public override string Name { get { return "IniFile"; } }
-
 	protected override void Configure()
 	{
         Category = "Configuration";
@@ -105,8 +103,6 @@ public class OptionIniFile : OptionString
     /// </summary>
 	public class OptionSearchPath : OptionString
 	{
-		public override string Name { get { return "SearchPath"; } }
-
 		protected override void Configure()
 		{
 			DefaultValue = ".";

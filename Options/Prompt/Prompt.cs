@@ -1,4 +1,4 @@
-﻿#if OPTION_Prompt || UNITY_EDITOR
+﻿#if OOptionrompt || UNITY_EDITOR
 
 using System;
 using System.Collections.Generic;

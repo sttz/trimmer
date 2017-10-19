@@ -18,8 +18,6 @@ namespace sttz.Workbench.Options
 [BuildOnly]
 public class OptionBuildSettings : OptionEnum<BuildOptions>
 {
-	public override string Name { get { return "BuildSettings"; } }
-
 	protected override void Configure()
 	{
         Category = "Build";
@@ -29,8 +27,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
 	public class OptionBuildPath : OptionString
 	{
-		public override string Name { get { return "BuildPath"; } }
-
 		protected override void Configure()
 		{
 			DefaultValue = "Export/%Target%/%ProductName%";
@@ -39,8 +35,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
     public class OptionScenes : OptionAsset<SceneAsset>
 	{
-		public override string Name { get { return "Scenes"; } }
-
 		protected override void Configure()
 		{
             IsVariant = true;

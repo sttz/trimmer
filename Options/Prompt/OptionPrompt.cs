@@ -1,4 +1,4 @@
-﻿#if OPTION_Prompt || UNITY_EDITOR
+﻿#if OOptionrompt || UNITY_EDITOR
 using System;
 using sttz.Workbench.BaseOptions;
 using UnityEngine;
@@ -8,8 +8,6 @@ namespace sttz.Workbench.Options
 
 public class OptionPrompt : OptionToggle
 {
-	public override string Name { get { return "Prompt"; } }
-
 	protected override void Configure()
 	{
 		Category = "Configuration";
@@ -47,8 +45,6 @@ public class OptionPrompt : OptionToggle
 
 	public class OptionPromptFontSize : OptionInt
 	{
-		public override string Name { get { return "FontSize"; } }
-
 		protected override void Configure()
 		{
 			DefaultValue = "";
@@ -57,8 +53,6 @@ public class OptionPrompt : OptionToggle
 
 	public class OptionPromptPosition : OptionEnum<Prompt.Position>
 	{
-		public override string Name { get { return "Position"; } }
-
 		protected override void Configure()
 		{
 			DefaultValue = "";
@@ -67,8 +61,6 @@ public class OptionPrompt : OptionToggle
 
 	public class OptionPromptActivation : OptionString
 	{
-		public override string Name { get { return "Activation"; } }
-
 		protected override void Configure()
 		{
 			DefaultValue = "O-O-O";

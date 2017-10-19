@@ -70,12 +70,25 @@ public abstract class Option : IOption
 	/// </summary>
 	protected abstract void Configure();
 
-	#if UNITY_EDITOR
-
 	/// <summary>
-	/// Prefix for the per-option compilation defines.
+	/// Prefix for the per-option scripting defines.
 	/// </summary>
-	public const string DEFINE_PREFIX = "OPTION_";
+	/// <remarks>
+	/// By default, Options will have the same name as their class. If the class
+	/// name starts with `DEFINE_PREFIX`, the prefix will be removed and later
+	/// re-appended to create the scripting define symbol. This way, the scripting
+	/// define symbols will match the class name. If you set an Option's name to 
+	/// something else that doesn't start with the prefix, it's scripting define
+	/// symbol will have the prefix prepended.
+	/// 
+	/// e.g.
+	/// Class Name -> Option Name -> Scripting Define Symbol
+	/// OptionExample -> Example -> OptionExample
+	/// NonDefaultExample -> NonDefaultExample -> OptionNonDefaultExample
+	/// </remarks>
+	public const string DEFINE_PREFIX = "Option";
+
+	#if UNITY_EDITOR
 
 	/// <summary>
 	/// Wether the Option is build-only.
@@ -192,7 +205,7 @@ public abstract class Option : IOption
 	/// and used for the scripting define symbol.
 	/// </summary>
 	/// <returns></returns>
-	public abstract string Name { get; }
+	public string Name { get; protected set; }
 
 	public IOption Parent {
 		get {
@@ -306,6 +319,11 @@ public abstract class Option : IOption
 
 	public Option()
 	{
+		Name = GetType().Name;
+		if (Name.StartsWith(DEFINE_PREFIX)) {
+			Name = Name.Substring(DEFINE_PREFIX.Length);
+		}
+
 		Parent = null;
 
 		#if UNITY_EDITOR
