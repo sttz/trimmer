@@ -110,6 +110,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			if (Application.isPlaying) {
 				CreateOrUpdateMainRuntimeProfile();
+				RuntimeProfile.Main.Apply();
 			}
 		}
 	}
