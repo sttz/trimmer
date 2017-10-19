@@ -362,9 +362,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 				}
 			}
 		} else {
-			if (!string.IsNullOrEmpty(node.value)) {
-				option.Load(node.value);
-			}
+			option.Load(node.value ?? string.Empty);
 
 			if (node.children != null) {
 				foreach (var childNode in node.children) {
