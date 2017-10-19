@@ -79,10 +79,14 @@ public class Prompt : MonoBehaviour
 
 	protected void ParseActivationSequence()
 	{
-		var parts = activationSequence.Split('-');
+		var parts = activationSequence.Split(new char[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 		keySequence = new KeyCode[parts.Length];
 		for (int i = 0; i < parts.Length; i++) {
-			keySequence[i] = (KeyCode)Enum.Parse(typeof(KeyCode), parts[i]);
+			try {
+				keySequence[i] = (KeyCode)Enum.Parse(typeof(KeyCode), parts[i]);
+			} catch (Exception e) {
+				Debug.LogError("Could not parse activation sequence key '" + parts[i] + "': " + e.Message);
+			}
 		}
 	}
 
