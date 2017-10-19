@@ -31,9 +31,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	public const string ActiveProfileGUIDKey = "ActiveProfileGUID";
 	/// <summary>
-	/// Key used to save the editor defaults profile GUID.
+	/// Key used to save the editor source profile GUID.
 	/// </summary>
-	public const string DefaultsProfileGUIDKey = "DefaultsProfileGUID";
+	public const string SourceProfileGUIDKey = "SourceProfileGUID";
 
 
 	/// <summary>
@@ -75,38 +75,38 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	private static BuildProfile _activeProfile;
 
 	/// <summary>
-	/// Profile providing the current defaults for the editor.
+	/// Profile providing the current configuration for the editor.
 	/// </summary>
 	/// <remarks>
-	/// Instead of using the editor's unique default option values, it's
-	/// possible to use a build profile's defaults instead, allowing to 
-	/// quickly switch between sets of option values.
+	/// Instead of using the editor's unique configuration values, it's
+	/// possible to use a build profile's configuration instead, allowing to 
+	/// quickly switch between sets of configuration values.
 	/// </remarks>
 	/// <value>
-	/// <c>null</c> when using the editor's own defaults, otherwise the 
-	/// build profile whose defaults are used.
+	/// <c>null</c> when using the editor's own configuration, otherwise the 
+	/// build profile whose configuration is used.
 	/// </value>
-	public static BuildProfile EditorDefaultsProfile {
+	public static BuildProfile EditorSourceProfile {
 		get {
-			if (_editorDefaultsProfile == null) {
-				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey);
+			if (_editorSourceProfile == null) {
+				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, SourceProfileGUIDKey);
 				if (!string.IsNullOrEmpty(guid)) {
-					_editorDefaultsProfile = BuildManager.LoadAssetByGUID<BuildProfile>(guid);
+					_editorSourceProfile = BuildManager.LoadAssetByGUID<BuildProfile>(guid);
 				}
 			}
-			return _editorDefaultsProfile;
+			return _editorSourceProfile;
 		}
 		set {
-			if (_editorDefaultsProfile == value)
+			if (_editorSourceProfile == value)
 				return;
 			
-			_editorDefaultsProfile = value;
+			_editorSourceProfile = value;
 
 			var guid = string.Empty;
 			if (value != null)
 				guid = BuildManager.GetAssetGUID(value);
 
-			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, DefaultsProfileGUIDKey, guid);
+			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, SourceProfileGUIDKey, guid);
 
 			if (Application.isPlaying) {
 				CreateOrUpdateMainRuntimeProfile();
@@ -114,7 +114,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 		}
 	}
-	private static BuildProfile _editorDefaultsProfile;
+	private static BuildProfile _editorSourceProfile;
 
 	/// <summary>
 	/// The profile used for the current build.
@@ -334,8 +334,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// During playback in the editor
 		if (Application.isPlaying) {
-			if (EditorDefaultsProfile != null) {
-				store = EditorDefaultsProfile.Store;
+			if (EditorSourceProfile != null) {
+				store = EditorSourceProfile.Store;
 			} else {
 				store = EditorProfile.SharedInstance.Store;
 			}

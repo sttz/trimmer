@@ -130,8 +130,8 @@ public class EditorProfile : EditableProfile
 
 	public override ValueStore Store {
 		get {
-			if (BuildManager.EditorDefaultsProfile != null) {
-				return BuildManager.EditorDefaultsProfile.Store;
+			if (BuildManager.EditorSourceProfile != null) {
+				return BuildManager.EditorSourceProfile.Store;
 			} else {
 				return store;
 			}

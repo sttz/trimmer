@@ -175,7 +175,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		InitializeGUI();
 
-		DefaultsGUI();
+		SourceProfileGUI();
 
 		EditorGUILayout.Space();
 
@@ -201,9 +201,9 @@ public class ProfileEditor : UnityEditor.Editor
 
 		options = Recursion.SortOptionsByCategoryAndName(profile.GetAllOptions());
 
-		// Invalidate defaults profile dropdown
-		defaultsProfiles = null;
-		defaultsProfilesNames = null;
+		// Invalidate source profile dropdown
+		sourceProfiles = null;
+		sourceProfilesNames = null;
 	}
 
 	protected void OnDisable()
@@ -231,8 +231,8 @@ public class ProfileEditor : UnityEditor.Editor
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
 	
-	[NonSerialized] BuildProfile[] defaultsProfiles;
-	[NonSerialized] string[] defaultsProfilesNames;
+	[NonSerialized] BuildProfile[] sourceProfiles;
+	[NonSerialized] string[] sourceProfilesNames;
 
 	// -------- GUI --------
 
@@ -301,32 +301,32 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 	}
 
-	void DefaultsGUI()
+	void SourceProfileGUI()
 	{
 		if (editorProfile != null) {
 			EditorGUILayout.BeginHorizontal();
 			{
-				if (defaultsProfiles == null) {
-					defaultsProfiles = BuildProfile.AllBuildProfiles.Prepend(null).ToArray();
-					defaultsProfilesNames = defaultsProfiles.Select(p => p == null ? "Editor" : p.name).ToArray();
+				if (sourceProfiles == null) {
+					sourceProfiles = BuildProfile.AllBuildProfiles.Prepend(null).ToArray();
+					sourceProfilesNames = sourceProfiles.Select(p => p == null ? "Editor" : p.name).ToArray();
 				}
 
-				var defaultsProfile = BuildManager.EditorDefaultsProfile;
+				var sourceProfile = BuildManager.EditorSourceProfile;
 
-				int selected = Array.IndexOf(defaultsProfiles, defaultsProfile);
-				var newSelected = EditorGUILayout.Popup("Defaults", selected, defaultsProfilesNames);
+				int selected = Array.IndexOf(sourceProfiles, sourceProfile);
+				var newSelected = EditorGUILayout.Popup("Source Profile", selected, sourceProfilesNames);
 
 				if (selected != newSelected) {
 					BuildProfile newProfile = null;
 					if (newSelected > 0) {
-						newProfile = defaultsProfiles[newSelected];
+						newProfile = sourceProfiles[newSelected];
 					}
-					BuildManager.EditorDefaultsProfile = newProfile;
+					BuildManager.EditorSourceProfile = newProfile;
 				}
 
-				GUI.enabled = (defaultsProfile != null);
+				GUI.enabled = (sourceProfile != null);
 				if (GUILayout.Button("Edit", EditorStyles.miniButton, GUILayout.Width(40))) {
-					Selection.activeObject = defaultsProfile;
+					Selection.activeObject = sourceProfile;
 					EditorApplication.ExecuteMenuItem("Window/Inspector");
 				}
 				GUI.enabled = true;
@@ -337,7 +337,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void OptionsGUI()
 	{
-		GUI.enabled = (buildProfile != null || BuildManager.EditorDefaultsProfile == null);
+		GUI.enabled = (buildProfile != null || BuildManager.EditorSourceProfile == null);
 
 		// Include column header
 		if (buildProfile != null) {
