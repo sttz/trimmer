@@ -20,9 +20,6 @@ using System.Text.RegularExpressions;
 
 namespace sttz.Workbench {
 
-// TODO: Add OnEnable / OnDisable?
-// TODO: Name defaults to class name
-
 /// <summary>
 /// Base class for individual Workebnch options.
 /// </summary>
