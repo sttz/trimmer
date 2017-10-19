@@ -181,7 +181,8 @@ public abstract class Option : IOption
 	/// </remarks>
 	public virtual IEnumerable<string> GetSctiptingDefineSymbols(bool includedInBuild, string parameter, string value)
 	{
-		if (includedInBuild) {
+		// Only the root option has a toggle in the build profile
+		if (Parent == null && includedInBuild) {
 			return new string[] { DEFINE_PREFIX + Name };
 		} else {
 			return Enumerable.Empty<string>();
