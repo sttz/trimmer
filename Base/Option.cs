@@ -14,8 +14,6 @@ using sttz.Workbench.Extensions;
 
 #if UNITY_EDITOR
 using UnityEditor;
-using System.IO;
-using System.Text.RegularExpressions;
 #endif
 
 namespace sttz.Workbench {
@@ -614,106 +612,6 @@ public abstract class Option : IOption
 		}
 	}
 	string _category = "General";
-
-	#if UNITY_EDITOR
-
-	// -------- Plugin Removal --------
-
-	// TODO: Move somewhere else?
-
-	class PluginDescription
-	{
-		public string[] deployPaths;
-		public string[] extensions;
-	}
-
-	static PluginDescription pluginsOSX = new PluginDescription() {
-		deployPaths = new string[] { "Contents/Plugins" },
-		extensions = new string[] { ".bundle" }
-	};
-	static PluginDescription pluginsWindows = new PluginDescription() {
-		deployPaths = new string[] {
-			"",
-			"{Product}_Data/Plugins", 
-		},
-		extensions = new string[] { ".dll" }
-	};
-	static PluginDescription pluginsLinux = new PluginDescription() {
-		deployPaths = new string[] { 
-			"{Product}_Data/Plugins", 
-			"{Product}_Data/Plugins/x86", 
-			"{Product}_Data/Plugins/x86_64", 
-		},
-		extensions = new string[] { ".so" }
-	};
-
-	static Dictionary<BuildTarget, PluginDescription> pluginDescs
-	= new Dictionary<BuildTarget, PluginDescription>() {
-
-		{ BuildTarget.StandaloneOSXIntel, pluginsOSX },
-		{ BuildTarget.StandaloneOSXIntel64, pluginsOSX },
-		{ BuildTarget.StandaloneOSXUniversal, pluginsOSX },
-
-		{ BuildTarget.StandaloneWindows, pluginsWindows },
-		{ BuildTarget.StandaloneWindows64, pluginsWindows },
-
-		{ BuildTarget.StandaloneLinux, pluginsLinux },
-		{ BuildTarget.StandaloneLinux64, pluginsLinux },
-		{ BuildTarget.StandaloneLinuxUniversal, pluginsLinux },
-	};
-
-	/// <summary>
-	/// Remove a plugin from a build.
-	/// </summary>
-	/// <remarks>
-	/// This can be used to remove a plugin when an option has been removed and the
-	/// plugin is no longer needed. Currently, only OS X, Windows and Linux standalone
-	/// builds are supported.
-	/// </remarks>
-	public static void RemovePluginFromBuild(BuildTarget target, string pathToBuiltProject, Regex pluginNameMatch)
-	{
-		PluginDescription desc;
-		if (!pluginDescs.TryGetValue(target, out desc)) {
-			Debug.LogError(string.Format("Build target {0} not supported for plugin removal.", target));
-			return;
-		}
-
-		if (File.Exists(pathToBuiltProject)) {
-			pathToBuiltProject = System.IO.Path.GetDirectoryName(pathToBuiltProject);
-		}
-
-		foreach (var pathTemplate in desc.deployPaths) {
-			var path = pathTemplate.Replace("{Product}", PlayerSettings.productName);
-			path = System.IO.Path.Combine(pathToBuiltProject, path);
-
-			if (!Directory.Exists(path)) {
-				Debug.Log("Plugin path does not exist: " + path);
-				continue;
-			}
-
-			foreach (var entry in Directory.GetFileSystemEntries(path)) {
-				var extension = System.IO.Path.GetExtension(entry);
-				if (!desc.extensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) {
-					Debug.Log("Extension does not match: " + entry);
-					continue;
-				}
-
-				var fileName = System.IO.Path.GetFileNameWithoutExtension(entry);
-				if (!pluginNameMatch.IsMatch(fileName)) {
-					Debug.Log("Name does not match: " + entry);
-					continue;
-				}
-
-				Debug.Log("Removing plugin: " + entry);
-				if (File.Exists(entry))
-					File.Delete(entry);
-				else
-					Directory.Delete(entry, true);
-			}
-		}
-	}
-
-	#endif
 }
 
 }
