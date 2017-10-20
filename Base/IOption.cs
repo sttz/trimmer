@@ -41,6 +41,29 @@ public class EditorOnlyAttribute : Attribute {}
 #endif
 
 /// <summary>
+/// Define how an Option can be variant.
+/// </summary>
+public enum OptionVariance
+{
+	/// <summary>
+	/// The Option is not variant. There exists only a single instance with a single value.
+	/// </summary>
+	Single,
+	
+	/// <summary>
+	/// The Option is a dictionary. It has variants that differ by their parameter
+	/// and the parameter is set explicitly.
+	/// </summary>
+	Dictionary,
+
+	/// <summary>
+	/// The Option is an array. It has variants that are ordered by an index and
+	/// the parameter is automatically set.
+	/// </summary>
+	Array
+}
+
+/// <summary>
 /// Interface for Workbench options.
 /// </summary>
 /// <remarks>
@@ -89,17 +112,8 @@ public interface IOption
 	void Apply();
 	void ApplyFromRoot();
 
-	/// <summary>
-	/// Wether the option can have variants, differentiated by the variant
-	/// parameter.
-	/// </summary>
-	/// <remarks>
-	/// Additional Option instances are automatically created for each variant
-	/// parameter. At least one instance with the default variant parameter is
-	/// guaranteed to exist.
-	/// </remarks>
-	bool IsVariant { get; }
-	bool IsArrayVariant { get; }
+	OptionVariance Variance { get; }
+	
 	/// <summary>
 	/// The variant parameter of a variant option. Not used if <see cref="IsVariant"/>
 	/// is false.

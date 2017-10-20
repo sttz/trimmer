@@ -187,7 +187,7 @@ public static class Recursion
 			}
 
 			// Determine the variant type
-			if (variantType == VariantType.None && child.option.IsVariant) {
+			if (variantType == VariantType.None && child.option.Variance != OptionVariance.Single) {
 				child.variantType = VariantType.VariantContainer;
 			} else if (variantType == VariantType.VariantContainer) {
 				if (defaultVariant) {

@@ -233,7 +233,7 @@ public abstract class Option : IOption
 
 	protected string GetPathRecursive(IOption current)
 	{
-		if (current.IsVariant && !current.IsDefaultVariant) {
+		if (current.Variance != OptionVariance.Single && !current.IsDefaultVariant) {
 			if (current.Parent != null) {
 				return GetPathRecursive(current.Parent) + ":" + current.VariantParameter;
 			} else {
@@ -342,11 +342,11 @@ public abstract class Option : IOption
 		
 		Configure();
 		
-		if (IsVariant) {
+		if (Variance != OptionVariance.Single) {
 			IsDefaultVariant = true;
 			VariantParameter = VariantDefaultParameter;
 			if (string.IsNullOrEmpty(VariantDefaultParameter)) {
-				if (IsArrayVariant) {
+				if (Variance == OptionVariance.Array) {
 					VariantDefaultParameter = "0";
 				} else {
 					VariantDefaultParameter = "Default";
@@ -360,17 +360,24 @@ public abstract class Option : IOption
 	// -------- Variants --------
 
 	/// <summary>
-	/// Wether the option accepts variants.
+	/// The variance of the Option.
 	/// </summary>
-	public bool IsVariant { get; protected set; }
-	/// <summary>
-	/// Treat the variants as an array.
-	/// </summary>
-	/// <remarks>
-	/// Array variants' parameters cannot be edited and are 
-	/// assigned automatically to numeric values.
-	/// </remarks>
-	public bool IsArrayVariant { get; protected set; }
+	/// <returns>
+	/// By default an Option is invariant and there's only a single instance / value of it.
+	/// 
+	/// An Option can also be variant, in which case multiple instances can exist and
+	/// the instances are distinguished by their parameter.
+	/// 
+	/// There are two types of variance, where the only difference is if their parameters
+	/// are set by the user (<see cref="OptionVariance.Dictionary"/>) or if an index
+	/// is assigned automatically as parameter (<see cref="OptionVariance.Array"/>).
+	/// 
+	/// Variant Options have a default variant (<see cref="IsDefaultVariant"/>), that acts 
+	/// as the container for all other variants and its parameter is always set to 
+	/// the <see cref="VariantDefaultParameter"/>.
+	/// </returns>
+	public OptionVariance Variance { get; protected set; }
+
 	/// <summary>
 	/// The parameter of a variant option, only valid if <c>IsVariant</c> is <c>true</c>.
 	/// </summary>
@@ -427,7 +434,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public IOption AddVariant(string parameter)
 	{
-		Assert.IsTrue(IsVariant, "Invalid call to AddVariant, option is not variant.");
+		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to AddVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to AddVariant, option is not the default variant.");
 
 		Assert.IsNotNull(parameter);
@@ -443,7 +450,7 @@ public abstract class Option : IOption
 			variants = new List<IOption>();
 		variants.Add(instance);
 
-		if (IsArrayVariant) {
+		if (Variance == OptionVariance.Array) {
 			RenumberArrayVariants();
 		}
 
@@ -460,7 +467,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public IOption GetVariant(string parameter, bool create = true)
 	{
-		Assert.IsTrue(IsVariant, "Invalid call to GetVariant, option is not variant.");
+		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to GetVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to GetVariant, option is not the default variant.");
 
 		if (string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase))
@@ -491,7 +498,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public void RemoveVariant(IOption option)
 	{
-		Assert.IsTrue(IsVariant, "Invalid call to RemoveVariant, option is not variant.");
+		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to RemoveVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to RemoveVariant, option is not the default variant.");
 
 		Assert.IsTrue(variants != null && variants.Contains(option), "Invalid call to RemoveVariant, option is not a variant of this instance.");
@@ -499,7 +506,7 @@ public abstract class Option : IOption
 		variants.Remove(option);
 		option.Parent = null;
 
-		if (IsArrayVariant) {
+		if (Variance == OptionVariance.Array) {
 			RenumberArrayVariants();
 		}
 	}
@@ -509,9 +516,8 @@ public abstract class Option : IOption
 	/// </summary>
 	protected void RenumberArrayVariants()
 	{
-		Assert.IsTrue(IsVariant, "Invalid call to RenumberArrayVariants, option is not variant.");
+		Assert.IsTrue(Variance == OptionVariance.Array, "Invalid call to RenumberArrayVariants, option is not an array variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to RenumberArrayVariants, option is not the default variant.");
-		Assert.IsTrue(IsArrayVariant, "Invalid call to RenumberArrayVariants, option is not variant.");
 
 		// Default variant is always 0
 		VariantParameter = "0";

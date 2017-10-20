@@ -259,14 +259,14 @@ public class Prompt : MonoBehaviour
 		if (!option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase))
 			return;
 
-		if (option.Parent == null || option.IsDefaultVariant || !option.IsVariant) {
+		if (option.Parent == null || option.IsDefaultVariant || option.Variance == OptionVariance.Single) {
 			if (option.Parent != null) {
 				baseInput += ".";
 			}
 			baseInput += option.Name;
 		}
 
-		if (option.IsVariant && !option.IsDefaultVariant) {
+		if (option.Variance != OptionVariance.Single && !option.IsDefaultVariant) {
 			baseInput += "[" + option.VariantParameter + "]";
 		}
 		

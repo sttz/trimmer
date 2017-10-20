@@ -37,8 +37,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 	{
 		protected override void Configure()
 		{
-            IsVariant = true;
-            IsArrayVariant = true;
+            Variance = OptionVariance.Array;
 			DefaultValue = "";
             VariantDefaultParameter = "0";
 		}

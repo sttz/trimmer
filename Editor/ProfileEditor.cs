@@ -506,7 +506,7 @@ public class ProfileEditor : UnityEditor.Editor
 			) {
 				var isDefault = (context.variantType == Recursion.VariantType.DefaultVariant);
 
-				if (!option.IsArrayVariant) {
+				if (option.Variance == OptionVariance.Dictionary) {
 					// Disable when editing the default variant
 					EditorGUI.BeginDisabledGroup(isDefault);
 					{
@@ -549,7 +549,7 @@ public class ProfileEditor : UnityEditor.Editor
 						if (context.type == Recursion.RecursionType.Nodes) {
 							delayedRemovals.Add(() => {
 								context.parentNode.RemoveVariant(context.node.Name);
-								if (option.IsArrayVariant) {
+								if (option.Variance == OptionVariance.Array) {
 									context.parentNode.NumberVariantsSequentially();
 								}
 							});
@@ -614,14 +614,14 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void AddNewVariant(IOption option, ValueStore.Node node)
 	{
-		if (!option.IsVariant)
+		if (option.Variance == OptionVariance.Single)
 			throw new Exception("Option is not variant.");
 
 		var parameter = FindUniqueVariantName(option, node);
 
 		if (node != null) {
 			node.AddVariant(parameter, option.DefaultValue ?? string.Empty);
-			if (option.IsArrayVariant) {
+			if (option.Variance == OptionVariance.Array) {
 				node.NumberVariantsSequentially();
 			}
 		} else {
