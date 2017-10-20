@@ -411,7 +411,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 
 			profile = RuntimeProfile.Main;
-			foreach (var option in profile) {
+			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 				option.PostprocessScene(scene, false, true);
 			}
 
@@ -427,7 +427,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 				InjectProfileContainer(profile.Store);
 			}
 
-			foreach (var option in profile) {
+			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 				var include = !removeAll && buildProfile.IncludeInBuild(option);
 				option.PostprocessScene(scene, true, include);
 			}
