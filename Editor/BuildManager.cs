@@ -301,7 +301,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			options = option.PrepareBuild(options, included, profile);
+			options = option.PrepareBuild(options, included);
 		}
 
 		// Ask for location if none has been set
@@ -379,7 +379,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			option.PostprocessBuild(target, path, included, profile);
+			option.PostprocessBuild(target, path, included);
 		}
 	}
 	
@@ -395,7 +395,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
 			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			option.PostprocessBuild(target, path, included, profile);
+			option.PostprocessBuild(target, path, included);
 		}
 	}
 
@@ -412,7 +412,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			profile = RuntimeProfile.Main;
 			foreach (var option in profile) {
-				option.PostprocessScene(scene, false, true, profile);
+				option.PostprocessScene(scene, false, true);
 			}
 
 		// Building
@@ -429,7 +429,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			foreach (var option in profile) {
 				var include = !removeAll && buildProfile.IncludeInBuild(option);
-				option.PostprocessScene(scene, true, include, profile);
+				option.PostprocessScene(scene, true, include);
 			}
 		}
 	}

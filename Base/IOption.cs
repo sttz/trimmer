@@ -175,14 +175,14 @@ public interface IOption
 	bool BuildOnly { get; }
 	bool EditorOnly { get; }
 
-	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile);
+	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild);
 
 	/// <summary>
 	/// Remove the option from the build.
 	/// </summary>
-	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile);
+	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild);
 
-	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile);
+	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild);
 
 	/// <summary>
 	/// Order the individual option's PostprocessBuild is getting called.
@@ -196,7 +196,7 @@ public interface IOption
 	/// Called after the build is complete, gives the option a chance
 	/// to edit or supplement the build.
 	/// </summary>
-	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile);
+	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild);
 
 	/// <summary>
 	/// The scripting define symbols that should be set when the option is included.

@@ -59,7 +59,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         return path;
     }
 
-    override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile)
+    override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild)
     {
         options.options |= Value;
         options.locationPathName = ExpandPath(GetChild<OptionBuildPath>().Value, options);

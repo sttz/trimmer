@@ -112,7 +112,7 @@ public abstract class Option : IOption
 	/// option is not included in a build. This method gets called
 	/// during each built scene's <c>OnPostprocessScene</c>.
 	/// </remarks>
-	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild, RuntimeProfile profile)
+	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild)
 	{
 		// NOP
 	}
@@ -137,7 +137,7 @@ public abstract class Option : IOption
 	/// Note that this method won't be called for default Unity builds
 	/// triggered from the build settings window or the menu.
 	/// </remarks>
-	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild, RuntimeProfile profile)
+	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild)
 	{
 		return options;
 	}
@@ -149,7 +149,7 @@ public abstract class Option : IOption
 	/// <param name="path">Path to the built project</param>
 	/// <param name="includedInBuild">Wether this option should be included in build</param>
 	/// <param name="profile">The profile used in the build</param>
-	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile)
+	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild)
 	{
 		// NOP
 	}
@@ -161,7 +161,7 @@ public abstract class Option : IOption
 	/// <param name="path">Path to the built project</param>
 	/// <param name="includedInBuild">Wether this option should be included in build</param>
 	/// <param name="profile">The profile used in the build</param>
-	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild, RuntimeProfile profile)
+	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild)
 	{
 		// NOP
 	}
