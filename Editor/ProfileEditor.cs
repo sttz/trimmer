@@ -186,6 +186,13 @@ public class ProfileEditor : UnityEditor.Editor
 		if (buildProfile != null) {
 			BuildGUI();
 		}
+
+		if (Event.current.type != EventType.Layout) {
+			foreach (var action in delayedRemovals) {
+				action();
+			}
+			delayedRemovals.Clear();
+		}
 	}
 
 	public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
@@ -353,13 +360,6 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 
 		ResurseOptionsGUI();
-
-		if (Event.current.type != EventType.Layout) {
-			foreach (var action in delayedRemovals) {
-				action();
-			}
-			delayedRemovals.Clear();
-		}
 
 		GUI.enabled = true;
 	}
