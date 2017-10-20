@@ -193,7 +193,7 @@ public class EditorProfile : EditableProfile
 			var newValue = option.EditGUI(label, oldValue);
 			if (oldValue != newValue) {
 				option.Load(newValue);
-				option.Apply();
+				option.ApplyFromRoot();
 			}
 			return;
 		}
@@ -208,7 +208,7 @@ public class EditorProfile : EditableProfile
 			var newValue = editModeOption.EditGUI(label, oldValue);
 			if (oldValue != newValue) {
 				editModeOption.Load(newValue);
-				editModeOption.Apply();
+				editModeOption.ApplyFromRoot();
 			}
 			node.Value = newValue;
 		

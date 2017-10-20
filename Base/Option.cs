@@ -311,6 +311,19 @@ public abstract class Option : IOption
 		}
 	}
 
+	/// <summary>
+	/// Look for the root option and then call it's Apply method.
+	/// </summary>
+	public void ApplyFromRoot()
+	{
+		IOption root = this;
+		while (root.Parent != null) {
+			root = root.Parent;
+		}
+
+		root.Apply();
+	}
+
 	// -------- Init --------
 
 	public Option()

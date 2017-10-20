@@ -84,6 +84,7 @@ public interface IOption
 	/// a new scene has loaded.
 	/// </remarks>
 	void Apply();
+	void ApplyFromRoot();
 
 	/// <summary>
 	/// Wether the option can have variants, differentiated by the variant
