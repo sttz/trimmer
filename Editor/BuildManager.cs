@@ -100,6 +100,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			if (_editorSourceProfile == value)
 				return;
 			
+			var previousValue = _editorSourceProfile;
 			_editorSourceProfile = value;
 
 			var guid = string.Empty;
@@ -109,6 +110,12 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, SourceProfileGUIDKey, guid);
 
 			if (Application.isPlaying) {
+				if (previousValue == null) {
+					// When switching away from editor profile in play mode,
+					// we need to save the changes made to the options
+					RuntimeProfile.Main.SaveToStore();
+					EditorProfile.SharedInstance.store = RuntimeProfile.Main.Store;
+				}
 				CreateOrUpdateMainRuntimeProfile();
 				RuntimeProfile.Main.Apply();
 			}
