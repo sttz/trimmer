@@ -214,8 +214,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var playerOptions = new BuildPlayerOptions();
 		playerOptions.target = target;
 		playerOptions.targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-		
-		playerOptions.locationPathName = EditorUserBuildSettings.GetBuildLocation(target);
 
 		playerOptions.scenes = EditorBuildSettings.scenes
 			.Where(s => s.enabled)
