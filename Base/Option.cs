@@ -305,7 +305,7 @@ public abstract class Option : IOption
 		}
 
 		if (children != null) {
-			foreach (var child in children.Values) {
+			foreach (var child in children) {
 				child.Apply();
 			}
 		}
@@ -536,7 +536,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public Type[] ChildOptionTypes { get; protected set; }
 
-	private Dictionary<string, IOption> children;
+	private List<IOption> children;
 
 	/// <summary>
 	/// Wether this option has children.
@@ -555,7 +555,7 @@ public abstract class Option : IOption
 			if (children == null) {
 				return Enumerable.Empty<IOption>();
 			} else {
-				return children.Values;
+				return children;
 			}
 		}
 	}
@@ -570,11 +570,15 @@ public abstract class Option : IOption
 				continue;
 
 			if (children == null)
-				children = new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
+				children = new List<IOption>();
 
 			var child = (IOption)Activator.CreateInstance(nestedType);
 			child.Parent = this;
-			children[child.Name] = child;
+			children.Add(child);
+		}
+
+		if (children != null) {
+			children.Sort((a, b) => a.ApplyOrder.CompareTo(b.ApplyOrder));
 		}
 	}
 
@@ -586,9 +590,13 @@ public abstract class Option : IOption
 		if (children == null)
 			return null;
 
-		IOption child;
-		children.TryGetValue(name, out child);
-		return child;
+		foreach (var child in children) {
+			if (child.Name.EqualsIgnoringCase(name)) {
+				return child;
+			}
+		}
+
+		return null;
 	}
 
 	/// <summary>
@@ -597,7 +605,7 @@ public abstract class Option : IOption
 	public TOption GetChild<TOption>() where TOption : IOption
 	{
 		if (children != null) {
-			foreach (var child in children.Values) {
+			foreach (var child in children) {
 				if (child is TOption)
 					return (TOption)child;
 			}
