@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,6 +27,7 @@ namespace sttz.Workbench {
 /// method is never called.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+[Conditional("UNITY_EDITOR")]
 public class BuildOnlyAttribute : Attribute {}
 
 /// <summary>
@@ -33,6 +35,7 @@ public class BuildOnlyAttribute : Attribute {}
 /// the editor and will always be removed in builds.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+[Conditional("UNITY_EDITOR")]
 public class EditorOnlyAttribute : Attribute {}
 
 #endif
