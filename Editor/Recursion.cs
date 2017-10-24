@@ -109,7 +109,7 @@ public static class Recursion
 		/// <summary>
 		/// Wether the current sub-tree is included in the build.
 		/// </summary>
-		public bool includeInBuild;
+		public OptionInclusion inclusion;
 
 		/// <summary>
 		/// Wether the current node is a root.
@@ -181,9 +181,9 @@ public static class Recursion
 			child.node = childNode;
 
 			if (child.type == RecursionType.Nodes && child.IsRoot) {
-				child.includeInBuild = ((ValueStore.RootNode)child.node).IncludeInBuild;
+				child.inclusion = ((ValueStore.RootNode)child.node).Inclusion;
 			} else {
-				child.includeInBuild = includeInBuild;
+				child.inclusion = inclusion;
 			}
 
 			// Determine the variant type

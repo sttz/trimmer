@@ -16,6 +16,7 @@ public class OptionPrompt : OptionToggle
 
 	public override void Apply()
 	{
+		Debug.Log("OptionPrompt.Apply");
 		base.Apply();
 		
 		var prompt = Prompt.Instance;

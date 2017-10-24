@@ -38,6 +38,91 @@ public class BuildOnlyAttribute : Attribute {}
 [Conditional("UNITY_EDITOR")]
 public class EditorOnlyAttribute : Attribute {}
 
+/// <summary>
+/// Enum indicating how and option behaves during the build process.
+/// </summary>
+/// <remarks>
+/// Conceptually, Workbench deals with Options that are its building blocks and
+/// configure some aspect of a project dynamically. That aspect of the project
+/// is referred to as a «feature».
+/// 
+/// When building, there are a few scenarios, how an option and its feature are
+/// compiled:
+/// * Both are included: The build includes both the Workbench Option as well
+///   as its associated feature. The Option allows to configure the build at
+///   runtime.
+/// * Only the feature is included: The Option only configures the feature in
+///   the editor. At build-time the Option statically configures the feature
+///   in the build and is itself not included. The feature cannot be configured
+///   at runtime using Workbench.
+/// * Both are removed: Neither the Option nor its feature are included in the
+///   build and if set up correctly, the build won't contain a trace that the
+///   Option or feature ever existed.
+/// 
+/// As an example, assume there's a platform integration that requires an API key.
+/// The feature is the integration script	 and maybe some conditionally-compiled
+/// snippets of code in other scripts. The Option controls the conditional compilation,
+/// injects the integration script when enabled and configures the API key.
+/// 
+/// When building for another platform, the integration should be completely 
+/// removed, leaving no unrelated code in the build. When doing a release build,
+/// the API key should be baked into the build, the Option removed and no way
+/// left to change the API key at runtime. In a development build, the Option
+/// might be included, to be able to override the API key to one used for testing.
+/// 
+/// In this scenario, different build profiles would configure the build differently:
+/// Profiles for other platforms would completely remove the build and feature,
+/// the release build profile would only remove the Option and the development
+/// profile would include both Option and feature.
+/// 
+/// Note that it's not possible to include the Option but not the Feature. Having
+/// an <c>OptionInclusion</c> value with only the <c>Option</c> flag set is invalid.
+/// </remarks>
+public enum OptionInclusion
+{
+	/// <summary>
+	/// Remove the feature and the option form the build.
+	/// </summary>
+	Remove = 0,
+
+	/// <summary>
+	/// Flag indicating the feature should be included.
+	/// </summary>
+	Feature = 1<<0,
+
+	/// <summary>
+	/// Flag indicating the option should be included.
+	/// </summary>
+	Option = 1<<1,
+
+	/// <summary>
+	/// Mask including both feature and option.
+	/// </summary>
+	FeatureAndOption = Feature | Option
+}
+
+/// <summary>
+/// Helper class with extensions to check <see cref="OptionInclusion"/> flags.
+/// </summary>
+public static class OptionInclusionExtensions
+{
+	/// <summary>
+	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Option"/> flag.
+	/// </summary>
+	public static bool IncludesOption(this OptionInclusion inclusion)
+	{
+		return (inclusion & OptionInclusion.Option) == OptionInclusion.Option;
+	}
+
+	/// <summary>
+	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Feature"/> flag.
+	/// </summary>
+	public static bool IncludesFeature(this OptionInclusion inclusion)
+	{
+		return (inclusion & OptionInclusion.Feature) == OptionInclusion.Feature;
+	}
+}
+
 #endif
 
 /// <summary>
@@ -98,12 +183,12 @@ public interface IOption
 	bool EditorOnly { get; }
 
 	int PostprocessOrder { get; }
-	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild);
-	void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild);
-	void PreprocessBuild(BuildTarget target, string path, bool includedInBuild);
-	void PostprocessBuild(BuildTarget target, string path, bool includedInBuild);
+	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion);
+	void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion);
+	void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
+	void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 
-	IEnumerable<string> GetSctiptingDefineSymbols(bool includedInBuild, string parameter, string value);
+	IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion, string parameter, string value);
 	string EditGUI(GUIContent label, string input);
 
 	#endif

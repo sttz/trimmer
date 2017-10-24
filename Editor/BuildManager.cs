@@ -298,8 +298,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var profile = RuntimeProfile.Main;
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			options = option.PrepareBuild(options, included);
+			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			options = option.PrepareBuild(options, inclusion);
 		}
 
 		// Ask for location if none has been set
@@ -376,8 +376,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var profile = RuntimeProfile.Main;
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			option.PostprocessBuild(target, path, included);
+			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			option.PostprocessBuild(target, path, inclusion);
 		}
 	}
 	
@@ -392,8 +392,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var profile = RuntimeProfile.Main;
 
 		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-			var included = !removeAll && buildProfile.IncludeInBuild(option);
-			option.PostprocessBuild(target, path, included);
+			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			option.PostprocessBuild(target, path, inclusion);
 		}
 	}
 
@@ -410,7 +410,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			profile = RuntimeProfile.Main;
 			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-				option.PostprocessScene(scene, false, true);
+				option.PostprocessScene(scene, false, OptionInclusion.FeatureAndOption);
 			}
 
 		// Building
@@ -426,8 +426,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 
 			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-				var include = !removeAll && buildProfile.IncludeInBuild(option);
-				option.PostprocessScene(scene, true, include);
+				var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+				option.PostprocessScene(scene, true, inclusion);
 			}
 		}
 	}

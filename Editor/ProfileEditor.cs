@@ -222,6 +222,10 @@ public class ProfileEditor : UnityEditor.Editor
 
 	List<IOption> options;
 
+	GUIContent inclusionRemove;
+	GUIContent inclusionFeature;
+	GUIContent inclusionOption;
+
 	GUIStyle categoryBackground;
 	GUIStyle categoryFoldout;
 	GUIStyle includeBackground;
@@ -253,6 +257,12 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void InitializeGUI()
 	{
+		if (inclusionRemove == null) {
+			inclusionRemove = new GUIContent("O", "Remove Feature and Option");
+			inclusionFeature = new GUIContent("I", "Remove Option, Include Feature");
+			inclusionOption = new GUIContent("II", "Include Feature and Option");
+		}
+
 		if (categoryBackground == null) {
 			categoryBackground = new GUIStyle();
 			categoryBackground.normal.background = CreateColorTexture(Color.white * 0.6f);
@@ -577,12 +587,41 @@ public class ProfileEditor : UnityEditor.Editor
 						&& !option.BuildOnly && !option.EditorOnly
 					) {
 						var root = (ValueStore.RootNode)context.node;
-						var value = root.IncludeInBuild;
+						var value = root.Inclusion;
 						if (!optionEnabled) {
-							value = false;
+							value = OptionInclusion.Remove;
 							GUI.enabled = false;
 						}
-						root.IncludeInBuild = EditorGUILayout.Toggle(value, GUILayout.Width(toggleWidth));
+						GUIContent content;
+						if (value == OptionInclusion.Remove) {
+							content = inclusionRemove;
+						} else if (value == OptionInclusion.Feature) {
+							content = inclusionFeature;
+						} else if (value == OptionInclusion.FeatureAndOption) {
+							content = inclusionOption;
+						} else {
+							content = null;
+						}
+						GUILayout.Label(content, GUILayout.Width(toggleWidth));
+						if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition)
+								&& Event.current.type == EventType.MouseDown) {
+							Event.current.Use();
+							var menu = new GenericMenu();
+							content = new GUIContent(inclusionRemove.text + " - " + inclusionRemove.tooltip);
+							menu.AddItem(content, value == OptionInclusion.Remove, () => {
+								root.Inclusion = OptionInclusion.Remove;
+							});
+							content = new GUIContent(inclusionFeature.text + " - " + inclusionFeature.tooltip);
+							menu.AddItem(content, value == OptionInclusion.Feature, () => {
+								root.Inclusion = OptionInclusion.Feature;
+							});
+							content = new GUIContent(inclusionOption.text + " - " + inclusionOption.tooltip);
+							menu.AddItem(content, value == OptionInclusion.FeatureAndOption, () => {
+								root.Inclusion = OptionInclusion.FeatureAndOption;
+							});
+							menu.ShowAsContext();
+						}
+						//root.Inclusion = EditorGUILayout.Toggle(value, GUILayout.Width(toggleWidth));
 						GUI.enabled = true;
 					} else {
 						EditorGUILayout.Space();

@@ -76,19 +76,15 @@ public abstract class Option : IOption
 	/// Prefix for the per-option scripting defines.
 	/// </summary>
 	/// <remarks>
-	/// By default, Options will have the same name as their class. If the class
-	/// name starts with `DEFINE_PREFIX`, the prefix will be removed and later
-	/// re-appended to create the scripting define symbol. This way, the scripting
-	/// define symbols will match the class name. If you set an Option's name to 
-	/// something else that doesn't start with the prefix, it's scripting define
-	/// symbol will have the prefix prepended.
-	/// 
-	/// e.g.
-	/// Class Name &#x2192; Option Name &#x2192; Scripting Define Symbol<br/>
-	/// OptionExample &#x2192; Example &#x2192; OptionExample<br/>
-	/// NonDefaultExample &#x2192; NonDefaultExample &#x2192; OptionNonDefaultExample
+	/// TODO
 	/// </remarks>
-	public const string DEFINE_PREFIX = "Option";
+	public const string DEFINE_PREFIX = "WB_";
+
+	/// <summary>
+	/// Prefix applied after the <see cref="DEFINE_PREFIX"/> for the 
+	/// Option scripting define.
+	/// </summary>
+	public const string OPTION_PREFIX = "Option";
 
 	#if UNITY_EDITOR
 
@@ -146,8 +142,8 @@ public abstract class Option : IOption
 	/// </remarks>
 	/// <param name="scene">The scene that is being processed.</param>
 	/// <param name="isBuild">Wether the scene is being played in the editor or processed during a build.</param>
-	/// <param name="includedInBuild">Wether the option is included in the build.</param>
-	public virtual void PostprocessScene(Scene scene, bool isBuild, bool includedInBuild)
+	/// <param name="inclusion">Wether the option is included in the build.</param>
+	public virtual void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion)
 	{
 		// NOP
 	}
@@ -189,9 +185,9 @@ public abstract class Option : IOption
 	/// started from the build player menu or using the build menu item.
 	/// </remarks>
 	/// <param name="options">The current options</param>
-	/// <param name="includedInBuild">Wether the Option is included in the  build.</param>
+	/// <param name="inclusion">Wether the Option is included in the  build.</param>
 	/// <returns>The modified options.</returns>
-	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, bool includedInBuild)
+	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
 	{
 		return options;
 	}
@@ -208,8 +204,8 @@ public abstract class Option : IOption
 	/// </remarks>
 	/// <param name="target">Build target type</param>
 	/// <param name="path">Path to the built project</param>
-	/// <param name="includedInBuild">Wether this option is included in the build</param>
-	public virtual void PreprocessBuild(BuildTarget target, string path, bool includedInBuild)
+	/// <param name="inclusion">Wether this option is included in the build</param>
+	public virtual void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
 	{
 		// NOP
 	}
@@ -223,8 +219,8 @@ public abstract class Option : IOption
 	/// </remarks>
 	/// <param name="target">Build target type</param>
 	/// <param name="path">Path to the built project</param>
-	/// <param name="includedInBuild">Wether this option is included in the build</param>
-	public virtual void PostprocessBuild(BuildTarget target, string path, bool includedInBuild)
+	/// <param name="inclusion">Wether this option is included in the build</param>
+	public virtual void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
 	{
 		// NOP
 	}
@@ -237,11 +233,18 @@ public abstract class Option : IOption
 	/// for main Options that are included in the build and nothing for child or variant
 	/// options or excluded options.
 	/// </remarks>
-	public virtual IEnumerable<string> GetSctiptingDefineSymbols(bool includedInBuild, string parameter, string value)
+	public virtual IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion, string parameter, string value)
 	{
 		// Only the root option has a toggle in the build profile
-		if (Parent == null && includedInBuild) {
-			return new string[] { DEFINE_PREFIX + Name };
+		if (Parent == null && inclusion != OptionInclusion.Remove) {
+			if (inclusion == OptionInclusion.Feature) {
+				return new string[] { DEFINE_PREFIX + Name };
+			} else if (inclusion == OptionInclusion.FeatureAndOption) {
+				return new string[] { DEFINE_PREFIX + Name, DEFINE_PREFIX + OPTION_PREFIX + Name };
+			} else {
+				Debug.LogError("Invalid inclusion for Option " + Name + ": " + inclusion);
+				return Enumerable.Empty<string>();
+			}
 		} else {
 			return Enumerable.Empty<string>();
 		}
@@ -472,8 +475,8 @@ public abstract class Option : IOption
 	public Option()
 	{
 		Name = GetType().Name;
-		if (Name.StartsWith(DEFINE_PREFIX)) {
-			Name = Name.Substring(DEFINE_PREFIX.Length);
+		if (Name.StartsWith(OPTION_PREFIX)) {
+			Name = Name.Substring(OPTION_PREFIX.Length);
 		}
 
 		Parent = null;

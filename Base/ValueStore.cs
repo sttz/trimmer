@@ -52,6 +52,7 @@ public class ValueStore : ISerializationCallbackReceiver
 				return name;
 			}
 			set {
+				if (this.name == value) return;
 				this.name = value;
 				isDirty = true;
 			}
@@ -65,6 +66,7 @@ public class ValueStore : ISerializationCallbackReceiver
 				return value;
 			}
 			set {
+				if (this.value == value) return;
 				this.value = value;
 				isDirty = true;
 			}
@@ -305,17 +307,18 @@ public class ValueStore : ISerializationCallbackReceiver
 	[Serializable]
 	public class RootNode : Node
 	{
-		[SerializeField] internal bool includeInBuild;
+		[SerializeField] internal OptionInclusion inclusion;
 
 		/// <summary>
 		/// Wether the option should be included in builds.
 		/// </summary>
-		public bool IncludeInBuild {
+		public OptionInclusion Inclusion {
 			get {
-				return includeInBuild;
+				return inclusion;
 			}
 			set {
-				includeInBuild = value;
+				if (inclusion == value) return;
+				inclusion = value;
 				isDirty = true;
 			}
 		}
@@ -323,7 +326,7 @@ public class ValueStore : ISerializationCallbackReceiver
 		public override Node Clone()
 		{
 			var clone = Clone<RootNode>();
-			clone.includeInBuild = includeInBuild;
+			clone.inclusion = inclusion;
 			return clone;
 		}
 	}

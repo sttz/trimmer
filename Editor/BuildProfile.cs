@@ -184,16 +184,19 @@ public class BuildProfile : EditableProfile
 	/// <summary>
 	/// Check if an option should be included in builds of this profile.
 	/// </summary>
-	public bool IncludeInBuild(IOption option)
+	public OptionInclusion GetInclusionOf(IOption option)
 	{
 		var node = store.GetRoot(option.Name);
 		if (node == null) {
-			return false;
+			return OptionInclusion.Remove;
 		} else {
-			return node.IncludeInBuild 
-				&& !option.BuildOnly
-				&& !option.EditorOnly
-				&& option.IsAvailable(BuildTargets);
+			var inclusion = node.Inclusion;
+			if (!option.IsAvailable(BuildTargets)) {
+				inclusion = OptionInclusion.Remove;
+			} else if (option.BuildOnly || option.EditorOnly) {
+				inclusion &= ~OptionInclusion.Option;
+			}
+			return inclusion;
 		}
 	}
 
@@ -203,7 +206,7 @@ public class BuildProfile : EditableProfile
 	public bool HasAvailableOptions()
 	{
 		foreach (var option in AllOptions) {
-			if (IncludeInBuild(option))
+			if (GetInclusionOf(option) != OptionInclusion.Remove)
 				return true;
 		}
 		return false;
@@ -365,7 +368,7 @@ public class BuildProfile : EditableProfile
 		Recursion.Recurse(this, Recursion.RecursionType.Nodes, (context) => {
 			if (context.variantType != Recursion.VariantType.VariantContainer) {
 				var current = context.option.GetSctiptingDefineSymbols(
-					context.includeInBuild, context.Value, context.VariantParameter
+					context.inclusion, context.Value, context.VariantParameter
 				);
 				symbols.AddRange(current);
 			}
