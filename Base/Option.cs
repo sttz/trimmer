@@ -98,7 +98,7 @@ public abstract class Option : IOption
 	public OptionCapabilities Capabilities { get; private set; }
 
 	/// <summary>
-	/// Determine if the Option is available on the given build targets.
+	/// Determine if the Option is available on the given build targets (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// It's possible to hide an Option in Build Profiles if they don't
@@ -116,7 +116,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// Callback invoked for every scene during build or when a scene is played in the editor.
+	/// Callback invoked for every scene during build or when a scene is played in the editor (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// This callback gives Options a chance to modify scenes during the
@@ -132,7 +132,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// The priority of the Option's processing callbacks.
+	/// The priority of the Option's processing callbacks (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// This determines the order in which all Option's processing callbacks
@@ -150,7 +150,7 @@ public abstract class Option : IOption
 	public int PostprocessOrder { get; protected set; }
 
 	/// <summary>
-	/// Callback invoked before a profile build is started.
+	/// Callback invoked before a profile build is started (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// When a build is started on a <see cref="Editor.BuildProfile"/>, all options
@@ -176,7 +176,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// Callback invoked right before a build.
+	/// Callback invoked right before a build (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// This callback is invoked before the build for both profile builds
@@ -194,7 +194,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// Callback invoked when the build completed.
+	/// Callback invoked when the build completed (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// This callback is invoked after the build has been completed for 
@@ -209,7 +209,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// The scripting define symbols set by this option.
+	/// The scripting define symbols set by this option (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// By default, this method returns `<see cref="DEFINE_PREFIX"/> + <see cref="Name"/>`
@@ -234,7 +234,7 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// Do the editor GUI to edit this option.
+	/// Do the editor GUI to edit this option (**Editor-only**).
 	/// </summary>
 	/// <remarks>
 	/// The bundled subclasses in <see cref="sttz.Workbench.BaseOptions"/>
