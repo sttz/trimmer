@@ -18,27 +18,6 @@ namespace sttz.Workbench {
 #if UNITY_EDITOR
 
 /// <summary>
-/// Attribute indicating the given option has no runtime part
-/// and is only applicable to the build process.
-/// </summary>
-/// <remarks>
-/// Build-only options never appear in the editor profile and
-/// are always removed at build-time. Build-only options' Apply
-/// method is never called.
-/// </remarks>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-[Conditional("UNITY_EDITOR")]
-public class BuildOnlyAttribute : Attribute {}
-
-/// <summary>
-/// Attribute indicating the given option can only be used in
-/// the editor and will always be removed in builds.
-/// </summary>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-[Conditional("UNITY_EDITOR")]
-public class EditorOnlyAttribute : Attribute {}
-
-/// <summary>
 /// Enum indicating how and option behaves during the build process.
 /// </summary>
 /// <remarks>
@@ -78,6 +57,7 @@ public class EditorOnlyAttribute : Attribute {}
 /// Note that it's not possible to include the Option but not the Feature. Having
 /// an <c>OptionInclusion</c> value with only the <c>Option</c> flag set is invalid.
 /// </remarks>
+[Flags]
 public enum OptionInclusion
 {
 	/// <summary>
@@ -120,6 +100,96 @@ public static class OptionInclusionExtensions
 	public static bool IncludesFeature(this OptionInclusion inclusion)
 	{
 		return (inclusion & OptionInclusion.Feature) == OptionInclusion.Feature;
+	}
+}
+
+/// <summary>
+/// Enum indicating the capabilities of the Option.
+/// </summary>
+/// <remarks>
+/// The enum contains specific flags that represent different capabilities and also
+/// a set of default masks that represent common combinations of flags.
+/// 
+/// The capabilities control where an Option is visible:
+/// * If neither <see cref="HasAssociatedFeature"/>, <see cref="CanIncludeOption"/>
+///   or <see cref="ConfiguresBuild"/> is set, the Option will not be shown in
+///   Build Profiles.
+/// * If neither <see cref="CanPlayInEditor"/> or <see cref="ExecuteInEditMode"/> is set,
+///   the Option will not be shown in the Editor Profile.
+/// </remarks>
+[Flags]
+public enum OptionCapabilities
+{
+	None,
+
+	// ------ Flags ------
+
+	/// <summary>
+	/// Flag indicating the option has an associated feature that can be included/excluded from the
+	/// build using Build Profiles.
+	/// </summary>
+	HasAssociatedFeature = 1<<0,
+	
+	/// <summary>
+	/// Flag indicating the Option can be included in builds. If not set, the Option will always
+	/// be removed from builds.
+	/// </summary>
+	CanIncludeOption = 1<<1,
+
+	/// <summary>
+	/// Flag indicating the Option integrates into the build process, configuring the build
+	/// options, setting conditional compilation symbols or pre-/post-processes scenes and
+	/// the build.
+	/// </summary>
+	ConfiguresBuild = 1<<2,
+
+	/// <summary>
+	/// Flag indicating the Option can be used when playing in the editor. If not set, the Option
+	/// will not be loaded when playing the project in the editor.
+	/// </summary>
+	CanPlayInEditor = 1<<3,
+
+	/// <summary>
+	/// Flag indicating the Option should be loaded in edit mode as well. If set, the Option
+	/// will be loaded when not playing in the editor.
+	/// </summary>
+	ExecuteInEditMode = 1<<4,
+
+	// ------ Presets ------
+
+	/// <summary>
+	/// Default preset mask. The Option has an associated feature that can be
+	/// included/excluded from the build, the Option itself can be included/excluded from 
+	/// the build and the Option will be loaded when playing in the editor.
+	/// </summary>
+	Default = HasAssociatedFeature | CanIncludeOption | ConfiguresBuild | CanPlayInEditor,
+
+	/// <summary>
+	/// Build-only preset mask. The Option will only affect the build process. The Option
+	/// will not be included in builds and not loaded when playing in the editor.
+	/// </summary>
+	BuildOnly = ConfiguresBuild,
+
+	/// <summary>
+	/// Editor-only preset mask. The Option only applies to the editor, will always
+	/// be removed from builds and is only shown in the Editor Profile.
+	/// </summary>
+	EditorOnly = CanPlayInEditor,
+}
+
+/// <summary>
+/// Attribute used to indicate the <see cref="OptionCapabilities" /> of an 
+/// <see cref="Option"/> subclass.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+[Conditional("UNITY_EDITOR")]
+public class CapabilitiesAttribute : Attribute
+{
+	public OptionCapabilities Capabilities { get; protected set; }
+
+	public CapabilitiesAttribute(OptionCapabilities caps)
+	{
+		Capabilities = caps;
 	}
 }
 
@@ -179,8 +249,7 @@ public interface IOption
 	#if UNITY_EDITOR
 
 	bool IsAvailable(IEnumerable<BuildTarget> targets);
-	bool BuildOnly { get; }
-	bool EditorOnly { get; }
+	OptionCapabilities Capabilities { get; }
 
 	int PostprocessOrder { get; }
 	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion);

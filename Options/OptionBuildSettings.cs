@@ -11,11 +11,7 @@ using sttz.Workbench.BaseOptions;
 namespace sttz.Workbench.Options
 {
 
-// BuildOptions
-// Path
-// Scenes
-
-[BuildOnly]
+[Capabilities(OptionCapabilities.BuildOnly)]
 public class OptionBuildSettings : OptionEnum<BuildOptions>
 {
 	protected override void Configure()

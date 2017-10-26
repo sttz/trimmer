@@ -226,11 +226,6 @@ public class Prompt : MonoBehaviour
 			var path = IniAdapter.NameToPath(input);
 			if (path != null) {
 				foreach (var option in RuntimeProfile.Main) {
-					#if UNITY_EDITOR
-					if (option.BuildOnly)
-						continue;
-					#endif
-
 					if (option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase)) {
 						CompleteOptionRecursive(path, option, "");
 					}

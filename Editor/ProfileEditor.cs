@@ -222,14 +222,15 @@ public class ProfileEditor : UnityEditor.Editor
 
 	List<IOption> options;
 
-	GUIContent inclusionRemove;
-	GUIContent inclusionFeature;
-	GUIContent inclusionOption;
+	GUIContent inclusionO;
+	GUIContent inclusionI;
+	GUIContent inclusionII;
 
 	GUIStyle categoryBackground;
 	GUIStyle categoryFoldout;
 	GUIStyle includeBackground;
 	GUIStyle separator;
+	GUIStyle inclusionLabel;
 
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
@@ -257,10 +258,10 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void InitializeGUI()
 	{
-		if (inclusionRemove == null) {
-			inclusionRemove = new GUIContent("O", "Remove Feature and Option");
-			inclusionFeature = new GUIContent("I", "Remove Option, Include Feature");
-			inclusionOption = new GUIContent("II", "Include Feature and Option");
+		if (inclusionO == null) {
+			inclusionO = new GUIContent("O");
+			inclusionI = new GUIContent("I");
+			inclusionII = new GUIContent("II");
 		}
 
 		if (categoryBackground == null) {
@@ -288,6 +289,12 @@ public class ProfileEditor : UnityEditor.Editor
 			separator = new GUIStyle();
 			separator.fixedHeight = 1;
 			separator.normal.background = CreateColorTexture(Color.white * 0.8f);
+		}
+
+		if (inclusionLabel == null) {
+			inclusionLabel = new GUIStyle(EditorStyles.label);
+			inclusionLabel.fixedWidth = 13;
+			inclusionLabel.alignment = TextAnchor.MiddleCenter;
 		}
 
 
@@ -584,7 +591,10 @@ public class ProfileEditor : UnityEditor.Editor
 					if (
 						context.type == Recursion.RecursionType.Nodes
 						&& context.IsRoot
-						&& !option.BuildOnly && !option.EditorOnly
+						&& (
+							(option.Capabilities & OptionCapabilities.CanIncludeOption) != 0
+							|| (option.Capabilities & OptionCapabilities.HasAssociatedFeature) != 0
+						)
 					) {
 						var root = (ValueStore.RootNode)context.node;
 						var value = root.Inclusion;
@@ -592,36 +602,8 @@ public class ProfileEditor : UnityEditor.Editor
 							value = OptionInclusion.Remove;
 							GUI.enabled = false;
 						}
-						GUIContent content;
-						if (value == OptionInclusion.Remove) {
-							content = inclusionRemove;
-						} else if (value == OptionInclusion.Feature) {
-							content = inclusionFeature;
-						} else if (value == OptionInclusion.FeatureAndOption) {
-							content = inclusionOption;
-						} else {
-							content = null;
-						}
-						GUILayout.Label(content, GUILayout.Width(toggleWidth));
-						if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition)
-								&& Event.current.type == EventType.MouseDown) {
-							Event.current.Use();
-							var menu = new GenericMenu();
-							content = new GUIContent(inclusionRemove.text + " - " + inclusionRemove.tooltip);
-							menu.AddItem(content, value == OptionInclusion.Remove, () => {
-								root.Inclusion = OptionInclusion.Remove;
-							});
-							content = new GUIContent(inclusionFeature.text + " - " + inclusionFeature.tooltip);
-							menu.AddItem(content, value == OptionInclusion.Feature, () => {
-								root.Inclusion = OptionInclusion.Feature;
-							});
-							content = new GUIContent(inclusionOption.text + " - " + inclusionOption.tooltip);
-							menu.AddItem(content, value == OptionInclusion.FeatureAndOption, () => {
-								root.Inclusion = OptionInclusion.FeatureAndOption;
-							});
-							menu.ShowAsContext();
-						}
-						//root.Inclusion = EditorGUILayout.Toggle(value, GUILayout.Width(toggleWidth));
+						GUILayout.Label(LabelForInclusion(root.Inclusion, option.Capabilities), inclusionLabel);
+						DoInclusionMenu(root, option.Capabilities);
 						GUI.enabled = true;
 					} else {
 						EditorGUILayout.Space();
@@ -649,6 +631,108 @@ public class ProfileEditor : UnityEditor.Editor
 		EditorGUI.indentLevel = lastDepth;
 
 		return isExpanded;
+	}
+
+	GUIContent LabelForInclusion(OptionInclusion inclusion, OptionCapabilities capabilities)
+	{
+		var capFeature = (capabilities & OptionCapabilities.HasAssociatedFeature) != 0;
+		var capOption = (capabilities & OptionCapabilities.CanIncludeOption) != 0;
+
+		if (capFeature && capOption) {
+			if (inclusion == OptionInclusion.Remove) {
+				return inclusionO;
+			} else if (inclusion == OptionInclusion.Feature) {
+				return inclusionI;
+			} else if (inclusion == OptionInclusion.FeatureAndOption) {
+				return inclusionII;
+			} else {
+				return null;
+			}
+		} else if (capFeature) {
+			if (inclusion == OptionInclusion.Remove) {
+				return inclusionO;
+			} else if (inclusion == OptionInclusion.Feature) {
+				return inclusionI;
+			} else {
+				return null;
+			}
+		} else if (capOption) {
+			if (inclusion == OptionInclusion.Remove) {
+				return inclusionO;
+			} else if (inclusion == OptionInclusion.Option) {
+				return inclusionI;
+			} else {
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	void DoInclusionMenu(ValueStore.RootNode root, OptionCapabilities capabilities)
+	{
+		// HasAssociatedFeature | CanIncludeOption
+		// O / I / II
+		// √ Include Feature
+		// √ Include Option
+		// ----
+		// Include Both
+		// Remove Both
+
+		// CanIncludeOption
+		// O / I
+		// √ Include Option
+
+		// HasAssociatedFeature
+		// O / I
+		// √ Include Feature
+		// Option always removed
+		
+		if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition)
+				&& Event.current.type == EventType.MouseDown) {
+			Event.current.Use();
+
+			var value = root.Inclusion;
+			var menu = new GenericMenu();
+			
+			var capFeature = (capabilities & OptionCapabilities.HasAssociatedFeature) != 0;
+			var capOption = (capabilities & OptionCapabilities.CanIncludeOption) != 0;
+
+			if (capFeature && capOption) {
+				menu.AddItem(new GUIContent("Include Feature"), (value & OptionInclusion.Feature) != 0, () => {
+					root.Inclusion ^= OptionInclusion.Feature;
+					if ((root.Inclusion & OptionInclusion.Feature) == 0) {
+						root.Inclusion &= ~OptionInclusion.Option;
+					}
+				});
+
+				menu.AddItem(new GUIContent("Include Option"), (value & OptionInclusion.Option) != 0, () => {
+					root.Inclusion ^= OptionInclusion.Option;
+				});
+
+				menu.AddSeparator("");
+
+				menu.AddItem(new GUIContent("Include Both"), (value & OptionInclusion.FeatureAndOption) == OptionInclusion.FeatureAndOption, () => {
+					root.Inclusion |= OptionInclusion.FeatureAndOption;
+				});
+
+				menu.AddItem(new GUIContent("Remove Both"), (value & OptionInclusion.FeatureAndOption) == 0, () => {
+					root.Inclusion &= ~OptionInclusion.FeatureAndOption;
+				});
+
+			} else if (capFeature) {
+				menu.AddItem(new GUIContent("Include Feature"), (value & OptionInclusion.Feature) != 0, () => {
+					root.Inclusion ^= OptionInclusion.Feature;
+				});
+
+			} else if (capOption) {
+				menu.AddItem(new GUIContent("Include Option"), (value & OptionInclusion.Option) != 0, () => {
+					root.Inclusion ^= OptionInclusion.Option;
+				});
+			}
+			
+			menu.ShowAsContext();
+		}
 	}
 
 	void AddNewVariant(IOption option, ValueStore.Node node)

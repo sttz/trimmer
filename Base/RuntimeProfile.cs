@@ -316,11 +316,19 @@ public class RuntimeProfile : IEnumerable<IOption>
 	}
 
 	/// <summary>
-	/// Limit the options the profile creates (for subclasses).
+	/// Limit the options the profile creates.
 	/// </summary>
 	protected virtual bool ShouldCreateOption(Type optionType)
 	{
+		#if UNITY_EDITOR
+		// In the editor, only create options that have the CanPlayInEditor capability
+		var caps = optionType.GetOptionCapabilities();
+		return (caps & OptionCapabilities.CanPlayInEditor) != 0;
+		#else
+		// During the build, non-capable Options should have been excluded
+		// Therefore, create all available Options in builds
 		return true;
+		#endif
 	}
 
 	/// <summary>

@@ -489,6 +489,21 @@ public class ValueStore : ISerializationCallbackReceiver
 		nodes.Clear();
 	}
 
+	/// <summary>
+	/// Create a clone of the current store.
+	/// </summary>
+	public ValueStore Clone()
+	{
+		var clone = new ValueStore();
+		
+		clone.nodes = new List<RootNode>(nodes.Count);
+		foreach (var node in nodes) {
+			clone.nodes.Add((RootNode)node.Clone());
+		}
+
+		return clone;
+	}
+
 	// -------- Unity Serialization --------
 
 	/// <summary>

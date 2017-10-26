@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using sttz.Workbench.Extensions;
 
 namespace sttz.Workbench.Editor
 {
@@ -179,7 +180,10 @@ public class EditorProfile : EditableProfile
 		if (Application.isPlaying) {
 			return RuntimeProfile.Main;
 		} else {
-			return AllOptions.Where(o => !o.BuildOnly);
+			return AllOptions.Where(o => 
+				(o.Capabilities & OptionCapabilities.CanPlayInEditor) != 0
+				|| (o.Capabilities & OptionCapabilities.ExecuteInEditMode) != 0
+			);
 		}
 	}
 
@@ -232,7 +236,8 @@ public class EditorProfile : EditableProfile
 
 		protected override bool ShouldCreateOption(Type optionType)
 		{
-			return optionType.GetCustomAttributes(typeof(ExecuteInEditMode), true).Length > 0;
+			var caps = optionType.GetOptionCapabilities();
+			return (caps & OptionCapabilities.ExecuteInEditMode) != 0;
 		}
 	}
 

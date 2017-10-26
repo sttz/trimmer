@@ -89,30 +89,13 @@ public abstract class Option : IOption
 	#if UNITY_EDITOR
 
 	/// <summary>
-	/// Wether the Option is build-only.
+	/// The capabilities of the Option (**Editor-only**).
 	/// </summary>
 	/// <remarks>
-	/// Build-only options only apply to the build process.
-	/// They're not loaded when playing in the editor or player
-	/// and their <see cref="Apply"/> is never called.
-	/// 
-	/// **This attribute only applies to main Options. All child and 
-	/// variant Options inherit this attribute from their main Option.**
+	/// Used to cache the attribute value. To change the capabilities,
+	/// use the <see cref="CapabilitiesAttribute"/>.
 	/// </remarks>
-	public bool BuildOnly { get; private set; }
-
-	/// <summary>
-	/// Wether the Option is editor-only.
-	/// </summary>
-	/// <remarks>
-	/// Editor-only Options are only available in the editor. They
-	/// will be loaded when playing in the editor but they will
-	/// always be removed from builds.
-	/// 
-	/// **This attribute only applies to main Options. All child and 
-	/// variant Options inherit this attribute from their main Option.**
-	/// </remarks>
-	public bool EditorOnly { get; private set; }
+	public OptionCapabilities Capabilities { get; private set; }
 
 	/// <summary>
 	/// Determine if the Option is available on the given build targets.
@@ -482,8 +465,13 @@ public abstract class Option : IOption
 		Parent = null;
 
 		#if UNITY_EDITOR
-		BuildOnly = GetType().GetCustomAttributes(typeof(BuildOnlyAttribute), true).Length > 0;
-		EditorOnly = GetType().GetCustomAttributes(typeof(EditorOnlyAttribute), true).Length > 0;
+		Capabilities = OptionCapabilities.Default;
+		var attr = (CapabilitiesAttribute)GetType()
+			.GetCustomAttributes(typeof(CapabilitiesAttribute), true)
+			.FirstOrDefault();
+		if (attr != null) {
+			Capabilities = attr.Capabilities;
+		}
 		#endif
 		
 		Configure();

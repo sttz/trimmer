@@ -193,7 +193,7 @@ public class BuildProfile : EditableProfile
 			var inclusion = node.Inclusion;
 			if (!option.IsAvailable(BuildTargets)) {
 				inclusion = OptionInclusion.Remove;
-			} else if (option.BuildOnly || option.EditorOnly) {
+			} else if ((option.Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
 				inclusion &= ~OptionInclusion.Option;
 			}
 			return inclusion;

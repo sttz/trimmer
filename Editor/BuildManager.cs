@@ -10,6 +10,7 @@ using UnityEditor.Callbacks;
 using UnityEditor.Build;
 using UnityEngine.SceneManagement;
 using System.Reflection;
+using sttz.Workbench.Extensions;
 
 namespace sttz.Workbench.Editor
 {
@@ -294,10 +295,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		// Run options' PrepareBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
-		CreateOrUpdateMainRuntimeProfile();
-		var profile = RuntimeProfile.Main;
-
-		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+		CreateOrUpdateBuildOptionsProfile();
+		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			options = option.PrepareBuild(options, inclusion);
 		}
@@ -318,7 +317,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		return error;
 	}
 
-	// -------- Processing --------
+	// -------- Profiles --------
 
 	/// <summary>
 	/// Create and configure the <see cref="ProfileContainer"/> during the build.
@@ -335,26 +334,72 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	private static void CreateOrUpdateMainRuntimeProfile()
 	{
+		if (!Application.isPlaying) {
+			Debug.LogError("Cannot create main runtime profile when not playing.");
+			return;
+		}
+
 		ValueStore store = null;
 
-		// During playback in the editor
-		if (Application.isPlaying) {
-			if (EditorSourceProfile != null) {
-				store = EditorSourceProfile.Store;
-			} else {
-				store = EditorProfile.SharedInstance.Store;
-			}
-
-		// During the build process
+		if (EditorSourceProfile != null) {
+			store = EditorSourceProfile.Store;
 		} else {
-			if (CurrentProfile != null) {
-				store = CurrentProfile.Store;
-			}
+			store = EditorProfile.SharedInstance.Store;
+		}
+
+		if (store != null) {
+			store = store.Clone();
 		}
 		
 		RuntimeProfile.CreateMain(store);
 		RuntimeProfile.Main.CleanStore();
 	}
+
+	/// <summary>
+	/// Profile used to call Option callbacks during builds.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="BuildProfile"/> only stores the Option values but doesn't
+	/// contain Option instances. During build, this BuildOptionsProfile is 
+	/// created to instantiate the necessary Options and then to call the
+	/// build callbacks on them.
+	/// </remarks>
+	private class BuildOptionsProfile : RuntimeProfile
+	{
+		public BuildOptionsProfile(ValueStore store) : base(store) { }
+
+		protected override bool ShouldCreateOption(Type optionType)
+		{
+			var caps = optionType.GetOptionCapabilities();
+			return (caps & OptionCapabilities.ConfiguresBuild) != 0;
+		}
+	}
+
+	static BuildOptionsProfile buildOptionsProfile;
+
+	/// <summary>
+	/// Create the build options profile when necessary and
+	/// assign it the current store.
+	/// </summary>
+	private static void CreateOrUpdateBuildOptionsProfile()
+	{
+		ValueStore store = null;
+		if (CurrentProfile != null) {
+			store = CurrentProfile.Store;
+		}
+
+		if (store != null) {
+			store = store.Clone();
+		}
+
+		if (buildOptionsProfile == null) {
+			buildOptionsProfile = new BuildOptionsProfile(store);
+		} else {
+			buildOptionsProfile.Store = store;
+		}
+	}
+
+	// ------ Unity Callbacks ------
 
 	public int callbackOrder { get { return 0; } }
 
@@ -372,10 +417,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
-		CreateOrUpdateMainRuntimeProfile();
-		var profile = RuntimeProfile.Main;
-
-		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+		CreateOrUpdateBuildOptionsProfile();
+		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			option.PostprocessBuild(target, path, inclusion);
 		}
@@ -388,10 +431,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
-		CreateOrUpdateMainRuntimeProfile();
-		var profile = RuntimeProfile.Main;
-
-		foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+		CreateOrUpdateBuildOptionsProfile();
+		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			option.PostprocessBuild(target, path, inclusion);
 		}
@@ -418,14 +459,13 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			var buildProfile = CurrentProfile;
 			var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 
-			CreateOrUpdateMainRuntimeProfile();
-			profile = RuntimeProfile.Main;
+			CreateOrUpdateBuildOptionsProfile();
 
 			if (!removeAll) {
-				InjectProfileContainer(profile.Store);
+				InjectProfileContainer(buildOptionsProfile.Store);
 			}
 
-			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
+			foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 				var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 				option.PostprocessScene(scene, true, inclusion);
 			}
