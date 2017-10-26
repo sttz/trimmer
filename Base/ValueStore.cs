@@ -307,6 +307,8 @@ public class ValueStore : ISerializationCallbackReceiver
 	[Serializable]
 	public class RootNode : Node
 	{
+		#if UNITY_EDITOR
+
 		[SerializeField] internal OptionInclusion inclusion;
 
 		/// <summary>
@@ -323,10 +325,16 @@ public class ValueStore : ISerializationCallbackReceiver
 			}
 		}
 
+		#endif
+
 		public override Node Clone()
 		{
 			var clone = Clone<RootNode>();
+
+			#if UNITY_EDITOR
 			clone.inclusion = inclusion;
+			#endif
+			
 			return clone;
 		}
 	}
