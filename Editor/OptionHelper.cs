@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
+namespace sttz.Workbench.Editor
+{
+
 /// <summary>
 /// Helper methods for Options.
 /// </summary>
@@ -115,4 +118,6 @@ public static class OptionHelper
             }
         }
     }
+}
+
 }
