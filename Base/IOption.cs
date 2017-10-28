@@ -116,6 +116,9 @@ public static class OptionInclusionExtensions
 ///   Build Profiles.
 /// * If neither <see cref="CanPlayInEditor"/> or <see cref="ExecuteInEditMode"/> is set,
 ///   the Option will not be shown in the Editor Profile.
+/// 
+/// Capabilities are only valid on the main Option, all child and variant Options will
+/// inherit the capabilities from the main Option.
 /// </remarks>
 [Flags]
 public enum OptionCapabilities
