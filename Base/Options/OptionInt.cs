@@ -16,11 +16,18 @@ public abstract class OptionInt : Option, IOption<int>
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
 	{
-		return Save(EditorGUILayout.IntField(label, Parse(input)));
+		if (MinValue != null && MaxValue != null) {
+			return Save(EditorGUILayout.IntSlider(label, Parse(input), (int)MinValue, (int)MaxValue));
+		} else {
+			return Save(EditorGUILayout.IntField(label, Parse(input)));
+		}
 	}
 	#endif
 
 	public int Value { get; set; }
+
+	public int? MinValue { get; set; }
+	public int? MaxValue { get; set; }
 
 	public int Parse(string input)
 	{
@@ -29,7 +36,11 @@ public abstract class OptionInt : Option, IOption<int>
 
 		int result;
 		if (int.TryParse(input, out result)) {
-			return result;
+			if (MinValue != null && MaxValue != null) {
+				return Math.Min(Math.Max((int)MinValue, result), (int)MaxValue);
+			} else {
+				return result;
+			}
 		} else {
 			return 0;
 		}

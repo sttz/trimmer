@@ -16,11 +16,18 @@ public abstract class OptionFloat : Option, IOption<float>
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
 	{
-		return Save(EditorGUILayout.FloatField(label, Parse(input)));
+		if (MinValue != null && MaxValue != null) {
+			return Save(EditorGUILayout.Slider(label, Parse(input), (float)MinValue, (float)MaxValue));
+		} else {
+			return Save(EditorGUILayout.FloatField(label, Parse(input)));
+		}
 	}
 	#endif
 
 	public float Value { get; set; }
+
+	public float? MinValue { get; set; }
+	public float? MaxValue { get; set; }
 
 	public float Parse(string input)
 	{
@@ -29,7 +36,11 @@ public abstract class OptionFloat : Option, IOption<float>
 
 		float result;
 		if (float.TryParse(input, out result)) {
-			return result;
+			if (MinValue != null && MaxValue != null) {
+				return Math.Min(Math.Max((float)MinValue, result), (float)MaxValue);
+			} else {
+				return result;
+			}
 		} else {
 			return 0f;
 		}
