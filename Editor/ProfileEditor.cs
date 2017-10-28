@@ -602,7 +602,7 @@ public class ProfileEditor : UnityEditor.Editor
 							value = OptionInclusion.Remove;
 							GUI.enabled = false;
 						}
-						GUILayout.Label(LabelForInclusion(root.Inclusion, option.Capabilities), inclusionLabel);
+						GUILayout.Label(LabelForInclusion(root, option.Capabilities), inclusionLabel);
 						DoInclusionMenu(root, option.Capabilities);
 						GUI.enabled = true;
 					} else {
@@ -633,8 +633,9 @@ public class ProfileEditor : UnityEditor.Editor
 		return isExpanded;
 	}
 
-	GUIContent LabelForInclusion(OptionInclusion inclusion, OptionCapabilities capabilities)
+	GUIContent LabelForInclusion(ValueStore.RootNode root, OptionCapabilities capabilities)
 	{
+		var inclusion = root.Inclusion;
 		var capFeature = (capabilities & OptionCapabilities.HasAssociatedFeature) != 0;
 		var capOption = (capabilities & OptionCapabilities.CanIncludeOption) != 0;
 
@@ -646,7 +647,9 @@ public class ProfileEditor : UnityEditor.Editor
 			} else if (inclusion == OptionInclusion.FeatureAndOption) {
 				return inclusionII;
 			} else {
-				return null;
+				// Fix invalid value
+				root.Inclusion = OptionInclusion.Remove;
+				return inclusionO;
 			}
 		} else if (capFeature) {
 			if (inclusion == OptionInclusion.Remove) {
@@ -654,7 +657,9 @@ public class ProfileEditor : UnityEditor.Editor
 			} else if (inclusion == OptionInclusion.Feature) {
 				return inclusionI;
 			} else {
-				return null;
+				// Fix invalid value
+				root.Inclusion = OptionInclusion.Remove;
+				return inclusionO;
 			}
 		} else if (capOption) {
 			if (inclusion == OptionInclusion.Remove) {
@@ -662,11 +667,13 @@ public class ProfileEditor : UnityEditor.Editor
 			} else if (inclusion == OptionInclusion.Option) {
 				return inclusionI;
 			} else {
-				return null;
+				// Fix invalid value
+				root.Inclusion = OptionInclusion.Remove;
+				return inclusionO;
 			}
 		}
 
-		return null;
+		return GUIContent.none;
 	}
 
 	void DoInclusionMenu(ValueStore.RootNode root, OptionCapabilities capabilities)
