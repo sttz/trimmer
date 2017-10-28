@@ -114,6 +114,16 @@ public class BuildProfile : EditableProfile
 
 	static BuildTarget[] activeBuildTarget;
 
+	/// <summary>
+	/// Option needs to have one of these capabilities to be 
+	/// displayed in Build Profiles.
+	/// </summary>
+	const OptionCapabilities requiredCapabilities = (
+		OptionCapabilities.HasAssociatedFeature
+		| OptionCapabilities.CanIncludeOption
+		| OptionCapabilities.ConfiguresBuild
+	);
+
 	// ------ Fields ------
 
 	/// <summary>
@@ -219,7 +229,7 @@ public class BuildProfile : EditableProfile
 
 	public override IEnumerable<IOption> GetAllOptions()
 	{
-		return AllOptions;
+		return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
 	}
 
 	public override void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node)

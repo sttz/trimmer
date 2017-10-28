@@ -75,6 +75,15 @@ public class EditorProfile : EditableProfile
 	}
 	private static EditorProfile _editorProfile;
 
+	/// <summary>
+	/// Option needs to have one of these capabilities to be 
+	/// displayed in the Editor Profile.
+	/// </summary>
+	const OptionCapabilities requiredCapabilities = (
+		OptionCapabilities.CanPlayInEditor
+		| OptionCapabilities.ExecuteInEditMode
+	);
+
 	[InitializeOnLoadMethod]
 	static void ListenForPlayModeStateChanges()
 	{
@@ -180,10 +189,7 @@ public class EditorProfile : EditableProfile
 		if (Application.isPlaying) {
 			return RuntimeProfile.Main;
 		} else {
-			return AllOptions.Where(o => 
-				(o.Capabilities & OptionCapabilities.CanPlayInEditor) != 0
-				|| (o.Capabilities & OptionCapabilities.ExecuteInEditMode) != 0
-			);
+			return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
 		}
 	}
 
