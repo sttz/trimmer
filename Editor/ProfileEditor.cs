@@ -391,6 +391,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		EditorGUILayout.Space();
 
+		var usesActive = buildProfile.UsesActiveBuildTarget();
 		EditorGUILayout.BeginHorizontal();
 		{
 			GUILayout.Label("Build Targets", boldLabel);
@@ -400,7 +401,9 @@ public class ProfileEditor : UnityEditor.Editor
 				var obsoleteType = typeof(ObsoleteAttribute);
 				foreach (BuildTarget target in Enum.GetValues(type)) {
 					var isObsolete = type.GetMember(target.ToString()).First().GetCustomAttributes(obsoleteType, true).Length > 0;
-					if (isObsolete || (int)target < 0 || buildProfile.BuildTargets.Contains(target))
+					if (isObsolete 
+						|| (int)target < 0 
+						|| (!usesActive && buildProfile.BuildTargets.Contains(target)))
 						continue;
 					menu.AddItem(new GUIContent(target.ToString()), false, AddBuildTarget, target);
 				}
@@ -410,7 +413,6 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 		EditorGUILayout.EndHorizontal();
 
-		var usesActive = buildProfile.UsesActiveBuildTarget();
 		foreach (var target in buildProfile.BuildTargets) {
 			EditorGUILayout.BeginHorizontal();
 			EditorGUI.BeginDisabledGroup(usesActive);
