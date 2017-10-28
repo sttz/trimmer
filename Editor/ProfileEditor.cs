@@ -399,7 +399,7 @@ public class ProfileEditor : UnityEditor.Editor
 				var menu = new GenericMenu();
 				var type = typeof(BuildTarget);
 				var obsoleteType = typeof(ObsoleteAttribute);
-				foreach (BuildTarget target in Enum.GetValues(type)) {
+				foreach (var target in Enum.GetValues(type).Cast<BuildTarget>().OrderBy(b => b.ToString())) {
 					var isObsolete = type.GetMember(target.ToString()).First().GetCustomAttributes(obsoleteType, true).Length > 0;
 					if (isObsolete 
 						|| (int)target < 0 
