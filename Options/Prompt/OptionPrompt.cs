@@ -42,9 +42,9 @@ public class OptionPrompt : OptionToggle
 	}
 
 	#if UNITY_EDITOR
-	override public void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion)
+	override public void PostprocessScene(Scene scene, OptionInclusion inclusion)
 	{
-		base.PostprocessScene(scene, isBuild, inclusion);
+		base.PostprocessScene(scene, inclusion);
 
 		// Inject prompt into first scene when only including feature and prompt enabled
 		if (inclusion == OptionInclusion.Feature && scene.buildIndex == 0 && Value) {

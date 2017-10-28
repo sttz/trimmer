@@ -253,7 +253,7 @@ public interface IOption
 
 	int PostprocessOrder { get; }
 	BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion);
-	void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion);
+	void PostprocessScene(Scene scene, OptionInclusion inclusion);
 	void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 	void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 

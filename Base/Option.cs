@@ -125,19 +125,18 @@ public abstract class Option : IOption
 	/// to e.g. inject a script into the scene or remove some game objects.
 	/// </remarks>
 	/// <param name="scene">The scene that is being processed.</param>
-	/// <param name="isBuild">Wether the scene is being played in the editor or processed during a build.</param>
 	/// <param name="inclusion">Wether the option is included in the build.</param>
-	public virtual void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion)
+	public virtual void PostprocessScene(Scene scene, OptionInclusion inclusion)
 	{
 		if (variants != null) {
 			foreach (var variant in variants) {
-				variant.PostprocessScene(scene, isBuild, inclusion);
+				variant.PostprocessScene(scene, inclusion);
 			}
 		}
 
 		if (children != null) {
 			foreach (var child in children) {
-				child.PostprocessScene(scene, isBuild, inclusion);
+				child.PostprocessScene(scene, inclusion);
 			}
 		}
 	}

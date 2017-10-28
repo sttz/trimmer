@@ -451,22 +451,15 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	public void OnProcessScene(Scene scene)
 	{
-		RuntimeProfile profile;
-
-		// Playing in editor
 		if (!BuildPipeline.isBuildingPlayer) {
+			// When playing only inject runtime profile, Options can use Apply()
 			if (RuntimeProfile.Main == null) {
 				CreateOrUpdateMainRuntimeProfile();
 				RuntimeProfile.Main.Apply();
 			}
 
-			profile = RuntimeProfile.Main;
-			foreach (var option in profile.OrderBy(o => o.PostprocessOrder)) {
-				option.PostprocessScene(scene, false, OptionInclusion.FeatureAndOption);
-			}
-
-		// Building
 		} else {
+			// Inject profile and call PostprocessScene, Apply() isn't called during build
 			var buildProfile = CurrentProfile;
 			var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 
@@ -478,7 +471,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 				var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-				option.PostprocessScene(scene, true, inclusion);
+				option.PostprocessScene(scene, inclusion);
 			}
 		}
 	}
