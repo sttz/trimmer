@@ -348,6 +348,26 @@ public class BuildProfile : EditableProfile
 		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
 	}
 
+	/// <summary>
+	/// The scripting define symbols set by this profile.
+	/// </summary>
+	public IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup)
+	{
+		var symbols = new HashSet<string>();
+		
+		Recursion.Recurse(this, Recursion.RecursionType.Nodes, (context) => {
+			if (context.variantType != Recursion.VariantType.VariantContainer) {
+				var current = context.option.GetSctiptingDefineSymbols(
+					context.inclusion, context.Value, context.VariantParameter
+				);
+				symbols.AddRange(current);
+			}
+			return true;
+		});
+
+		return symbols;
+	}
+
 	// -------- Internals --------
 
 	protected virtual void OnEnable()
@@ -366,26 +386,6 @@ public class BuildProfile : EditableProfile
 	{
 		var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
 		return new HashSet<string>(defines);
-	}
-
-	/// <summary>
-	/// The scripting define symbols set by this profile.
-	/// </summary>
-	protected IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup)
-	{
-		var symbols = new HashSet<string>();
-		
-		Recursion.Recurse(this, Recursion.RecursionType.Nodes, (context) => {
-			if (context.variantType != Recursion.VariantType.VariantContainer) {
-				var current = context.option.GetSctiptingDefineSymbols(
-					context.inclusion, context.Value, context.VariantParameter
-				);
-				symbols.AddRange(current);
-			}
-			return true;
-		});
-
-		return symbols;
 	}
 }
 

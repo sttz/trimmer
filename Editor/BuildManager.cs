@@ -414,6 +414,17 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		CurrentProfile.ApplyScriptingDefineSymbols(target);
 
+		Debug.Log(string.Format(
+			"Workbench: Building '{0}' to '{1}'\nIncluded Options: {2}\nSymbols: {3}",
+			target, path, 
+			CurrentProfile.GetAllOptions()
+				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
+				.Select(o => o.Name)
+				.Aggregate((c, n) => c + ", " + n),
+			CurrentProfile.GetProfileScriptingDefineSymbols(BuildPipeline.GetBuildTargetGroup(target))
+				.Aggregate((c, n) => c + ", " + n)
+		));
+
 		// Run options' PostprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
