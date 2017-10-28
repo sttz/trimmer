@@ -215,7 +215,9 @@ public class ProfileEditor : UnityEditor.Editor
 
 	protected void OnDisable()
 	{
-		profile.SaveIfNeeded();
+		if (profile != null) {
+			profile.SaveIfNeeded();
+		}
 	}
 
 	// -------- Fields --------
