@@ -220,12 +220,18 @@ public abstract class Option : IOption
 	{
 		// Only the root option has a toggle in the build profile
 		if (Parent == null && inclusion != OptionInclusion.Remove) {
-			if (inclusion == OptionInclusion.Feature) {
+			if (inclusion == OptionInclusion.Feature 
+					&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
 				return new string[] { DEFINE_PREFIX + Name };
-			} else if (inclusion == OptionInclusion.FeatureAndOption) {
+			} else if (inclusion == OptionInclusion.Option 
+					&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
+				return new string[] { DEFINE_PREFIX + OPTION_PREFIX + Name };
+			} else if (inclusion == OptionInclusion.FeatureAndOption
+					&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0
+					&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
 				return new string[] { DEFINE_PREFIX + Name, DEFINE_PREFIX + OPTION_PREFIX + Name };
 			} else {
-				Debug.LogError("Invalid inclusion for Option " + Name + ": " + inclusion);
+				Debug.LogError("Invalid inclusion for Option " + Name + ": OptionInclusion = " + inclusion + ", OptionCapabilities = " + Capabilities);
 				return Enumerable.Empty<string>();
 			}
 		} else {
