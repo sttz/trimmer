@@ -100,6 +100,8 @@ public static class OptionInclusionExtensions
 	}
 }
 
+#endif
+
 /// <summary>
 /// Enum indicating the capabilities of the Option.
 /// </summary>
@@ -192,8 +194,6 @@ public class CapabilitiesAttribute : Attribute
 		Capabilities = caps;
 	}
 }
-
-#endif
 
 /// <summary>
 /// Define how an Option can be variant.
