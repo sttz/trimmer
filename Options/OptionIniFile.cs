@@ -1,4 +1,4 @@
-#if OptionIniFile || UNITY_EDITOR
+#if WB_OptionIniFile || UNITY_EDITOR
 using System;
 using System.IO;
 using sttz.Workbench.Extensions;
@@ -30,6 +30,7 @@ namespace sttz.Workbench.Options
 /// <c>%Personal%</c> is replaced by <c>Environment.SpecialFolder.Personal</c><br />
 /// <c>%Desktop%</c> is replaced by <c>Environment.SpecialFolder.DesktopDirectory</c><br />
 /// </remarks>
+[Capabilities(OptionCapabilities.CanIncludeOption)]
 public class OptionIniFile : OptionString
 {
 	protected override void Configure()
