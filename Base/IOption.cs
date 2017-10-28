@@ -28,7 +28,7 @@ namespace sttz.Workbench {
 /// When building, there are a few scenarios, how an option and its feature are
 /// compiled:
 /// * Both are included: The build includes both the Workbench Option as well
-///   as its associated feature. The Option allows to configure the build at
+///   as its associated feature. The Option allows to configure the feature at
 ///   runtime.
 /// * Only the feature is included: The Option only configures the feature in
 ///   the editor. At build-time the Option statically configures the feature
@@ -39,7 +39,7 @@ namespace sttz.Workbench {
 ///   Option or feature ever existed.
 /// 
 /// As an example, assume there's a platform integration that requires an API key.
-/// The feature is the integration script	 and maybe some conditionally-compiled
+/// The feature is the integration script and maybe some conditionally-compiled
 /// snippets of code in other scripts. The Option controls the conditional compilation,
 /// injects the integration script when enabled and configures the API key.
 /// 
@@ -53,9 +53,6 @@ namespace sttz.Workbench {
 /// Profiles for other platforms would completely remove the build and feature,
 /// the release build profile would only remove the Option and the development
 /// profile would include both Option and feature.
-/// 
-/// Note that it's not possible to include the Option but not the Feature. Having
-/// an <c>OptionInclusion</c> value with only the <c>Option</c> flag set is invalid.
 /// </remarks>
 [Flags]
 public enum OptionInclusion

@@ -18,7 +18,8 @@ using UnityEditor;
 
 namespace sttz.Workbench {
 
-// TODO: Process callback on child/variant options?
+// TODO: Document editor-only methods/props
+// TODO: Document main-option-only methods/props
 
 /// <summary>
 /// Base class for Workebnch Options.
@@ -128,7 +129,17 @@ public abstract class Option : IOption
 	/// <param name="inclusion">Wether the option is included in the build.</param>
 	public virtual void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion)
 	{
-		// NOP
+		if (variants != null) {
+			foreach (var variant in variants) {
+				variant.PostprocessScene(scene, isBuild, inclusion);
+			}
+		}
+
+		if (children != null) {
+			foreach (var child in children) {
+				child.PostprocessScene(scene, isBuild, inclusion);
+			}
+		}
 	}
 
 	/// <summary>
@@ -172,6 +183,18 @@ public abstract class Option : IOption
 	/// <returns>The modified options.</returns>
 	public virtual BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
 	{
+		if (variants != null) {
+			foreach (var variant in variants) {
+				options = variant.PrepareBuild(options, inclusion);
+			}
+		}
+
+		if (children != null) {
+			foreach (var child in children) {
+				options = child.PrepareBuild(options, inclusion);
+			}
+		}
+
 		return options;
 	}
 
@@ -190,7 +213,17 @@ public abstract class Option : IOption
 	/// <param name="inclusion">Wether this option is included in the build</param>
 	public virtual void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
 	{
-		// NOP
+		if (variants != null) {
+			foreach (var variant in variants) {
+				variant.PreprocessBuild(target, path, inclusion);
+			}
+		}
+
+		if (children != null) {
+			foreach (var child in children) {
+				child.PreprocessBuild(target, path, inclusion);
+			}
+		}
 	}
 
 	/// <summary>
@@ -205,7 +238,17 @@ public abstract class Option : IOption
 	/// <param name="inclusion">Wether this option is included in the build</param>
 	public virtual void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
 	{
-		// NOP
+		if (variants != null) {
+			foreach (var variant in variants) {
+				variant.PostprocessBuild(target, path, inclusion);
+			}
+		}
+
+		if (children != null) {
+			foreach (var child in children) {
+				child.PostprocessBuild(target, path, inclusion);
+			}
+		}
 	}
 
 	/// <summary>
