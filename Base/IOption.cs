@@ -160,11 +160,24 @@ public enum OptionCapabilities
 	// ------ Presets ------
 
 	/// <summary>
-	/// Default preset mask. The Option has an associated feature that can be
-	/// included/excluded from the build, the Option itself can be included/excluded from 
-	/// the build and the Option will be loaded when playing in the editor.
+	/// Default preset mask. The Option can be included in the build, its 
+	/// build configuration callbacks are called and it is loaded when playing
+	/// in the editor.
 	/// </summary>
-	Default = HasAssociatedFeature | CanIncludeOption | ConfiguresBuild | CanPlayInEditor,
+	Default = CanIncludeOption | ConfiguresBuild | CanPlayInEditor,
+
+	/// <summary>
+	/// Default preset mask. Like <see cref="Default"/> but also has an associated 
+	/// feature that can be included/excluded from the build.
+	/// </summary>
+	WithFeature = Default | HasAssociatedFeature,
+
+	/// <summary>
+	/// Default preset mask. A simple Option that can be included in the build
+	/// and gets loaded in the editor but doesn't process the build and has 
+	/// no assocaited feature.
+	/// </summary>
+	OptionOnly = CanIncludeOption | CanPlayInEditor,
 
 	/// <summary>
 	/// Build-only preset mask. The Option will only affect the build process. The Option
