@@ -2,6 +2,7 @@
 using System;
 using sttz.Workbench.BaseOptions;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace sttz.Workbench.Options
 {
@@ -16,14 +17,20 @@ public class OptionPrompt : OptionToggle
 
 	public override void Apply()
 	{
-		Debug.Log("OptionPrompt.Apply");
 		base.Apply();
 		
-		var prompt = Prompt.Instance;
-		if (prompt == null) {
-			if (!Value)
-				return;
+		// Do not create instance when disabled
+		if (Prompt.Instance == null && !Value)
+			return;
 
+		CreateAndUpdate();
+	}
+
+	public void CreateAndUpdate()
+	{
+		var prompt = Prompt.Instance;
+
+		if (prompt == null) {
 			var go = new GameObject("Prompt");
 			prompt = go.AddComponent<Prompt>();
 		}
@@ -34,15 +41,17 @@ public class OptionPrompt : OptionToggle
 		prompt.position = GetChild<OptionPromptPosition>().Value;
 	}
 
-	public Prompt GetOrCreatePrompt()
+	#if UNITY_EDITOR
+	override public void PostprocessScene(Scene scene, bool isBuild, OptionInclusion inclusion)
 	{
-		var prompt = Prompt.Instance;
-		if (prompt == null) {
-			var go = new GameObject("Prompt");
-			prompt = go.AddComponent<Prompt>();
+		base.PostprocessScene(scene, isBuild, inclusion);
+
+		// Inject prompt into first scene when only including feature and prompt enabled
+		if (inclusion == OptionInclusion.Feature && scene.buildIndex == 0 && Value) {
+			CreateAndUpdate();
 		}
-		return prompt;
 	}
+	#endif
 
 	public class OptionPromptFontSize : OptionInt
 	{
