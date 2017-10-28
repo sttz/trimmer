@@ -836,6 +836,84 @@ public abstract class Option : IOption
 		}
 	}
 	string _category = "General";
+
+	// ------ Injection ------
+
+    /// <summary>
+    /// Get a singleton script instance in the current scene.
+    /// Intended for use in Options' <see cref="Apply"/> methods.
+    /// </summary>
+    /// <remarks>
+    /// Helper methods for Options to inject a feature into the project.
+    /// 
+    /// This method can be used in Options' <see cref="Apply"/> method, to 
+    /// create the feature on-demand or return the existing instance. Scripts 
+    /// created by `GetSingleton` are automatically marked `DontDestroyOnLoad`.
+    /// 
+    /// First determine if the feature is activated based on the Option's value.
+    /// Then set the <paramref name="create"/> parameter accordingly to not create
+    /// instances when not needed. If the method returns a non-null value, apply
+    /// the Option's configuration to the script.
+    /// 
+    /// Use <see cref="InjectFeature*"/> in <see cref="PostprocessScene"/> to
+    /// inject the script into the build if the Option is not included.
+    /// </remarks>
+    /// <param name="create">Wether to create the script if it not exists.</param>
+    /// <param name="containerName">The name of the container the script is created on (defaults to the script's name)</param>
+    /// <returns>The script or null if <paramref name="create"/> is <c>false</c> and the script doesn't exist</returns>
+    public static T GetSingleton<T>(bool create = true, string containerName = null) where T : Component
+    {
+        containerName = containerName ?? typeof(T).Name;
+
+        var container = GameObject.Find(containerName);
+        if (container == null) {
+            if (!create) return null;
+            container = new GameObject(containerName);
+            UnityEngine.Object.DontDestroyOnLoad(container);
+        }
+
+        var script = container.GetComponent<T>();
+        if (script == null) {
+            if (!create) return null;
+            script = container.AddComponent<T>();
+        }
+
+        return script;
+    }
+
+	#if UNITY_EDITOR
+
+    /// <summary>
+    /// Inject a feature script when necessary in an Option's <see cref="PostprocessScene"/> method.
+    /// </summary>
+    /// <remarks>
+    /// This method is analogous to <see cref="GetSingleton*"/>.
+    /// 
+    /// This method can be used in Options' <see cref="PostprocessScene"/> method to 
+    /// inject a feature script when it's needed (only if the feature is included but
+    /// the option is not and only in the first scene).
+	/// 
+	/// Make sure to check if the feature is properly configured before injecting it.
+    /// </remarks>
+    /// <param name="scene">Pass in the `scene` parameter from <see cref="PostprocessScene"/></param>
+    /// <param name="inclusion">Pass in the `inclusion` parameter from <see cref="PostprocessScene"/></param>
+    /// <param name="container">The name of the container the script is created on (defaults to the script's name)</param>
+    /// <returns>The script if it's injected or null</returns>
+    public static T InjectFeature<T>(Scene scene, OptionInclusion inclusion, string containerName = null) where T : Component
+    {
+        // We only inject when the feature is included but the Option is not
+        if (inclusion != OptionInclusion.Feature)
+            return null;
+
+        // We only inject to the first scene, because DontDestroyOnLoad is set,
+        // the script will persist through scene loads
+        if (scene.buildIndex != 0)
+            return null;
+
+        return GetSingleton<T>(true, containerName);
+    }
+
+	#endif
 }
 
 }
