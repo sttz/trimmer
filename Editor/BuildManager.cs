@@ -409,7 +409,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var buildProfile = CurrentProfile;
 		if (buildProfile == null) {
 			Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
-			return;
 		}
 
 		CurrentProfile.ApplyScriptingDefineSymbols(target);
