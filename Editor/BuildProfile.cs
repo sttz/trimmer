@@ -200,12 +200,19 @@ public class BuildProfile : EditableProfile
 		if (node == null) {
 			return OptionInclusion.Remove;
 		} else {
+			if (!option.IsAvailable(BuildTargets))
+				return OptionInclusion.Remove;
+			
 			var inclusion = node.Inclusion;
-			if (!option.IsAvailable(BuildTargets)) {
-				inclusion = OptionInclusion.Remove;
-			} else if ((option.Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
+			if ((option.Capabilities & OptionCapabilities.CanIncludeOption) == 0) {
 				inclusion &= ~OptionInclusion.Option;
 			}
+			if ((option.Capabilities & OptionCapabilities.HasAssociatedFeature) == 0) {
+				inclusion &= ~OptionInclusion.Feature;
+			} else if (inclusion == OptionInclusion.Feature && !option.ShouldIncludeOnlyFeature()) {
+				inclusion &= ~OptionInclusion.Feature;
+			}
+			
 			return inclusion;
 		}
 	}
@@ -257,117 +264,6 @@ public class BuildProfile : EditableProfile
 		BuildManager.ActiveProfile = this;
 	}
 
-	/// <summary>
-	/// Check if the option scripting define symbols match those
-	/// that would be defined by this profile.
-	/// This method checks the active build target and development build setting.
-	/// </summary>
-	public bool ScriptingDefineSymbolsUpToDate()
-	{
-		return ScriptingDefineSymbolsUpToDate(EditorUserBuildSettings.activeBuildTarget);
-	}
-
-	/// <summary>
-	/// Check if the option scripting define symbols match those
-	/// that would be defined by this profile.
-	/// </summary>
-	public bool ScriptingDefineSymbolsUpToDate(BuildTarget target)
-	{
-		return !ScriptingDefineSymbolsDifference().Any();
-	}
-
-	/// <summary>
-	/// Return the scripting define symbols that need to be removed or added
-	/// to match those in this profile. Symbols to remove are prefixed with "-"
-	/// and symbols to add with "+".
-	/// This method checks the active build target and development build setting.
-	/// </summary>
-	public IEnumerable<string> ScriptingDefineSymbolsDifference()
-	{
-		return ScriptingDefineSymbolsDifference(EditorUserBuildSettings.activeBuildTarget);
-	}
-
-	/// <summary>
-	/// Return the scripting define symbols that need to be removed or added
-	/// to match those in this profile. Symbols to remove are prefixed with "-"
-	/// and symbols to add with "+".
-	/// </summary>
-	public IEnumerable<string> ScriptingDefineSymbolsDifference(BuildTarget target)
-	{
-		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-		if (targetGroup == BuildTargetGroup.Unknown) {
-			Debug.LogError("Could not find build target group for target " + target + ".");
-			return Enumerable.Empty<string>();
-		}
-
-		var current = GetCurrentScriptingDefineSymbols(targetGroup)
-			.Where(s => s.StartsWith(Option.DEFINE_PREFIX));
-		var needed = GetProfileScriptingDefineSymbols(targetGroup);
-
-		var toRemove = current.Except(needed).Select(d => "-" + d);
-		var toAdd = needed.Except(current).Select(d => "+" + d);
-
-		return toRemove.Concat(toAdd);
-	}
-
-	/// <summary>
-	/// Update the scripting define symbols of the active build target.
-	/// </summary>
-	/// <remarks>
-	/// This triggers a rebuild if the defines are changed for the active
-	/// build target. While not necessary, this cannot be avoided due to
-	/// Unity's API.
-	/// </remarks>
-	public void ApplyScriptingDefineSymbols()
-	{
-		ApplyScriptingDefineSymbols(EditorUserBuildSettings.activeBuildTarget);
-	}
-
-	/// <summary>
-	/// Update the scripting define symbols of the given build target.
-	/// </summary>
-	/// <remarks>
-	/// This triggers a rebuild if the defines are changed for the active
-	/// build target. While not necessary, this cannot be avoided due to
-	/// Unity's API.
-	/// </remarks>
-	public void ApplyScriptingDefineSymbols(BuildTarget target)
-	{
-		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-		if (targetGroup == BuildTargetGroup.Unknown) {
-			Debug.LogError("Could not find build target group for target " + target + ".");
-			return;
-		}
-
-		var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
-		symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
-		foreach (var symbol in GetProfileScriptingDefineSymbols(targetGroup)) {
-			symbols.Add(symbol);
-		}
-
-		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
-	}
-
-	/// <summary>
-	/// The scripting define symbols set by this profile.
-	/// </summary>
-	public IEnumerable<string> GetProfileScriptingDefineSymbols(BuildTargetGroup targetGroup)
-	{
-		var symbols = new HashSet<string>();
-		
-		Recursion.Recurse(this, Recursion.RecursionType.Nodes, (context) => {
-			if (context.variantType != Recursion.VariantType.VariantContainer) {
-				var current = context.option.GetSctiptingDefineSymbols(
-					context.inclusion, context.Value, context.VariantParameter
-				);
-				symbols.AddRange(current);
-			}
-			return true;
-		});
-
-		return symbols;
-	}
-
 	// -------- Internals --------
 
 	protected virtual void OnEnable()
@@ -376,16 +272,6 @@ public class BuildProfile : EditableProfile
 		if (_buildProfiles != null && !_buildProfiles.Contains(this)) {
 			_buildProfiles = null;
 		}
-	}
-
-	/// <summary>
-	/// Convenience method to get the current scripting define symbols as a
-	/// hash set (instead of a colon-delimited string).
-	/// </summary>
-	protected HashSet<string> GetCurrentScriptingDefineSymbols(BuildTargetGroup targetGroup)
-	{
-		var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
-		return new HashSet<string>(defines);
 	}
 }
 

@@ -20,6 +20,8 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
+// TODO: Clean up capabilities presets
+// TODO: Apply scripting define symbols manually? Restore them after build?
 
 /// <summary>
 /// Base class for Workebnch Options.
@@ -112,6 +114,24 @@ public abstract class Option : IOption
 	/// child and variant Options is inherited from their main Option.**
 	/// </remarks>
 	public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
+	{
+		return true;
+	}
+
+	/// <summary>
+	/// This method is only called if the Option has an associated 
+	/// feature and only the feature is included in the build.
+	/// 
+	/// The method allows the Option to check if the feature is
+	/// properly configured and only include it if it is. Since
+	/// only the feature is included and the option is not, it's
+	/// potentially not possible to properly configure the feature
+	/// in the build and therefore it makes no sense to include it.
+	/// 
+	/// Returning `false` will change the inclusion from 
+	/// <see cref="OptionInclusion.Feature"/> to <see cref="OptionInclusion.Remove"/>.
+	/// </summary>
+	public virtual bool ShouldIncludeOnlyFeature()
 	{
 		return true;
 	}
@@ -258,7 +278,7 @@ public abstract class Option : IOption
 	/// for main Options that are included in the build and nothing for child or variant
 	/// options or excluded options.
 	/// </remarks>
-	public virtual IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion, string parameter, string value)
+	public virtual IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion)
 	{
 		// Only the root option has a toggle in the build profile
 		if (Parent == null && inclusion != OptionInclusion.Remove) {

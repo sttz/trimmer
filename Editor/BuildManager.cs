@@ -293,11 +293,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		BuildManager.CurrentProfile = buildProfile;
 
 		// Run options' PrepareBuild
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
-		
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
-			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
+			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			options = option.PrepareBuild(options, inclusion);
 		}
 
@@ -366,12 +365,22 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </remarks>
 	private class BuildOptionsProfile : RuntimeProfile
 	{
+		/// <summary>
+		/// Option needs to have one of these capabilities to be 
+		/// included in the build options profile.
+		/// </summary>
+		const OptionCapabilities requiredCapabilities = (
+			OptionCapabilities.HasAssociatedFeature
+			| OptionCapabilities.CanIncludeOption
+			| OptionCapabilities.ConfiguresBuild
+		);
+
 		public BuildOptionsProfile(ValueStore store) : base(store) { }
 
 		protected override bool ShouldCreateOption(Type optionType)
 		{
 			var caps = optionType.GetOptionCapabilities();
-			return (caps & OptionCapabilities.ConfiguresBuild) != 0;
+			return ((caps & requiredCapabilities) != 0);
 		}
 	}
 
@@ -399,6 +408,16 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 	}
 
+	/// <summary>
+	/// Convenience method to get the current scripting define symbols as a
+	/// hash set (instead of a colon-delimited string).
+	/// </summary>
+	protected HashSet<string> GetCurrentScriptingDefineSymbols(BuildTargetGroup targetGroup)
+	{
+		var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+		return new HashSet<string>(defines);
+	}
+
 	// ------ Unity Callbacks ------
 
 	public int callbackOrder { get { return 0; } }
@@ -411,39 +430,47 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
 		}
 
-		CurrentProfile.ApplyScriptingDefineSymbols(target);
-
-		Debug.Log(string.Format(
-			"Workbench: Building '{0}' to '{1}'\nIncluded Options: {2}\nSymbols: {3}",
-			target, path, 
-			CurrentProfile.GetAllOptions()
-				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
-				.Select(o => o.Name)
-				.Aggregate((c, n) => c + ", " + n),
-			CurrentProfile.GetProfileScriptingDefineSymbols(BuildPipeline.GetBuildTargetGroup(target))
-				.Aggregate((c, n) => c + ", " + n)
-		));
-
-		// Run options' PreprocessBuild
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
+		// Run options' PreprocessBuild and collect scripting define symbols
+		var symbols = new HashSet<string>();
 		
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
-			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-			option.PreprocessBuild(target, path, inclusion);
+			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+
+			symbols.AddRange(option.GetSctiptingDefineSymbols(inclusion));
+
+			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
+				option.PreprocessBuild(target, path, inclusion);
+			}
 		}
+
+		// Apply scripting define symbols
+		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+		var current = GetCurrentScriptingDefineSymbols(targetGroup);
+		current.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
+		current.AddRange(symbols);
+		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", current.ToArray()));
+
+		Debug.Log(string.Format(
+			"Workbench: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
+			target, path, 
+			buildOptionsProfile
+				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
+				.Select(o => o.Name)
+				.Aggregate((c, n) => c + ", " + n),
+			symbols.Aggregate((c, n) => c + ", " + n)
+		));
 	}
 	
 	public void OnPostprocessBuild(BuildTarget target, string path)
 	{
 		var buildProfile = CurrentProfile;
 
-		// Run options' PostprocessBuild
-		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
-		
+		// Run options' PostprocessBuild		
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
-			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
+			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			option.PostprocessBuild(target, path, inclusion);
 		}
 	}
@@ -460,17 +487,20 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		} else {
 			// Inject profile and call PostprocessScene, Apply() isn't called during build
 			var buildProfile = CurrentProfile;
-			var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
-
 			CreateOrUpdateBuildOptionsProfile();
+			
+			var includesAnyOption = false;
+			foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+				var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+				includesAnyOption |= (inclusion & OptionInclusion.Option) != 0;
 
-			if (!removeAll) {
-				InjectProfileContainer(buildOptionsProfile.Store);
+				if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
+					option.PostprocessScene(scene, inclusion);
+				}
 			}
 
-			foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
-				var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-				option.PostprocessScene(scene, inclusion);
+			if (includesAnyOption) {
+				InjectProfileContainer(buildOptionsProfile.Store);
 			}
 		}
 	}

@@ -262,6 +262,7 @@ public interface IOption
 	#if UNITY_EDITOR
 
 	bool IsAvailable(IEnumerable<BuildTarget> targets);
+	bool ShouldIncludeOnlyFeature();
 	OptionCapabilities Capabilities { get; }
 
 	int PostprocessOrder { get; }
@@ -270,7 +271,7 @@ public interface IOption
 	void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 	void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 
-	IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion, string parameter, string value);
+	IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion);
 	string EditGUI(GUIContent label, string input);
 
 	#endif
