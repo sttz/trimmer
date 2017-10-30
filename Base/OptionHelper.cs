@@ -94,6 +94,48 @@ public static class OptionHelper
         return GetSingleton<T>(true, containerName);
     }
 
+    /// <summary>
+    /// Simple helepr to run a script with arguments.
+    /// </summary>
+    /// <param name="path">Path to the script (absolute or relative to project directory)</param>
+    /// <param name="arguments">Arguments to pass to the script</param>
+    /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
+    public static bool RunScript(string path, string arguments)
+    {
+        if (string.IsNullOrEmpty(path)) {
+            Debug.LogError("RunScript: path null or empty");
+            return false;
+        }
+
+        var scriptName = Path.GetFileName(path);
+
+        if (!File.Exists(path)) {
+            Debug.LogError("RunScript: " + scriptName + " script not found at '" + path + "'");
+            return false;
+        }
+
+        var script = new System.Diagnostics.Process();
+        script.StartInfo.UseShellExecute = false;
+        script.StartInfo.RedirectStandardError = true;
+        script.StartInfo.FileName = path;
+        script.StartInfo.Arguments = arguments;
+
+        try {
+            script.Start();
+            script.WaitForExit();
+        } catch (Exception e) {
+            Debug.LogError("RunScript: Exception running " + scriptName + ": " + e.Message);
+            return false;
+        }
+
+        if (script.ExitCode != 0) {
+            Debug.LogError("RunScript: " + scriptName + " returned error: " + script.StandardError.ReadToEnd());
+            return false;
+        }
+
+        return true;
+    }
+
     #endif
 
     // -------- Plugin Removal --------
