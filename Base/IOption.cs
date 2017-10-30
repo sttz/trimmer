@@ -259,7 +259,7 @@ public interface IOption
 	void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 	void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion);
 
-	IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion);
+	void GetSctiptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols);
 	string EditGUI(GUIContent label, string input);
 
 	#endif

@@ -76,6 +76,17 @@ public static class Extensions
 	}
 
 	/// <summary>
+	/// Join together a enumerable of strings.
+	/// </summary>
+	public static string Join(this IEnumerable<string> collection, string separator = ", ")
+	{
+		if (collection == null || !collection.Any())
+			return string.Empty;
+		
+		return collection.Aggregate((c, n) => c + separator + n);
+	}
+
+	/// <summary>
 	/// Equalses the ignoring case.
 	/// </summary>
 	public static bool EqualsIgnoringCase(this string first, string second)

@@ -431,13 +431,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		// Run options' PreprocessBuild and collect scripting define symbols
-		var symbols = new HashSet<string>();
+		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+		var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
+
+		// Remove all symbols previously added by Workbench
+		symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
+		var current = new HashSet<string>(symbols);
 		
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 
-			symbols.AddRange(option.GetSctiptingDefineSymbols(inclusion));
+			option.GetSctiptingDefineSymbols(inclusion, symbols);
 
 			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
 				option.PreprocessBuild(target, path, inclusion);
@@ -445,20 +450,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		// Apply scripting define symbols
-		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-		var current = GetCurrentScriptingDefineSymbols(targetGroup);
-		current.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
-		current.AddRange(symbols);
-		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", current.ToArray()));
+		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
 
+		var added = symbols.Except(current);
+		var removed = current.Except(symbols);
 		Debug.Log(string.Format(
 			"Workbench: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
 			target, path, 
 			buildOptionsProfile
 				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
 				.Select(o => o.Name)
-				.Aggregate((c, n) => c + ", " + n),
-			symbols.Aggregate((c, n) => c + ", " + n)
+				.Join(),
+			removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
 		));
 	}
 	

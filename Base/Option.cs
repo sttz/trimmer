@@ -277,26 +277,20 @@ public abstract class Option : IOption
 	/// for main Options that are included in the build and nothing for child or variant
 	/// options or excluded options.
 	/// </remarks>
-	public virtual IEnumerable<string> GetSctiptingDefineSymbols(OptionInclusion inclusion)
+	public virtual void GetSctiptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
 	{
 		// Only the root option has a toggle in the build profile
-		if (Parent == null && inclusion != OptionInclusion.Remove) {
-			if (inclusion == OptionInclusion.Feature 
-					&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
-				return new string[] { DEFINE_PREFIX + Name };
-			} else if (inclusion == OptionInclusion.Option 
-					&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
-				return new string[] { DEFINE_PREFIX + OPTION_PREFIX + Name };
-			} else if (inclusion == OptionInclusion.FeatureAndOption
-					&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0
-					&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
-				return new string[] { DEFINE_PREFIX + Name, DEFINE_PREFIX + OPTION_PREFIX + Name };
-			} else {
-				Debug.LogError("Invalid inclusion for Option " + Name + ": OptionInclusion = " + inclusion + ", OptionCapabilities = " + Capabilities);
-				return Enumerable.Empty<string>();
-			}
-		} else {
-			return Enumerable.Empty<string>();
+		if (Parent != null || inclusion == OptionInclusion.Remove)
+			return;
+
+		if ((inclusion & OptionInclusion.Feature) != 0 
+				&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
+			symbols.Add(DEFINE_PREFIX + Name);
+		}
+
+		if ((inclusion & OptionInclusion.Option) != 0 
+				&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
+			symbols.Add(DEFINE_PREFIX + OPTION_PREFIX + Name);
 		}
 	}
 
