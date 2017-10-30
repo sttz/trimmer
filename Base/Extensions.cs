@@ -128,7 +128,7 @@ public static class Extensions
         var attr = (CapabilitiesAttribute)optionType
             .GetCustomAttributes(typeof(CapabilitiesAttribute), true)
             .FirstOrDefault();
-        return (attr != null ? attr.Capabilities : OptionCapabilities.Default);
+        return (attr != null ? attr.Capabilities : OptionCapabilities.PresetDefault);
     }
 
 	#endif

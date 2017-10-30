@@ -20,7 +20,6 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
-// TODO: Clean up capabilities presets
 // TODO: Apply scripting define symbols manually? Restore them after build?
 
 /// <summary>
@@ -533,7 +532,7 @@ public abstract class Option : IOption
 		Parent = null;
 
 		#if UNITY_EDITOR
-		Capabilities = OptionCapabilities.Default;
+		Capabilities = OptionCapabilities.PresetDefault;
 		var attr = (CapabilitiesAttribute)GetType()
 			.GetCustomAttributes(typeof(CapabilitiesAttribute), true)
 			.FirstOrDefault();

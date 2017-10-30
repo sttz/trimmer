@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 namespace sttz.Workbench.Options
 {
 
-[Capabilities(OptionCapabilities.WithFeature)]
+[Capabilities(OptionCapabilities.PresetWithFeature)]
 public class OptionPrompt : OptionToggle
 {
 	protected override void Configure()

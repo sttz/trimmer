@@ -11,7 +11,7 @@ using sttz.Workbench.BaseOptions;
 namespace sttz.Workbench.Options
 {
 
-[Capabilities(OptionCapabilities.BuildOnly)]
+[Capabilities(OptionCapabilities.ConfiguresBuild)]
 public class OptionBuildSettings : OptionEnum<BuildOptions>
 {
 	protected override void Configure()

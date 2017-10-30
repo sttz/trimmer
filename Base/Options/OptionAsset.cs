@@ -17,7 +17,7 @@ namespace sttz.Workbench.BaseOptions
 /// <remarks>
 /// This option type is only available in the editor.
 /// </remarks>
-[Capabilities(OptionCapabilities.EditorOnly)]
+[Capabilities(OptionCapabilities.CanPlayInEditor)]
 public abstract class OptionAsset<TUnity> : Option, IOption<TUnity> where TUnity : UnityEngine.Object
 {
 	public override string EditGUI(GUIContent label, string input)
