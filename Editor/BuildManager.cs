@@ -424,13 +424,13 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 				.Aggregate((c, n) => c + ", " + n)
 		));
 
-		// Run options' PostprocessBuild
+		// Run options' PreprocessBuild
 		var removeAll = (buildProfile == null || !buildProfile.HasAvailableOptions());
 		
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = removeAll ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-			option.PostprocessBuild(target, path, inclusion);
+			option.PreprocessBuild(target, path, inclusion);
 		}
 	}
 	
