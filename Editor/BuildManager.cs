@@ -338,14 +338,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			return;
 		}
 
-		ValueStore store = null;
-
-		if (EditorSourceProfile != null) {
-			store = EditorSourceProfile.Store;
-		} else {
-			store = EditorProfile.SharedInstance.Store;
-		}
-
+		var store = EditorProfile.SharedInstance.Store;
 		if (store != null) {
 			store = store.Clone();
 		}
