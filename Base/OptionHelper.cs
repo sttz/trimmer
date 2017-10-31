@@ -50,7 +50,6 @@ public static class OptionHelper
         if (container == null) {
             if (!create) return null;
             container = new GameObject(containerName);
-            UnityEngine.Object.DontDestroyOnLoad(container);
         }
 
         var script = container.GetComponent<T>();

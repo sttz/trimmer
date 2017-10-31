@@ -25,6 +25,7 @@ namespace sttz.Workbench {
 // TODO: Typed DefaultValue?
 // TODO: Remove IOption?
 // TODO: Better indication for unavailable options (currently no indication for build-only)
+// TODO: Inject and DontDestroyOnLoad
 
 /// <summary>
 /// Base class for Workebnch Options.
