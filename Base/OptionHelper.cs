@@ -102,20 +102,30 @@ public static class OptionHelper
     /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
     public static bool RunScript(string path, string arguments)
     {
+        string output;
+        return RunScript(path, arguments, out output);
+    }
+
+    /// <summary>
+    /// Simple helepr to run a script with arguments.
+    /// </summary>
+    /// <param name="path">Path to the script (absolute or relative to project directory)</param>
+    /// <param name="arguments">Arguments to pass to the script</param>
+    /// <param name="output">The output of the script if it completed successfully</param>
+    /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
+    public static bool RunScript(string path, string arguments, out string output)
+    {
+        output = null;
+
         if (string.IsNullOrEmpty(path)) {
             Debug.LogError("RunScript: path null or empty");
             return false;
         }
 
         var scriptName = Path.GetFileName(path);
-
-        if (!File.Exists(path)) {
-            Debug.LogError("RunScript: " + scriptName + " script not found at '" + path + "'");
-            return false;
-        }
-
         var script = new System.Diagnostics.Process();
         script.StartInfo.UseShellExecute = false;
+        script.StartInfo.RedirectStandardOutput = true;
         script.StartInfo.RedirectStandardError = true;
         script.StartInfo.FileName = path;
         script.StartInfo.Arguments = arguments;
@@ -133,6 +143,7 @@ public static class OptionHelper
             return false;
         }
 
+        output = script.StandardOutput.ReadToEnd();
         return true;
     }
 
