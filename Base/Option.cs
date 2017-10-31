@@ -104,6 +104,11 @@ public abstract class Option : IOption
 	public OptionCapabilities Capabilities { get; private set; }
 
 	/// <summary>
+	/// The `BuildTarget`s this Option supports. (null = all)
+	/// </summary>
+	public IEnumerable<BuildTarget> SupportedTargets { get; protected set; }
+
+	/// <summary>
 	/// Determine if the Option is available on the given build targets (**Editor-only**).
 	/// </summary>
 	/// <remarks>
@@ -118,7 +123,15 @@ public abstract class Option : IOption
 	/// </remarks>
 	public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
 	{
-		return true;
+		if (SupportedTargets == null) {
+			return true;
+		} else {
+			foreach (var target in targets) {
+				if (SupportedTargets.Contains(target))
+					return true;
+			}
+			return false;
+		}
 	}
 
 	/// <summary>
