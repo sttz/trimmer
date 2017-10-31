@@ -146,6 +146,19 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
+	void OnEnable()
+	{
+		if (_editorProfile != this) {
+			Debug.LogWarning("Cleaning up additional editor profile instance.");
+			DestroyImmediate(this);
+		}
+	}
+
+	void OnDisable()
+	{
+		SaveIfNeeded();
+	}
+
 	/// <summary>
 	/// Save the editor profile. Since it's stored in ProjectSettings,
 	/// it needs to be saved manually.
@@ -291,11 +304,6 @@ public class EditorProfile : EditableProfile
 	{
 		var hash = identifier.GetHashCode();
 		return expanded.BinarySearch(hash) >= 0;
-	}
-
-	void OnDisable()
-	{
-		SaveIfNeeded();
 	}
 }
 
