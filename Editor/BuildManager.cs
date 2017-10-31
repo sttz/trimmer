@@ -309,6 +309,32 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			EditorUserBuildSettings.SetBuildLocation(options.target, options.locationPathName);
 		}
 
+		// Make sure the path has the right extension
+		// Call internal method:
+		// string PostprocessBuildPlayer.GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options)
+		var PostprocessBuildPlayer = typeof(BuildPipeline).Assembly.GetType("UnityEditor.PostprocessBuildPlayer");
+		if (PostprocessBuildPlayer == null) {
+			Debug.LogWarning("Could not find PostprocessBuildPlayer to determine build file extension.");
+		} else {
+			var GetExtensionForBuildTarget = PostprocessBuildPlayer.GetMethod("GetExtensionForBuildTarget", BindingFlags.Public | BindingFlags.Static);
+			if (GetExtensionForBuildTarget == null) {
+				Debug.LogWarning("Could not find GetExtensionForBuildTarget to determine build file extension.");
+			} else {
+				var args = new object[] { options.targetGroup, options.target, options.options };
+				var ext = (string)GetExtensionForBuildTarget.Invoke(null, args);
+
+				var current = Path.GetExtension(options.locationPathName);
+				if (current.Length > 0) {
+					current = current.Substring(1); // Remove leading dot
+				}
+
+				if (!string.IsNullOrEmpty(ext) 
+						&& Path.GetExtension(options.locationPathName).EqualsIgnoringCase(current)) {
+					options.locationPathName += "." + ext;
+				}
+			}
+		}
+
 		// Run the build
 		var error = BuildPipeline.BuildPlayer(options);
 
