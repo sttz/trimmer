@@ -60,14 +60,11 @@ public class EditorProfile : EditableProfile
 	public static EditorProfile SharedInstance {
 		get {
 			if (_editorProfile == null) {
-				var objs = UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(EDITOR_PROFILE_PATH);
-				if (objs != null && objs.Length > 0 && objs[0] is EditorProfile) {
-					_editorProfile = (EditorProfile)objs[0];
-				}
+				UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(EDITOR_PROFILE_PATH);
 				if (_editorProfile == null) {
-					_editorProfile = ScriptableObject.CreateInstance<EditorProfile>();
-					_editorProfile.name = "Editor Profile";
-					_editorProfile.hideFlags = HideFlags.HideAndDontSave;
+					var instance = ScriptableObject.CreateInstance<EditorProfile>();
+					instance.name = "Editor Profile";
+					instance.hideFlags = HideFlags.HideAndDontSave;
 				}
 			}
 			return _editorProfile;
@@ -118,22 +115,12 @@ public class EditorProfile : EditableProfile
 			// Apply the store to the editor profile and save it out
 			SharedInstance.store = RuntimeProfile.Main.Store;
 			SharedInstance.Save();
-			// Force reloading of the editor profile and reopen it
-			_editorProfile = null;
-			if (Selection.activeObject is EditorProfile) {
-				OpenEditorProfile();
-			}
 		}
 	}
 
 	// -------- Fields --------
 
-	/// <summary>
-	/// The config of the <see cref="MaintenancePanel"/> used in the editor.
-	/// </summary>
-	//public MaintenancePanel.PanelConfig panelConfig = MaintenancePanel.DefaultConfig;
-
-	/// <summary>
+	// <summary>
 	/// The value store containing the values for the profile's options.
 	/// </summary>
 	public ValueStore store = new ValueStore();
@@ -149,6 +136,15 @@ public class EditorProfile : EditableProfile
 	}
 
 	// -------- Methods --------
+
+	public EditorProfile()
+	{
+		if (_editorProfile != null) {
+			Debug.LogWarning("Multiple editor profile instances loaded.");
+		} else {
+			_editorProfile = this;
+		}
+	}
 
 	/// <summary>
 	/// Save the editor profile. Since it's stored in ProjectSettings,
