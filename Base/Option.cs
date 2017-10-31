@@ -21,6 +21,10 @@ namespace sttz.Workbench {
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
 // TODO: Apply scripting define symbols manually? Restore them after build?
+// TODO: Manage non prefixed additional symbols?
+// TODO: Typed DefaultValue?
+// TODO: Remove IOption?
+// TODO: Better indication for unavailable options (currently no indication for build-only)
 
 /// <summary>
 /// Base class for Workebnch Options.
