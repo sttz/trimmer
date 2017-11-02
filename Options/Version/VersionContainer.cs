@@ -15,6 +15,7 @@ public class VersionContainer : MonoBehaviour
     void OnEnable()
     {
         Version.ProjectVersion = version;
+        Debug.Log(Application.productName + " " + Version.ProjectVersion);
     }
 }
 
