@@ -19,26 +19,13 @@ public class OptionPrompt : OptionToggle
 	{
 		base.Apply();
 		
-		// Do not create instance when disabled
-		if (Prompt.Instance == null && !Value)
-			return;
-
-		CreateAndUpdate();
-	}
-
-	public void CreateAndUpdate()
-	{
-		var prompt = Prompt.Instance;
-
-		if (prompt == null) {
-			var go = new GameObject("Prompt");
-			prompt = go.AddComponent<Prompt>();
+		var prompt = OptionHelper.GetSingleton<Prompt>(Value);
+		if (prompt != null) {
+			prompt.enabled = Value;
+			prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
+			prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
+			prompt.position = GetChild<OptionPromptPosition>().Value;
 		}
-
-		prompt.enabled = Value;
-		prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
-		prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
-		prompt.position = GetChild<OptionPromptPosition>().Value;
 	}
 
 	#if UNITY_EDITOR
@@ -46,9 +33,11 @@ public class OptionPrompt : OptionToggle
 	{
 		base.PostprocessScene(scene, inclusion);
 
-		// Inject prompt into first scene when only including feature and prompt enabled
-		if (inclusion == OptionInclusion.Feature && scene.buildIndex == 0 && Value) {
-			CreateAndUpdate();
+		var prompt = OptionHelper.InjectFeature<Prompt>(scene, inclusion);
+		if (prompt != null) {
+			prompt.activationSequence = GetChild<OptionPromptActivation>().Value;
+			prompt.fontSize = GetChild<OptionPromptFontSize>().Value;
+			prompt.position = GetChild<OptionPromptPosition>().Value;
 		}
 	}
 	#endif
