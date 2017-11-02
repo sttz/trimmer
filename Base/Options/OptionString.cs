@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+using System;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -51,3 +53,4 @@ public abstract class OptionString : Option<string>
 
 }
 
+#endif

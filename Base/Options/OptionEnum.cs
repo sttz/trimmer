@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -71,3 +73,4 @@ public abstract class OptionEnum<TEnum> : Option<TEnum>
 
 }
 
+#endif

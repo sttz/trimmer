@@ -1,4 +1,6 @@
-﻿// Workaround for docfx documentation building
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+// Workaround for docfx documentation building
 #if !UNITY_5 && !UNITY_2017 && !UNITY_2018
 #define UNITY_EDITOR
 #endif
@@ -60,4 +62,6 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
 }
 
 }
+#endif
+
 #endif

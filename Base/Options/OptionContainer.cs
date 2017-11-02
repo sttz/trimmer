@@ -1,3 +1,5 @@
+#if !NO_WORKBENCH || UNITY_EDITOR
+
 using System;
 using UnityEngine;
 
@@ -38,3 +40,4 @@ public abstract class OptionContainer : Option
 
 }
 
+#endif

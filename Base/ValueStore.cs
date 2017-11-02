@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -883,3 +885,5 @@ public static class IniAdapter
 }
 
 }
+
+#endif

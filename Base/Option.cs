@@ -1,4 +1,6 @@
-﻿// Workaround for docfx documentation building
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+// Workaround for docfx documentation building
 #if !UNITY_5 && !UNITY_2017 && !UNITY_2018
 #define UNITY_EDITOR
 #endif
@@ -22,6 +24,7 @@ namespace sttz.Workbench {
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
 // TODO: Completely remove WB from build with all options removed (No_Workbench symbol?)
+// TODO: Make OptionAsset work in build
 
 #if UNITY_EDITOR
 
@@ -1094,3 +1097,4 @@ public abstract class Option<TValue> : Option
 
 }
 
+#endif

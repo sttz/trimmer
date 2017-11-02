@@ -1,6 +1,8 @@
 ﻿using System;
 using UnityEngine;
 
+#if !NO_WORKBENCH || UNITY_EDITOR
+
 namespace sttz.Workbench
 {
 
@@ -35,3 +37,4 @@ public class ProfileContainer : MonoBehaviour
 
 }
 
+#endif

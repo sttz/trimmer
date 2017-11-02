@@ -36,6 +36,11 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	public const string SourceProfileGUIDKey = "SourceProfileGUID";
 
+	/// <summary>
+	/// Scripting define symbol added to remove workbench code in player.
+	/// </summary>
+	public const string NO_WORKBENCH = "NO_WORKBENCH";
+
 
 	/// <summary>
 	/// The active profile, which is used for regular Unity builds.
@@ -453,17 +458,24 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// Remove all symbols previously added by Workbench
 		symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
+		symbols.Remove(NO_WORKBENCH);
 		var current = new HashSet<string>(symbols);
 		
+		bool includesOptions = false;
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			includesOptions |= ((inclusion & OptionInclusion.Option) != 0);
 
 			option.GetSctiptingDefineSymbols(inclusion, symbols);
 
 			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
 				option.PreprocessBuild(target, path, inclusion);
 			}
+		}
+
+		if (!includesOptions) {
+			symbols.Add(NO_WORKBENCH);
 		}
 
 		// Apply scripting define symbols

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -224,3 +226,4 @@ public sealed class NumericStringComparer : IComparer<string>
 
 }
 
+#endif
