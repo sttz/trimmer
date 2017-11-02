@@ -1,5 +1,3 @@
-#if !NO_WORKBENCH || UNITY_EDITOR
-
 using UnityEngine;
 
 namespace sttz.Workbench
@@ -19,5 +17,3 @@ public class InjectionContainer : MonoBehaviour
 }
 
 }
-
-#endif
