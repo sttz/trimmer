@@ -84,7 +84,7 @@ public static class Recursion
 		/// single shared options instance per type, so you can only query
 		/// it for non-specific information.
 		/// </remarks>
-		public IOption option;
+		public Option option;
 		/// <summary>
 		/// The current store node.
 		/// </summary>
@@ -101,7 +101,7 @@ public static class Recursion
 		/// <summary>
 		/// The parent option of the current node.
 		/// </summary>
-		public IOption parentOption;
+		public Option parentOption;
 		/// <summary>
 		/// The parent store node of the current node.
 		/// </summary>
@@ -170,7 +170,7 @@ public static class Recursion
 		/// <summary>
 		/// Internal method used to set up the state when recursing into a node.
 		/// </summary>
-		internal RecurseOptionsContext Recurse(IOption childOption, ValueStore.Node childNode, bool defaultVariant = false)
+		internal RecurseOptionsContext Recurse(Option childOption, ValueStore.Node childNode, bool defaultVariant = false)
 		{
 			var child = this;
 			child.type = type;
@@ -233,9 +233,9 @@ public static class Recursion
 	/// <summary>
 	/// Sort the root options in the given profile first by category and then by name.
 	/// </summary>
-	public static List<IOption> SortOptionsByCategoryAndName(IEnumerable<IOption> options)
+	public static List<Option> SortOptionsByCategoryAndName(IEnumerable<Option> options)
 	{
-		var list = new List<IOption>(options);
+		var list = new List<Option>(options);
 		list.Sort((o1, o2) => {
 			var cat = string.CompareOrdinal(o1.Category, o2.Category);
 			if (cat != 0) {
@@ -319,7 +319,7 @@ public static class Recursion
 	/// <param name="type">The type of recursion to perform.</param>
 	/// <param name="options">Custom list of root options, mostly for custom sorting.</param>
 	/// <param name="callback">The callback to call for each node.</param>
-	public static void Recurse(EditableProfile profile, RecursionType type, IEnumerable<IOption> options, Func<RecurseOptionsContext, bool> callback)
+	public static void Recurse(EditableProfile profile, RecursionType type, IEnumerable<Option> options, Func<RecurseOptionsContext, bool> callback)
 	{
 		var context = new RecurseOptionsContext();
 		context.type = type;

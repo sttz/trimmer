@@ -249,7 +249,7 @@ public class Prompt : MonoBehaviour
 		}
 	}
 
-	protected void CompleteOptionRecursive(string path, IOption option, string baseInput)
+	protected void CompleteOptionRecursive(string path, Option option, string baseInput)
 	{
 		if (!option.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase))
 			return;

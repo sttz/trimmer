@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using sttz.Workbench.Extensions;
+using System.Diagnostics;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -22,17 +23,219 @@ namespace sttz.Workbench {
 // TODO: Document main-option-only methods/props
 // TODO: Apply scripting define symbols manually? Restore them after build?
 // TODO: Manage non prefixed additional symbols?
-// TODO: Typed DefaultValue?
-// TODO: Remove IOption?
 // TODO: Better indication for unavailable options (currently no indication for build-only)
 // TODO: Inject and DontDestroyOnLoad
+
+#if UNITY_EDITOR
+
+/// <summary>
+/// Enum indicating how and option behaves during the build process.
+/// </summary>
+/// <remarks>
+/// Conceptually, Workbench deals with Options that are its building blocks and
+/// configure some aspect of a project dynamically. That aspect of the project
+/// is referred to as a «feature».
+/// 
+/// When building, there are a few scenarios, how an option and its feature are
+/// compiled:
+/// * Both are included: The build includes both the Workbench Option as well
+///   as its associated feature. The Option allows to configure the feature at
+///   runtime.
+/// * Only the feature is included: The Option only configures the feature in
+///   the editor. At build-time the Option statically configures the feature
+///   in the build and is itself not included. The feature cannot be configured
+///   at runtime using Workbench.
+/// * Both are removed: Neither the Option nor its feature are included in the
+///   build and if set up correctly, the build won't contain a trace that the
+///   Option or feature ever existed.
+/// 
+/// As an example, assume there's a platform integration that requires an API key.
+/// The feature is the integration script and maybe some conditionally-compiled
+/// snippets of code in other scripts. The Option controls the conditional compilation,
+/// injects the integration script when enabled and configures the API key.
+/// 
+/// When building for another platform, the integration should be completely 
+/// removed, leaving no unrelated code in the build. When doing a release build,
+/// the API key should be baked into the build, the Option removed and no way
+/// left to change the API key at runtime. In a development build, the Option
+/// might be included, to be able to override the API key to one used for testing.
+/// 
+/// In this scenario, different build profiles would configure the build differently:
+/// Profiles for other platforms would completely remove the build and feature,
+/// the release build profile would only remove the Option and the development
+/// profile would include both Option and feature.
+/// </remarks>
+[Flags]
+public enum OptionInclusion
+{
+	/// <summary>
+	/// Remove the feature and the option form the build.
+	/// </summary>
+	Remove = 0,
+
+	/// <summary>
+	/// Flag indicating the feature should be included.
+	/// </summary>
+	Feature = 1<<0,
+
+	/// <summary>
+	/// Flag indicating the option should be included.
+	/// </summary>
+	Option = 1<<1,
+
+	/// <summary>
+	/// Mask including both feature and option.
+	/// </summary>
+	FeatureAndOption = Feature | Option
+}
+
+/// <summary>
+/// Helper class with extensions to check <see cref="OptionInclusion"/> flags.
+/// </summary>
+public static class OptionInclusionExtensions
+{
+	/// <summary>
+	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Option"/> flag.
+	/// </summary>
+	public static bool IncludesOption(this OptionInclusion inclusion)
+	{
+		return (inclusion & OptionInclusion.Option) == OptionInclusion.Option;
+	}
+
+	/// <summary>
+	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Feature"/> flag.
+	/// </summary>
+	public static bool IncludesFeature(this OptionInclusion inclusion)
+	{
+		return (inclusion & OptionInclusion.Feature) == OptionInclusion.Feature;
+	}
+}
+
+#endif
+
+/// <summary>
+/// Enum indicating the capabilities of the Option.
+/// </summary>
+/// <remarks>
+/// The enum contains specific flags that represent different capabilities and also
+/// a set of default masks that represent common combinations of flags.
+/// 
+/// The capabilities control where an Option is visible:
+/// * If neither <see cref="HasAssociatedFeature"/>, <see cref="CanIncludeOption"/>
+///   or <see cref="ConfiguresBuild"/> is set, the Option will not be shown in
+///   Build Profiles.
+/// * If neither <see cref="CanPlayInEditor"/> or <see cref="ExecuteInEditMode"/> is set,
+///   the Option will not be shown in the Editor Profile.
+/// 
+/// Capabilities are only valid on the main Option, all child and variant Options will
+/// inherit the capabilities from the main Option.
+/// </remarks>
+[Flags]
+public enum OptionCapabilities
+{
+	None,
+
+	// ------ Flags ------
+
+	/// <summary>
+	/// Flag indicating the option has an associated feature that can be included/excluded from the
+	/// build using Build Profiles.
+	/// </summary>
+	HasAssociatedFeature = 1<<0,
+	
+	/// <summary>
+	/// Flag indicating the Option can be included in builds. If not set, the Option will always
+	/// be removed from builds.
+	/// </summary>
+	CanIncludeOption = 1<<1,
+
+	/// <summary>
+	/// Flag indicating the Option integrates into the build process, configuring the build
+	/// options, setting conditional compilation symbols or pre-/post-processes scenes and
+	/// the build.
+	/// </summary>
+	ConfiguresBuild = 1<<2,
+
+	/// <summary>
+	/// Flag indicating the Option can be used when playing in the editor. If not set, the Option
+	/// will not be loaded when playing the project in the editor.
+	/// </summary>
+	CanPlayInEditor = 1<<3,
+
+	/// <summary>
+	/// Flag indicating the Option should be loaded in edit mode as well. If set, the Option
+	/// will be loaded when not playing in the editor.
+	/// </summary>
+	ExecuteInEditMode = 1<<4,
+
+	// ------ Presets ------
+
+	/// <summary>
+	/// Default preset mask. The Option can be included in the build, its 
+	/// build configuration callbacks are called and it is loaded when playing
+	/// in the editor.
+	/// </summary>
+	PresetDefault = CanIncludeOption | ConfiguresBuild | CanPlayInEditor,
+
+	/// <summary>
+	/// Default preset mask. Like <see cref="PresetDefault"/> but also has an associated 
+	/// feature that can be included/excluded from the build.
+	/// </summary>
+	PresetWithFeature = PresetDefault | HasAssociatedFeature,
+
+	/// <summary>
+	/// Default preset mask. A simple Option that can be included in the build
+	/// and gets loaded in the editor but doesn't process the build and has 
+	/// no assocaited feature.
+	/// </summary>
+	OptionOnly = CanIncludeOption | CanPlayInEditor,
+}
+
+/// <summary>
+/// Attribute used to indicate the <see cref="OptionCapabilities" /> of an 
+/// <see cref="Option"/> subclass.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+[Conditional("UNITY_EDITOR")]
+public class CapabilitiesAttribute : Attribute
+{
+	public OptionCapabilities Capabilities { get; protected set; }
+
+	public CapabilitiesAttribute(OptionCapabilities caps)
+	{
+		Capabilities = caps;
+	}
+}
+
+/// <summary>
+/// Define how an Option can be variant.
+/// </summary>
+public enum OptionVariance
+{
+	/// <summary>
+	/// The Option is not variant. There exists only a single instance with a single value.
+	/// </summary>
+	Single,
+	
+	/// <summary>
+	/// The Option is a dictionary. It has variants that differ by their parameter
+	/// and the parameter is set explicitly.
+	/// </summary>
+	Dictionary,
+
+	/// <summary>
+	/// The Option is an array. It has variants that are ordered by an index and
+	/// the parameter is automatically set.
+	/// </summary>
+	Array
+}
 
 /// <summary>
 /// Base class for Workebnch Options.
 /// </summary>
 /// <remarks>
 /// Options are the basic building blocks to integrate your project 
-/// into Workbench. Workbench detects all <see cref="IOption"/> classes
+/// into Workbench. Workbench detects all <see cref="Option"/> classes
 /// in your project, so there's no additional configuration necessary
 /// besides adding the Option source files to your project.
 /// 
@@ -45,7 +248,7 @@ namespace sttz.Workbench {
 /// 
 /// Options can model more complicated data than simple values in two ways:
 /// * <b>Variant Options</b> allow to have multiple instances of the same
-///   Option type that differ by their <see cref="IOption.VariantParameter"/>,
+///   Option type that differ by their <see cref="Option.VariantParameter"/>,
 ///   e.g. to have a volume Option, which can control multiple channels.
 /// * <b>Child Options</b> allow Options to group multiple different values
 ///   together.
@@ -65,7 +268,7 @@ namespace sttz.Workbench {
 /// 
 /// 
 /// </remarks>
-public abstract class Option : IOption
+public abstract class Option
 {
 	// -------- Implement / Override in Sub-Classes --------
 
@@ -365,7 +568,7 @@ public abstract class Option : IOption
 	/// 
 	/// The parent is `null` for main Options.
 	/// </remarks>
-	public IOption Parent {
+	public Option Parent {
 		get {
 			return _parent;
 		}
@@ -377,7 +580,7 @@ public abstract class Option : IOption
 			InvalidatePathRecursive();
 		}
 	}
-	private IOption _parent;
+	private Option _parent;
 
 	/// <summary>
 	/// The path to this Option.
@@ -402,7 +605,7 @@ public abstract class Option : IOption
 	/// <summary>
 	/// Internal helper method to construct an Option's path recursively.
 	/// </summary>
-	protected string GetPathRecursive(IOption current)
+	protected string GetPathRecursive(Option current)
 	{
 		if (current.Variance != OptionVariance.Single && !current.IsDefaultVariant) {
 			if (current.Parent != null) {
@@ -441,7 +644,7 @@ public abstract class Option : IOption
 	/// <remarks>
 	/// This method is called with the value defined in the profile
 	/// or entered by the user. This method should parse the input
-	/// and then save it to <see cref="IOption{TValue}.Value"/>.
+	/// and then save it to <see cref="Option{TValue}.Value"/>.
 	/// If the input is empty or contains an invalid value, the 
 	/// <see cref="DefaultValue"/> should be used instead.
 	/// </remarks>
@@ -501,7 +704,7 @@ public abstract class Option : IOption
 	/// </summary>
 	public void ApplyFromRoot()
 	{
-		IOption root = this;
+		Option root = this;
 		while (root.Parent != null) {
 			root = root.Parent;
 		}
@@ -615,7 +818,7 @@ public abstract class Option : IOption
 	/// </remarks>
 	public bool IsDefaultVariant { get; set; }
 
-	private List<IOption> variants;
+	private List<Option> variants;
 
 	/// <summary>
 	/// The variants contained in the default variant.
@@ -626,10 +829,10 @@ public abstract class Option : IOption
 	/// 
 	/// The enumerable does not contain the default variant itself.
 	/// </remarks>
-	public IEnumerable<IOption> Variants {
+	public IEnumerable<Option> Variants {
 		get {
 			if (variants == null) {
-				return Enumerable.Empty<IOption>();
+				return Enumerable.Empty<Option>();
 			} else {
 				return variants;
 			}
@@ -645,7 +848,7 @@ public abstract class Option : IOption
 	/// 
 	/// The default variant acts as a container for all other variants.
 	/// </remarks>
-	public IOption AddVariant(string parameter)
+	public Option AddVariant(string parameter)
 	{
 		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to AddVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to AddVariant, option is not the default variant.");
@@ -660,7 +863,7 @@ public abstract class Option : IOption
 		instance.IsDefaultVariant = false;
 
 		if (variants == null)
-			variants = new List<IOption>();
+			variants = new List<Option>();
 		variants.Add(instance);
 
 		if (Variance == OptionVariance.Array) {
@@ -682,7 +885,7 @@ public abstract class Option : IOption
 	/// the method will return `this`.
 	/// </remarks>
 	/// <param name="create">Wether a new variant should be created if one doesn't currently exist</param>
-	public IOption GetVariant(string parameter, bool create = true)
+	public Option GetVariant(string parameter, bool create = true)
 	{
 		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to GetVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to GetVariant, option is not the default variant.");
@@ -693,7 +896,7 @@ public abstract class Option : IOption
 		if (!create && variants == null)
 			return null;
 
-		IOption variant = null;
+		Option variant = null;
 		if (variants != null) {
 			variant = variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter));
 		}
@@ -712,7 +915,7 @@ public abstract class Option : IOption
 	/// Variants only exist on the <see cref="IsDefaultVariant" /> instance
 	/// of an Option whose <see cref="Variance" /> is not <see cref="OptionVariance.Single" />.
 	/// </remarks>
-	public void RemoveVariant(IOption option)
+	public void RemoveVariant(Option option)
 	{
 		Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to RemoveVariant, option is not variant.");
 		Assert.IsTrue(IsDefaultVariant, "Invalid call to RemoveVariant, option is not the default variant.");
@@ -748,7 +951,7 @@ public abstract class Option : IOption
 
 	// -------- Children --------
 
-	private List<IOption> children;
+	private List<Option> children;
 
 	/// <summary>
 	/// Wether this option has children.
@@ -767,10 +970,10 @@ public abstract class Option : IOption
 	/// They are detected automatically and instantaited when their
 	/// parent Option is instantiated.
 	/// </remarks>
-	public IEnumerable<IOption> Children {
+	public IEnumerable<Option> Children {
 		get {
 			if (children == null) {
-				return Enumerable.Empty<IOption>();
+				return Enumerable.Empty<Option>();
 			} else {
 				return children;
 			}
@@ -786,13 +989,13 @@ public abstract class Option : IOption
 
 		var nested = type.GetNestedTypes(BindingFlags.Public);
 		foreach (var nestedType in nested) {
-			if (!typeof(IOption).IsAssignableFrom(nestedType))
+			if (!typeof(Option).IsAssignableFrom(nestedType))
 				continue;
 
 			if (children == null)
-				children = new List<IOption>();
+				children = new List<Option>();
 
-			var child = (IOption)Activator.CreateInstance(nestedType);
+			var child = (Option)Activator.CreateInstance(nestedType);
 			child.Parent = this;
 			children.Add(child);
 		}
@@ -805,7 +1008,7 @@ public abstract class Option : IOption
 	/// <summary>
 	/// Get a child Option by its name.
 	/// </summary>
-	public IOption GetChild(string name)
+	public Option GetChild(string name)
 	{
 		if (children == null)
 			return null;
@@ -822,7 +1025,7 @@ public abstract class Option : IOption
 	/// <summary>
 	/// Get a child Option instance by its type.
 	/// </summary>
-	public TOption GetChild<TOption>() where TOption : IOption
+	public TOption GetChild<TOption>() where TOption : Option
 	{
 		if (children != null) {
 			foreach (var child in children) {
@@ -855,7 +1058,7 @@ public abstract class Option : IOption
 	string _category = "General";
 }
 
-public abstract class Option<TValue> : Option, IOption<TValue>
+public abstract class Option<TValue> : Option
 {
 	/// <summary>
 	/// The typed value of the Option.
@@ -871,7 +1074,7 @@ public abstract class Option<TValue> : Option, IOption<TValue>
 	/// Parse a string value to the Option Value's type.
 	/// </summary>
 	/// <remarks>
-	/// If the input is empty or parsing fails, <see cref="IOption.DefaultValue"/>
+	/// If the input is empty or parsing fails, <see cref="DefaultValue"/>
 	/// should be used.
 	/// 
 	/// The method can be called on not fully initialized and sahred Option 

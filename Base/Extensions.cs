@@ -126,13 +126,13 @@ public static class Extensions
 	#if UNITY_EDITOR
 	
 	/// <summary>
-    /// Get the OptionCapabilities of an IOption type defined by the 
+    /// Get the OptionCapabilities of an Option type defined by the 
     /// CapabilitiesAttribute or OptionCapabilities.Default, if no attribute exists.
     /// </summary>
     public static OptionCapabilities GetOptionCapabilities(this Type optionType)
     {
-        if (!typeof(IOption).IsAssignableFrom(optionType)) {
-            Debug.LogError("Invalid call to GetCapabilities: Type does not implement IOption");
+        if (!typeof(Option).IsAssignableFrom(optionType)) {
+            Debug.LogError("Invalid call to GetCapabilities: Type does not implement Option");
             return OptionCapabilities.None;
         }
 

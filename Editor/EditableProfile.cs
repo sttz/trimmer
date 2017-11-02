@@ -19,24 +19,24 @@ public abstract class EditableProfile : ScriptableObject
 	/// These options are used for the editor GUI and should not be
 	/// used to change option values.
 	/// </remarks>
-	public static IEnumerable<IOption> AllOptions {
+	public static IEnumerable<Option> AllOptions {
 		get {
 			if (_allOptions == null) {
-				_allOptions = new List<IOption>();
+				_allOptions = new List<Option>();
 				foreach (var optionType in RuntimeProfile.AllOptionTypes) {
-					_allOptions.Add((IOption)Activator.CreateInstance(optionType));
+					_allOptions.Add((Option)Activator.CreateInstance(optionType));
 				}
 			}
 			return _allOptions;
 		}
 	}
-	private static List<IOption> _allOptions;
+	private static List<Option> _allOptions;
 
     public abstract ValueStore Store { get; }
     public abstract void SaveIfNeeded();
 	public abstract Recursion.RecursionType GetRecursionType();
-    public abstract IEnumerable<IOption> GetAllOptions();
-    public abstract void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node);
+    public abstract IEnumerable<Option> GetAllOptions();
+    public abstract void EditOption(string path, GUIContent label, Option option, ValueStore.Node node);
 }
 
 }

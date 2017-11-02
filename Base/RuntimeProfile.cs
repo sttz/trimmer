@@ -14,7 +14,7 @@ namespace sttz.Workbench
 /// <remarks>
 /// The profile can be enumerated to access the individual options.
 /// </remarks>
-public class RuntimeProfile : IEnumerable<IOption>
+public class RuntimeProfile : IEnumerable<Option>
 {
 	// -------- Static --------
 
@@ -36,7 +36,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 							t.IsClass 
 							&& !t.IsAbstract 
 							&& !t.IsNested
-							&& typeof(IOption).IsAssignableFrom(t)
+							&& typeof(Option).IsAssignableFrom(t)
 						)
 					);
 				}
@@ -71,14 +71,14 @@ public class RuntimeProfile : IEnumerable<IOption>
 	// -------- Profile --------
 
 	/// <summary>
-	/// Options sorted by <see cref="IOption.ApplyOrder"/>.
+	/// Options sorted by <see cref="Option.ApplyOrder"/>.
 	/// </summary>
-	protected List<IOption> options = new List<IOption>();
+	protected List<Option> options = new List<Option>();
 	/// <summary>
 	/// Options by name.
 	/// </summary>
-	protected Dictionary<string, IOption> optionsByName
-		= new Dictionary<string, IOption>(StringComparer.OrdinalIgnoreCase);
+	protected Dictionary<string, Option> optionsByName
+		= new Dictionary<string, Option>(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Values used for this profile.
@@ -116,7 +116,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 		// Create option instances
 		foreach (var optionType in AllOptionTypes) {
 			if (ShouldCreateOption(optionType)) {
-				var option = (IOption)Activator.CreateInstance(optionType);
+				var option = (Option)Activator.CreateInstance(optionType);
 				options.Add(option);
 				optionsByName[option.Name] = option;
 			}
@@ -131,7 +131,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// Try to find an option by its path, allowing to get nested
 	/// child and variant options.
 	/// </summary>
-	public IOption GetOption(string path)
+	public Option GetOption(string path)
 	{
 		// Example paths:
 		// "Name"
@@ -192,7 +192,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// <summary>
 	/// Get a root option by name (no nested child or variant options).
 	/// </summary>
-	public IOption GetRootOption(string name)
+	public Option GetRootOption(string name)
 	{
 		if (optionsByName.ContainsKey(name)) {
 			return optionsByName[name];
@@ -221,7 +221,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 
 		// Apply values in store to options
 		foreach (var node in Store.Roots) {
-			IOption option;
+			Option option;
 			if (!optionsByName.TryGetValue(node.name, out option))
 				continue;
 
@@ -265,7 +265,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	public void CleanStore()
 	{
 		foreach (var root in Store.Roots.ToArray()) {
-			IOption option;
+			Option option;
 			if (optionsByName.TryGetValue(root.name, out option)) {
 				CleanStoreRecursive(root, option);
 			} else {
@@ -274,7 +274,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 		}
 	}
 
-	protected void CleanStoreRecursive(ValueStore.Node node, IOption option, bool isDefaultNode = false)
+	protected void CleanStoreRecursive(ValueStore.Node node, Option option, bool isDefaultNode = false)
 	{
 		if (!isDefaultNode && option.IsDefaultVariant) {
 			// Value and children are stored in the default parameter sub-node
@@ -334,7 +334,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// <summary>
 	/// Clear the option recursively.
 	/// </summary>
-	private void ClearOption(IOption option)
+	private void ClearOption(Option option)
 	{
 		option.Load(string.Empty);
 
@@ -351,7 +351,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// Recursive method to apply a node with all its variants and
 	/// children to an option.
 	/// </summary>
-	private void LoadNode(IOption option, ValueStore.Node node, bool isDefaultNode = false)
+	private void LoadNode(Option option, ValueStore.Node node, bool isDefaultNode = false)
 	{
 		if (!isDefaultNode && option.IsDefaultVariant) {
 			// Load default variant sub-node into the main variant option
@@ -387,7 +387,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 	/// Recursive method to save the option's value and its variants'
 	/// and children's values to the node.
 	/// </summary>
-	private void SaveNode(ValueStore.Node node, IOption option, bool isDefaultNode = false)
+	private void SaveNode(ValueStore.Node node, Option option, bool isDefaultNode = false)
 	{
 		if (!isDefaultNode && option.IsDefaultVariant) {
 			var defaultVariant = node.GetOrCreateVariant(option.VariantDefaultParameter);
@@ -409,7 +409,7 @@ public class RuntimeProfile : IEnumerable<IOption>
 
 	// -------- IEnumerable --------
 
-	public IEnumerator<IOption> GetEnumerator()
+	public IEnumerator<Option> GetEnumerator()
 	{
 		return options.GetEnumerator();
 	}

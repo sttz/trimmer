@@ -193,7 +193,7 @@ public class EditorProfile : EditableProfile
 	/// <summary>
 	/// 
 	/// </summary>
-	public override IEnumerable<IOption> GetAllOptions()
+	public override IEnumerable<Option> GetAllOptions()
 	{
 		if (Application.isPlaying) {
 			return RuntimeProfile.Main;
@@ -205,7 +205,7 @@ public class EditorProfile : EditableProfile
 	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
-	public override void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node)
+	public override void EditOption(string path, GUIContent label, Option option, ValueStore.Node node)
 	{
 		if (Application.isPlaying) {
 			var oldValue = option.Save();
@@ -217,7 +217,7 @@ public class EditorProfile : EditableProfile
 			return;
 		}
 		
-		IOption editModeOption = null;
+		Option editModeOption = null;
 		if (editModeProfile != null) {
 			editModeOption = editModeProfile.GetOption(path);
 		}

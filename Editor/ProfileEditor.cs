@@ -222,7 +222,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	// -------- Fields --------
 
-	List<IOption> options;
+	List<Option> options;
 
 	GUIContent inclusionO;
 	GUIContent inclusionI;
@@ -730,7 +730,7 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 	}
 
-	void AddNewVariant(IOption option, ValueStore.Node node)
+	void AddNewVariant(Option option, ValueStore.Node node)
 	{
 		if (option.Variance == OptionVariance.Single)
 			throw new Exception("Option is not variant.");
@@ -749,7 +749,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	static Regex RemoveTrailingNumbersRegex = new Regex(@"^(.*?)\d*$");
 
-	string FindUniqueVariantName(IOption option, ValueStore.Node node, string baseParam = null)
+	string FindUniqueVariantName(Option option, ValueStore.Node node, string baseParam = null)
 	{
 		if (baseParam == null) {
 			baseParam = option.VariantDefaultParameter;

@@ -21,7 +21,7 @@ namespace sttz.Workbench.Editor
 /// and their default values using an ini file.
 /// </summary>
 /// <remarks>
-/// <para>A build profile defines which <see cref="IOption"/> types
+/// <para>A build profile defines which <see cref="Option"/> types
 /// are available in debug or release builds. It defines a set of
 /// scripting define symbols based on those options, which allows to
 /// conditionally compile code (and the options themselves) depending
@@ -194,7 +194,7 @@ public class BuildProfile : EditableProfile
 	/// <summary>
 	/// Check if an option should be included in builds of this profile.
 	/// </summary>
-	public OptionInclusion GetInclusionOf(IOption option)
+	public OptionInclusion GetInclusionOf(Option option)
 	{
 		var node = store.GetRoot(option.Name);
 		if (node == null) {
@@ -234,12 +234,12 @@ public class BuildProfile : EditableProfile
 		return Recursion.RecursionType.Nodes;
 	}
 
-	public override IEnumerable<IOption> GetAllOptions()
+	public override IEnumerable<Option> GetAllOptions()
 	{
 		return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
 	}
 
-	public override void EditOption(string path, GUIContent label, IOption option, ValueStore.Node node)
+	public override void EditOption(string path, GUIContent label, Option option, ValueStore.Node node)
 	{
 		// For build profiles, the store is always directly edited.
 		node.Value = option.EditGUI(label, node.Value);
