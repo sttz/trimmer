@@ -11,7 +11,7 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with a string as value.
 /// </summary>
-public abstract class OptionString : Option, IOption<string>
+public abstract class OptionString : Option<string>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
@@ -20,27 +20,30 @@ public abstract class OptionString : Option, IOption<string>
 	}
 	#endif
 
-	public string Value { get; set; }
-
-	public string Parse(string input)
+	public OptionString() : base()
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
+		DefaultValue = string.Empty;
+	}
+
+	override public string Parse(string input)
+	{
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		return input;
 	}
 
-	public override void Load(string input)
+	override public void Load(string input)
 	{
 		Value = input;
 	}
 
-	public string Save(string input)
+	override public string Save(string input)
 	{
 		return input;
 	}
 
-	public override string Save()
+	override public string Save()
 	{
 		return Value;
 	}

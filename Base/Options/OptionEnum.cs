@@ -12,7 +12,7 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with an enumeration as value.
 /// </summary>
-public abstract class OptionEnum<TEnum> : Option, IOption<TEnum>
+public abstract class OptionEnum<TEnum> : Option<TEnum>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
@@ -27,8 +27,6 @@ public abstract class OptionEnum<TEnum> : Option, IOption<TEnum>
 	}
 	#endif
 
-	public TEnum Value { get; set; }
-
 	private bool? _isMask;
 	public bool IsMask {
 		get {
@@ -42,34 +40,30 @@ public abstract class OptionEnum<TEnum> : Option, IOption<TEnum>
 		}
 	}
 
-	public TEnum Parse(string input)
+	override public TEnum Parse(string input)
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
-
-		if (string.IsNullOrEmpty(input)) {
-			return default(TEnum);
-		}
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		try {
 			return (TEnum)Enum.Parse(typeof(TEnum), input, true);
 		} catch {
 			Debug.LogError("Failed to parse enum value of " + typeof(TEnum).Name + ": " + input);
-			return default(TEnum);
+			return DefaultValue;
 		}
 	}
 
-	public override void Load(string input)
+	override public void Load(string input)
 	{
 		Value = Parse(input);
 	}
 
-	public string Save(TEnum input)
+	override public string Save(TEnum input)
 	{
 		return ((Enum)(object)input).ToString("F");
 	}
 
-	public override string Save()
+	override public string Save()
 	{
 		return Save(Value);
 	}

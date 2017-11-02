@@ -18,7 +18,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 	{
         Category = "Build";
         IsMask = true;
-		DefaultValue = "";
 	}
 
 	public class OptionBuildPath : OptionString
@@ -34,7 +33,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 		protected override void Configure()
 		{
             Variance = OptionVariance.Array;
-			DefaultValue = "";
             VariantDefaultParameter = "0";
 		}
 	}

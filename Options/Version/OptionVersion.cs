@@ -79,7 +79,7 @@ public class OptionVersion : OptionToggle
     override protected void Configure()
     {
         Category = "General";
-        DefaultValue = "true";
+        DefaultValue = true;
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class OptionVersion : OptionToggle
     {
         override protected void Configure()
         {
-            DefaultValue = "true";
+            DefaultValue = true;
         }
     }
 

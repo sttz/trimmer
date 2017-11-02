@@ -738,7 +738,7 @@ public class ProfileEditor : UnityEditor.Editor
 		var parameter = FindUniqueVariantName(option, node);
 
 		if (node != null) {
-			node.AddVariant(parameter, option.DefaultValue ?? string.Empty);
+			node.AddVariant(parameter, string.Empty);
 			if (option.Variance == OptionVariance.Array) {
 				node.NumberVariantsSequentially();
 			}

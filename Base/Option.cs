@@ -433,23 +433,6 @@ public abstract class Option : IOption
 	}
 
 	/// <summary>
-	/// The default value of the option.
-	/// </summary>
-	/// <remarks>
-	/// The default string value, used if the profile doesn't contain
-	/// a value or its value is empty.
-	/// </remarks>
-	public string DefaultValue {
-		get {
-			return _defaultValue;
-		}
-		set {
-			_defaultValue = value;
-		}
-	}
-	private string _defaultValue = string.Empty;
-
-	/// <summary>
 	/// Parse and load an input string.
 	/// </summary>
 	/// <remarks>
@@ -867,6 +850,43 @@ public abstract class Option : IOption
 		}
 	}
 	string _category = "General";
+}
+
+public abstract class Option<TValue> : Option, IOption<TValue>
+{
+	/// <summary>
+	/// The typed value of the Option.
+	/// </summary>
+	public TValue Value { get; set; }
+
+	/// <summary>
+	/// The default value, used when input is empty or invalid.
+	/// </summary>
+	public TValue DefaultValue { get; protected set; }
+
+	/// <summary>
+	/// Parse a string value to the Option Value's type.
+	/// </summary>
+	/// <remarks>
+	/// If the input is empty or parsing fails, <see cref="IOption.DefaultValue"/>
+	/// should be used.
+	/// 
+	/// The method can be called on not fully initialized and sahred Option 
+	/// instances and should be careful when relying on external state.
+	/// </remarks>
+	public abstract TValue Parse(string input);
+
+	/// <summary>
+	/// Serialize a typed value to a string.
+	/// </summary>
+	/// <remarks>
+	/// The string returned by Save can later be fed back to <see cref="Parse" />
+	/// and should survive the round-trip without loss.
+	/// 
+	/// The method can be called on not fully initialized and sahred Option 
+	/// instances and should be careful when relying on external state.
+	/// </remarks>
+	public abstract string Save(TValue input);
 }
 
 }

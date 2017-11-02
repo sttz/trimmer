@@ -13,7 +13,6 @@ public class OptionPrompt : OptionToggle
 	protected override void Configure()
 	{
 		Category = "Configuration";
-		DefaultValue = "";
 	}
 
 	public override void Apply()
@@ -56,18 +55,12 @@ public class OptionPrompt : OptionToggle
 
 	public class OptionPromptFontSize : OptionInt
 	{
-		protected override void Configure()
-		{
-			DefaultValue = "";
-		}
+		protected override void Configure() { }
 	}
 
 	public class OptionPromptPosition : OptionEnum<Prompt.Position>
 	{
-		protected override void Configure()
-		{
-			DefaultValue = "";
-		}
+		protected override void Configure() { }
 	}
 
 	public class OptionPromptActivation : OptionString

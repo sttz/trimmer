@@ -11,7 +11,7 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with a boolean as value.
 /// </summary>
-public abstract class OptionToggle : Option, IOption<bool>
+public abstract class OptionToggle : Option<bool>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
@@ -24,27 +24,25 @@ public abstract class OptionToggle : Option, IOption<bool>
 		"yes", "true", "y", "1"
 	};
 
-	public bool Value { get; set; }
-
-	public bool Parse(string input)
+	override public bool Parse(string input)
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		return Array.FindIndex(trueStrings, s => s.Equals(input, StringComparison.OrdinalIgnoreCase)) >= 0;
 	}
 
-	public override void Load(string input)
+	override public void Load(string input)
 	{
 		Value = Parse(input);
 	}
 
-	public string Save(bool input)
+	override public string Save(bool input)
 	{
 		return input ? "yes" : "no";
 	}
 
-	public override string Save()
+	override public string Save()
 	{
 		return Save(Value);
 	}

@@ -228,7 +228,6 @@ public interface IOption
 	IOption Parent { get; set; }
 	string Path { get; }
 	void InvalidatePathRecursive();
-	string DefaultValue { get; }
 	void Load(string input);
 	string Save();
 	int ApplyOrder { get; }
@@ -279,6 +278,10 @@ public interface IOption<TValue> : IOption
 	/// The typed value of the Option.
 	/// </summary>
 	TValue Value { get; set; }
+	/// <summary>
+	/// The default value, used when input is empty or invalid.
+	/// </summary>
+	TValue DefaultValue { get; }
 	/// <summary>
 	/// Parse a string value to the Option Value's type.
 	/// </summary>

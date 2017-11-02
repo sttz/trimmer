@@ -11,7 +11,7 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with an int as value.
 /// </summary>
-public abstract class OptionInt : Option, IOption<int>
+public abstract class OptionInt : Option<int>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
@@ -24,15 +24,13 @@ public abstract class OptionInt : Option, IOption<int>
 	}
 	#endif
 
-	public int Value { get; set; }
-
 	public int? MinValue { get; set; }
 	public int? MaxValue { get; set; }
 
-	public int Parse(string input)
+	override public int Parse(string input)
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		int result;
 		if (int.TryParse(input, out result)) {
@@ -42,21 +40,21 @@ public abstract class OptionInt : Option, IOption<int>
 				return result;
 			}
 		} else {
-			return 0;
+			return DefaultValue;
 		}
 	}
 
-	public override void Load(string input)
+	override public void Load(string input)
 	{
 		Value = Parse(input);
 	}
 
-	public string Save(int input)
+	override public string Save(int input)
 	{
 		return input.ToString();
 	}
 
-	public override string Save()
+	override public string Save()
 	{
 		return Save(Value);
 	}

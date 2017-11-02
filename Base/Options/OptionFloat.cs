@@ -11,7 +11,7 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with a float as value.
 /// </summary>
-public abstract class OptionFloat : Option, IOption<float>
+public abstract class OptionFloat : Option<float>
 {
 	#if UNITY_EDITOR
 	public override string EditGUI(GUIContent label, string input)
@@ -24,15 +24,13 @@ public abstract class OptionFloat : Option, IOption<float>
 	}
 	#endif
 
-	public float Value { get; set; }
-
 	public float? MinValue { get; set; }
 	public float? MaxValue { get; set; }
 
-	public float Parse(string input)
+	override public float Parse(string input)
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		float result;
 		if (float.TryParse(input, out result)) {
@@ -42,21 +40,21 @@ public abstract class OptionFloat : Option, IOption<float>
 				return result;
 			}
 		} else {
-			return 0f;
+			return DefaultValue;
 		}
 	}
 
-	public override void Load(string input)
+	override public void Load(string input)
 	{
 		Value = Parse(input);
 	}
 
-	public string Save(float input)
+	override public string Save(float input)
 	{
 		return input.ToString("R");
 	}
 
-	public override string Save()
+	override public string Save()
 	{
 		return Save(Value);
 	}

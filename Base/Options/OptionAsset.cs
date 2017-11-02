@@ -18,23 +18,21 @@ namespace sttz.Workbench.BaseOptions
 /// This option type is only available in the editor.
 /// </remarks>
 [Capabilities(OptionCapabilities.CanPlayInEditor)]
-public abstract class OptionAsset<TUnity> : Option, IOption<TUnity> where TUnity : UnityEngine.Object
+public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
 	public override string EditGUI(GUIContent label, string input)
 	{
 		return Save((TUnity)EditorGUILayout.ObjectField(label, Parse(input), typeof(TUnity), false));
 	}
 
-	public TUnity Value { get; set; }
-
-	public TUnity Parse(string input)
+	override public TUnity Parse(string input)
 	{
-		if (input.Length == 0)
-			input = DefaultValue ?? string.Empty;
+		if (string.IsNullOrEmpty(input))
+			return DefaultValue;
 
 		var path = AssetDatabase.GUIDToAssetPath(input);
 		if (string.IsNullOrEmpty(path))
-			return null;
+			return DefaultValue;
 
 		var asset = (TUnity)AssetDatabase.LoadAssetAtPath(path, typeof(TUnity));
 		return asset;
@@ -45,7 +43,7 @@ public abstract class OptionAsset<TUnity> : Option, IOption<TUnity> where TUnity
 		Value = Parse(input);
 	}
 
-	public string Save(TUnity input)
+	override public string Save(TUnity input)
 	{
 		var path = AssetDatabase.GetAssetPath(input);
 		if (string.IsNullOrEmpty(path))
