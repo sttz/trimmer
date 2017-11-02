@@ -216,13 +216,31 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 	}
 
-	// -------- Fields --------
+	// ------ Styling ------
 
-	List<Option> options;
+	static Color Grey(float amount)
+	{
+		return new Color(amount, amount, amount, 1f);
+	}
 
-	GUIContent inclusionO;
-	GUIContent inclusionI;
-	GUIContent inclusionII;
+	struct Styling
+	{
+		public Color categoryBackground;
+		public Color includeBackground;
+		public Color separator;
+	}
+
+	Styling personalStyling = new Styling() {
+		categoryBackground = Grey(0.65f),
+		includeBackground =  Grey(0.725f),
+		separator = Grey(0.8f)
+	};
+
+	Styling professionalStyling = new Styling() {
+		categoryBackground = Grey(0.32f),
+		includeBackground =  Grey(0.2f),
+		separator = Grey(0.175f)
+	};
 
 	GUIStyle categoryBackground;
 	GUIStyle categoryFoldout;
@@ -234,6 +252,14 @@ public class ProfileEditor : UnityEditor.Editor
 	GUIStyle minusStyle;
 	GUIStyle greyFoldout;
 	GUIStyle boldLabel;
+
+	// -------- Fields --------
+
+	List<Option> options;
+
+	GUIContent inclusionO;
+	GUIContent inclusionI;
+	GUIContent inclusionII;
 
 	string lastCategory;
 	bool categoryExpanded;
@@ -257,6 +283,8 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void InitializeGUI()
 	{
+		var style = EditorGUIUtility.isProSkin ? professionalStyling : personalStyling;
+
 		if (inclusionO == null) {
 			inclusionO = new GUIContent("O");
 			inclusionI = new GUIContent("I");
@@ -265,7 +293,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		if (categoryBackground == null) {
 			categoryBackground = new GUIStyle();
-			categoryBackground.normal.background = CreateColorTexture(Color.white * 0.6f);
+			categoryBackground.normal.background = CreateColorTexture(style.categoryBackground);
 			categoryBackground.overflow = new RectOffset(20, 20, -3, -3);
 			categoryBackground.margin = categoryBackground.padding = new RectOffset();
 		}
@@ -279,7 +307,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		if (includeBackground == null) {
 			includeBackground = new GUIStyle();
-			includeBackground.normal.background = CreateColorTexture(Color.white * 0.7f);
+			includeBackground.normal.background = CreateColorTexture(style.includeBackground);
 			//includeBackground.overflow = new RectOffset(20, 20, -3, -3);
 			//includeBackground.margin = includeBackground.padding = new RectOffset();
 		}
@@ -287,7 +315,7 @@ public class ProfileEditor : UnityEditor.Editor
 		if (separator == null) {
 			separator = new GUIStyle();
 			separator.fixedHeight = 1;
-			separator.normal.background = CreateColorTexture(Color.white * 0.8f);
+			separator.normal.background = CreateColorTexture(style.separator);
 		}
 
 		if (inclusionLabel == null) {
@@ -299,14 +327,14 @@ public class ProfileEditor : UnityEditor.Editor
 
 		if (plusStyle == null) {
 			plusStyle = new GUIStyle("OL Plus");
-			plusStyle.fixedWidth = 18;
+			plusStyle.fixedWidth = 17;
 			plusStyle.stretchWidth = false;
 			plusStyle.margin.top = 3;
 		}
 
 		if (minusStyle == null) {
 			minusStyle = new GUIStyle("OL Minus");
-			minusStyle.fixedWidth = 18;
+			minusStyle.fixedWidth = 17;
 			minusStyle.stretchWidth = false;
 			minusStyle.margin.top = 3;
 		}
