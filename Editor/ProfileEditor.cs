@@ -21,17 +21,13 @@ public class ProfileEditor : UnityEditor.Editor
 	// -------- Constants --------
 
 	/// <summary>
-	/// Width of Unity's toggle control.
-	/// </summary>
-	const float toggleWidth = 13;
-	/// <summary>
-	/// Width of Unity's foldout control.
-	/// </summary>
-	const float foldoutWidth = 13;
-	/// <summary>
 	/// Width of columns with toggles on the right-hand side of the profile editor.
 	/// </summary>
 	const float buildColumnWidth = 21;
+	/// <summary>
+	/// Alpha value applied to unavailable options.
+	/// </summary>
+	const float unavailableAlpha = 0.5f;
 
 	// -------- Static --------
 
@@ -241,6 +237,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	string lastCategory;
 	bool categoryExpanded;
+	bool optionAvailable;
 	bool buildCategory;
 	string pathBase;
 	List<Action> delayedRemovals = new List<Action>();
@@ -455,6 +452,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		lastCategory = null;
 		categoryExpanded = true;
+		optionAvailable = true;
 		buildCategory = showBuild;
 		Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
 	}
@@ -468,13 +466,15 @@ public class ProfileEditor : UnityEditor.Editor
 		var lastDepth = EditorGUI.indentLevel;
 		EditorGUI.indentLevel = context.depth;
 
-		var optionEnabled = true;
-		if (buildProfile != null) {
-			optionEnabled = context.option.IsAvailable(buildProfile.BuildTargets);
+		if (buildProfile != null && context.IsRoot) {
+			optionAvailable = context.option.IsAvailable(buildProfile.BuildTargets);
 		}
-		if (!WorkbenchPrefs.ShowUnavailableOptions && !optionEnabled) {
+		
+		if (!WorkbenchPrefs.ShowUnavailableOptions && !optionAvailable) {
 			return false;
 		}
+
+		GUI.color = new Color(1, 1, 1, optionAvailable ? 1 : unavailableAlpha);
 
 		var expansionPath = pathBase + context.path;
 		var isExpanded = true;
@@ -590,6 +590,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 			// Include in build toggle
 			if (buildProfile != null) {
+				GUI.color = Color.white;
 				EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.ExpandHeight(true));
 				{
 					if (
@@ -602,12 +603,14 @@ public class ProfileEditor : UnityEditor.Editor
 					) {
 						var root = (ValueStore.RootNode)context.node;
 						var value = root.Inclusion;
-						if (!optionEnabled) {
+						if (!optionAvailable) {
 							value = OptionInclusion.Remove;
 							GUI.enabled = false;
 						}
 						GUILayout.Label(LabelForInclusion(root, option.Capabilities), inclusionLabel);
-						DoInclusionMenu(root, option.Capabilities);
+						if (optionAvailable) {
+							DoInclusionMenu(root, option.Capabilities);
+						}
 						GUI.enabled = true;
 					} else {
 						EditorGUILayout.Space();
