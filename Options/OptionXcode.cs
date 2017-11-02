@@ -27,7 +27,7 @@ namespace sttz.Workbench.Options
 /// * <see cref="OptionRenameScheme"/>
 /// </remarks>
 [Capabilities(OptionCapabilities.ConfiguresBuild)]
-public class OptionXcode : OptionToggle
+public class OptionXcode : OptionContainer
 {
     protected override void Configure()
     {

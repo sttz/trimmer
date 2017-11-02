@@ -57,8 +57,8 @@ namespace sttz.Workbench.Options
 /// https://developer.android.com/studio/publish/versioning.html
 /// https://developer.apple.com/library/content/technotes/tn2420/_index.html
 /// </remarks>
-[Capabilities(OptionCapabilities.ConfiguresBuild | OptionCapabilities.CanPlayInEditor)]
-public class OptionVersion : OptionToggle
+[Capabilities(OptionCapabilities.ConfiguresBuild | OptionCapabilities.CanPlayInEditor | OptionCapabilities.HasAssociatedFeature)]
+public class OptionVersion : OptionContainer
 {
     // ------ Configuration ------
 
@@ -79,7 +79,6 @@ public class OptionVersion : OptionToggle
     override protected void Configure()
     {
         Category = "General";
-        DefaultValue = true;
     }
 
     /// <summary>
@@ -117,7 +116,7 @@ public class OptionVersion : OptionToggle
     {
         base.PreprocessBuild(target, path, inclusion);
 
-        if (!Value) return;
+        if (inclusion == OptionInclusion.Remove) return;
 
         projectVersion = DetermineProjectVersion(target);
 
@@ -130,13 +129,9 @@ public class OptionVersion : OptionToggle
     {
         base.PostprocessScene(scene, inclusion);
 
-        if (Value) {
-            // The Value decides if the version gets injected, so we pass
-            // OptionInclusion.Feature here to force the injection
-            var script = OptionHelper.InjectFeature<VersionContainer>(scene, OptionInclusion.Feature);
-            if (script != null) {
-                script.version = projectVersion;
-            }
+        var script = OptionHelper.InjectFeature<VersionContainer>(scene, OptionInclusion.Feature);
+        if (script != null) {
+            script.version = projectVersion;
         }
     }
 
