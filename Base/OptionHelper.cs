@@ -21,6 +21,12 @@ public static class OptionHelper
     // ------ Injection ------
 
     /// <summary>
+    /// Name used for the container that holds the singletons
+    /// created by <see cref="GetSingleton*"> and <see cref="InjectFeature*"/>.
+    /// </summary>
+    const string CONTAINER_NAME = "_Workbench";
+
+    /// <summary>
     /// Get a singleton script instance in the current scene.
     /// Intended for use in Options' <see cref="Apply"/> methods.
     /// </summary>
@@ -40,16 +46,13 @@ public static class OptionHelper
     /// inject the script into the build if the Option is not included.
     /// </remarks>
     /// <param name="create">Wether to create the script if it not exists.</param>
-    /// <param name="containerName">The name of the container the script is created on (defaults to the script's name)</param>
     /// <returns>The script or null if <paramref name="create"/> is <c>false</c> and the script doesn't exist</returns>
-    public static T GetSingleton<T>(bool create = true, string containerName = null) where T : Component
+    public static T GetSingleton<T>(bool create = true) where T : Component
     {
-        containerName = containerName ?? typeof(T).Name;
-
-        var container = GameObject.Find(containerName);
+        var container = GameObject.Find(CONTAINER_NAME);
         if (container == null) {
             if (!create) return null;
-            container = new GameObject(containerName);
+            container = new GameObject(CONTAINER_NAME);
         }
 
         var script = container.GetComponent<T>();
@@ -77,9 +80,8 @@ public static class OptionHelper
     /// </remarks>
     /// <param name="scene">Pass in the `scene` parameter from <see cref="PostprocessScene"/></param>
     /// <param name="inclusion">Pass in the `inclusion` parameter from <see cref="PostprocessScene"/></param>
-    /// <param name="container">The name of the container the script is created on (defaults to the script's name)</param>
     /// <returns>The script if it's injected or null</returns>
-    public static T InjectFeature<T>(Scene scene, OptionInclusion inclusion, string containerName = null) where T : Component
+    public static T InjectFeature<T>(Scene scene, OptionInclusion inclusion) where T : Component
     {
         // We only inject when the feature is included but the Option is not
         if (inclusion != OptionInclusion.Feature)
@@ -90,7 +92,7 @@ public static class OptionHelper
         if (scene.buildIndex != 0)
             return null;
 
-        return GetSingleton<T>(true, containerName);
+        return GetSingleton<T>(true);
     }
 
     /// <summary>

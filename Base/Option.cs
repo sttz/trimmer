@@ -21,7 +21,7 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
-// TODO: Inject and DontDestroyOnLoad
+// TODO: Completely remove WB from build with all options removed (No_Workbench symbol?)
 
 #if UNITY_EDITOR
 
