@@ -199,11 +199,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		return AssetDatabase.LoadAssetAtPath(path, typeof(T)) as T;
 	}
 
-	// -------- Build Settings Tracking --------
-
-	private static BuildTarget lastBuildTarget;
-	private static bool lastDevelopmentBuild;
-
 	// -------- Building --------
 
 	/// <summary>
@@ -439,6 +434,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	// ------ Unity Callbacks ------
 
+	string previousScriptingDefineSymbols;
+
 	public int callbackOrder { get { return 0; } }
 
 	public void OnPreprocessBuild(BuildTarget target, string path)
@@ -451,6 +448,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// Run options' PreprocessBuild and collect scripting define symbols
 		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+		previousScriptingDefineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
 		var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
 
 		// Remove all symbols previously added by Workbench
@@ -495,6 +493,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			option.PostprocessBuild(target, path, inclusion);
 		}
+
+		// Restore original scripting define symbols
+		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+		PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
 	}
 
 	public void OnProcessScene(Scene scene)

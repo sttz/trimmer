@@ -21,9 +21,7 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
-// TODO: Apply scripting define symbols manually? Restore them after build?
 // TODO: Inject and DontDestroyOnLoad
-// TODO: Default instead of active profile?
 
 #if UNITY_EDITOR
 
