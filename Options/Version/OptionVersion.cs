@@ -85,18 +85,12 @@ public class OptionVersion : OptionToggle
     /// <summary>
     /// If non-empty, this version will be used instead of `PlayerSettings.bundleVersion`
     /// </summary>
-    public class OptionOverrideVersion : OptionString
-    {
-        override protected void Configure() { }
-    }
+    public class OptionOverrideVersion : OptionString { }
 
     /// <summary>
     /// If non-empty, this build number will be used instead of the shared build number.
     /// </summary>
-    public class OptionOverrideBuild : OptionString
-    {
-        override protected void Configure() { }
-    }
+    public class OptionOverrideBuild : OptionString { }
 
     /// <summary>
     /// When enabled, version control information will be included.

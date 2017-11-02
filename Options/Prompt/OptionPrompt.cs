@@ -53,15 +53,9 @@ public class OptionPrompt : OptionToggle
 	}
 	#endif
 
-	public class OptionPromptFontSize : OptionInt
-	{
-		protected override void Configure() { }
-	}
+	public class OptionPromptFontSize : OptionInt { }
 
-	public class OptionPromptPosition : OptionEnum<Prompt.Position>
-	{
-		protected override void Configure() { }
-	}
+	public class OptionPromptPosition : OptionEnum<Prompt.Position> { }
 
 	public class OptionPromptActivation : OptionString
 	{

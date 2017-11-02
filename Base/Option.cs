@@ -77,7 +77,10 @@ public abstract class Option : IOption
 	/// Option instance. Most Option properties should only bet set once
 	/// in this method and then not changed after the Option is created.
 	/// </remarks>
-	protected abstract void Configure();
+	protected virtual void Configure()
+	{
+		// NOP
+	}
 
 	/// <summary>
 	/// Prefix for the per-option scripting defines.

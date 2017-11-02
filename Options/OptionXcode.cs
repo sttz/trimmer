@@ -48,8 +48,6 @@ public class OptionXcode : OptionToggle
     /// </summary>
     public class OptionForceDisableRemoteNotifications : OptionToggle
     {
-        protected override void Configure() { }
-
         override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
         {
             base.PostprocessBuild(target, path, inclusion);
@@ -89,8 +87,6 @@ public class OptionXcode : OptionToggle
     /// </summary>
     public class OptionAddEncryptionExemption : OptionToggle
     {
-        protected override void Configure() { }
-
         override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
         {
             base.PostprocessBuild(target, path, inclusion);
@@ -122,8 +118,6 @@ public class OptionXcode : OptionToggle
     /// </summary>
     public class OptionRenameScheme : OptionToggle
     {
-        protected override void Configure() { }
-
         override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
         {
             base.PostprocessBuild(target, path, inclusion);
