@@ -120,7 +120,7 @@ public class EditorProfile : EditableProfile
 
 	// -------- Fields --------
 
-	// <summary>
+	/// <summary>
 	/// The value store containing the values for the profile's options.
 	/// </summary>
 	public ValueStore store = new ValueStore();

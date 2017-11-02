@@ -644,7 +644,7 @@ public abstract class Option
 	/// or entered by the user. This method should parse the input
 	/// and then save it to <see cref="Option{TValue}.Value"/>.
 	/// If the input is empty or contains an invalid value, the 
-	/// <see cref="DefaultValue"/> should be used instead.
+	/// <see cref="Option{TValue}.DefaultValue"/> should be used instead.
 	/// </remarks>
 	public abstract void Load(string input);
 	/// <summary>
