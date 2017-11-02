@@ -652,7 +652,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 		// Expansion toggle
 		if (context.IsRecursable) {
-			rect.y += EditorStyles.foldout.padding.top;
+			rect.y += EditorStyles.foldout.padding.top + linePadding / 2;
 			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 
 			if (wasExpanded != isExpanded) {
