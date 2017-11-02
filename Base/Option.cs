@@ -23,6 +23,7 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
+// TODO: Icon
 
 #if UNITY_EDITOR
 
