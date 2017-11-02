@@ -1,14 +1,12 @@
 ﻿#if !NO_WORKBENCH || UNITY_EDITOR
 
-// Workaround for docfx documentation building
-#if !UNITY_5 && !UNITY_2017 && !UNITY_2018
-#define UNITY_EDITOR
-#endif
-
-#if UNITY_EDITOR
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 
 namespace sttz.Workbench.BaseOptions
 {
@@ -16,21 +14,35 @@ namespace sttz.Workbench.BaseOptions
 /// <summary>
 /// Option base class with a Unity asset as value.
 /// </summary>
-/// <remarks>
-/// This option type is only available in the editor.
-/// </remarks>
-[Capabilities(OptionCapabilities.CanPlayInEditor)]
 public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
+	#if UNITY_EDITOR
 	public override string EditGUI(string input)
 	{
 		return Save((TUnity)EditorGUILayout.ObjectField(Parse(input), typeof(TUnity), false));
 	}
 
+	override public void PostprocessScene(Scene scene, OptionInclusion inclusion)
+	{
+		base.PostprocessScene(scene, inclusion);
+
+		if ((inclusion & OptionInclusion.Option) != 0
+				&& scene.buildIndex == 0 
+				&& ProfileContainer.Instance != null
+				&& Value != null && !string.IsNullOrEmpty(GuidValue)) {
+			ProfileContainer.Instance.AddReference(GuidValue, Value);
+		}
+	}
+	#endif
+
+	public string GuidValue { get; protected set; }
+
 	override public TUnity Parse(string input)
 	{
 		if (string.IsNullOrEmpty(input))
 			return DefaultValue;
+
+		#if UNITY_EDITOR
 
 		var path = AssetDatabase.GUIDToAssetPath(input);
 		if (string.IsNullOrEmpty(path))
@@ -38,21 +50,36 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
 
 		var asset = (TUnity)AssetDatabase.LoadAssetAtPath(path, typeof(TUnity));
 		return asset;
+
+		#else
+		
+		return ProfileContainer.Instance.GetReference<TUnity>(input);
+		
+		#endif
 	}
 
 	public override void Load(string input)
 	{
+		GuidValue = input;
 		Value = Parse(input);
 	}
 
 	override public string Save(TUnity input)
 	{
+		#if UNITY_EDITOR
+
 		var path = AssetDatabase.GetAssetPath(input);
 		if (string.IsNullOrEmpty(path))
 			return string.Empty;
 
 		var guid = AssetDatabase.AssetPathToGUID(path);
 		return guid;
+
+		#else
+
+		return GuidValue;
+
+		#endif
 	}
 
 	public override string Save()
@@ -62,6 +89,5 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
 }
 
 }
-#endif
 
 #endif

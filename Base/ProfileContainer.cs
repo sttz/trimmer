@@ -1,7 +1,9 @@
-﻿using System;
-using UnityEngine;
+﻿#if !NO_WORKBENCH || UNITY_EDITOR
 
-#if !NO_WORKBENCH || UNITY_EDITOR
+using System.Collections.Generic;
+using sttz.Workbench.Extensions;
+using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace sttz.Workbench
 {
@@ -18,16 +20,76 @@ namespace sttz.Workbench
 /// </remarks>
 public class ProfileContainer : MonoBehaviour
 {
+	// ------ Profile Store ------
+
 	/// <summary>
 	/// Field for the store which Unity will serialize in the build.
 	/// </summary>
 	public ValueStore store;
+
+	// ------ Object References ------
+
+	[SerializeField] List<string> referenceGUIDs;
+	[SerializeField] List<Object> references;
+
+	/// <summary>
+	/// Add an Unity object reference to be included in the build.
+	/// </summary>
+	/// <remarks>
+	/// This method can be called during the <see cref="Option.PostprocessScene*"/> callback 
+	/// of the first scene (`scene.buildIndex` is 0) to add Unity object references
+	/// that can then be recalled in the build using <see cref="GetReference"/>.
+	/// </remarks>
+	public void AddReference(string guid, Object reference)
+	{
+		if (referenceGUIDs == null) referenceGUIDs = new List<string>();
+		if (references == null) references = new List<Object>();
+
+		Assert.AreEqual(referenceGUIDs.Count, references.Count, "GUID/Reference lists are out of sync");
+
+		referenceGUIDs.Add(guid);
+		references.Add(reference);
+	}
+
+	/// <summary>
+	/// Get a Unity object reference in the build.
+	/// </summary>
+	/// <remarks>
+	/// The reference needs to have been added using <see cref="AddReference"/> during
+	/// the the <see cref="Option.PostprocessScene*"/> callback of the first scene.
+	/// </remarks>
+	public T GetReference<T>(string guid) where T : Object
+	{
+		if (referenceGUIDs == null || referenceGUIDs == null || referenceGUIDs.Count != references.Count)
+			return null;
+		
+		for (int i = 0; i < referenceGUIDs.Count; i++) {
+			if (referenceGUIDs[i].EqualsIgnoringCase(guid)) {
+				return references[i] as T;
+			}
+		}
+
+		return null;
+	}
+
+	// ------ Behaviour ------
+
+	public static ProfileContainer Instance { get; set; }
 
 	/// <summary>
 	/// Called when a scene is loaded in the player.
 	/// </summary>
 	void OnEnable()
 	{
+		if (Instance != null) {
+			Debug.LogWarning("Multiple ProfileContainers loaded!");
+			DestroyImmediate(gameObject);
+			return;
+		}
+
+		Instance = this;
+		DontDestroyOnLoad(gameObject);
+		
 		if (RuntimeProfile.Main == null) {
 			RuntimeProfile.CreateMain(store);
 			RuntimeProfile.Main.Apply();

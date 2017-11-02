@@ -351,6 +351,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	{
 		var go = new GameObject("Workbench");
 		var container = go.AddComponent<ProfileContainer>();
+		ProfileContainer.Instance = container;
 		container.store = store;
 	}
 
@@ -440,6 +441,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	// ------ Unity Callbacks ------
 
 	string previousScriptingDefineSymbols;
+	bool includesAnyOption;
 
 	public int callbackOrder { get { return 0; } }
 
@@ -461,11 +463,11 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		symbols.Remove(NO_WORKBENCH);
 		var current = new HashSet<string>(symbols);
 		
-		bool includesOptions = false;
+		includesAnyOption = false;
 		CreateOrUpdateBuildOptionsProfile();
 		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-			includesOptions |= ((inclusion & OptionInclusion.Option) != 0);
+			includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
 			option.GetSctiptingDefineSymbols(inclusion, symbols);
 
@@ -474,7 +476,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 		}
 
-		if (!includesOptions) {
+		if (!includesAnyOption) {
 			symbols.Add(NO_WORKBENCH);
 		}
 
@@ -525,18 +527,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			var buildProfile = CurrentProfile;
 			CreateOrUpdateBuildOptionsProfile();
 			
-			var includesAnyOption = false;
+			if (includesAnyOption && scene.buildIndex == 0) {
+				InjectProfileContainer(buildOptionsProfile.Store);
+			} else {
+				ProfileContainer.Instance = null;
+			}
+
 			foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
 				var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
-				includesAnyOption |= (inclusion & OptionInclusion.Option) != 0;
 
 				if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
 					option.PostprocessScene(scene, inclusion);
 				}
-			}
-
-			if (includesAnyOption) {
-				InjectProfileContainer(buildOptionsProfile.Store);
 			}
 		}
 	}

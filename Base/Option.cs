@@ -23,8 +23,6 @@ namespace sttz.Workbench {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
-// TODO: Completely remove WB from build with all options removed (No_Workbench symbol?)
-// TODO: Make OptionAsset work in build
 
 #if UNITY_EDITOR
 
