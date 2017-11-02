@@ -239,10 +239,10 @@ public class BuildProfile : EditableProfile
 		return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
 	}
 
-	public override void EditOption(string path, GUIContent label, Option option, ValueStore.Node node)
+	public override void EditOption(string path, Option option, ValueStore.Node node)
 	{
 		// For build profiles, the store is always directly edited.
-		node.Value = option.EditGUI(label, node.Value);
+		node.Value = option.EditGUI(node.Value);
 	}
 
 	[ContextMenu("Copy As Ini File")]

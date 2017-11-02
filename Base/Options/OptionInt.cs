@@ -14,12 +14,12 @@ namespace sttz.Workbench.BaseOptions
 public abstract class OptionInt : Option<int>
 {
 	#if UNITY_EDITOR
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
 		if (MinValue != null && MaxValue != null) {
-			return Save(EditorGUILayout.IntSlider(label, Parse(input), (int)MinValue, (int)MaxValue));
+			return Save(EditorGUILayout.IntSlider(Parse(input), (int)MinValue, (int)MaxValue));
 		} else {
-			return Save(EditorGUILayout.IntField(label, Parse(input)));
+			return Save(EditorGUILayout.IntField(Parse(input)));
 		}
 	}
 	#endif

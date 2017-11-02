@@ -21,6 +21,10 @@ public class ProfileEditor : UnityEditor.Editor
 	// -------- Constants --------
 
 	/// <summary>
+	/// Extra space between lines.
+	/// </summary>
+	const float linePadding = 4;
+	/// <summary>
 	/// Width of columns with toggles on the right-hand side of the profile editor.
 	/// </summary>
 	const float buildColumnWidth = 21;
@@ -390,19 +394,6 @@ public class ProfileEditor : UnityEditor.Editor
 	{
 		GUI.enabled = (buildProfile != null || BuildManager.EditorSourceProfile == null);
 
-		// Include column header
-		if (buildProfile != null) {
-			EditorGUILayout.BeginHorizontal();
-			{
-				if (BuildManager.ActiveProfile == buildProfile) {
-					EditorGUILayout.LabelField("Active Profile", EditorStyles.boldLabel);
-				}
-				GUILayout.FlexibleSpace();
-				EditorGUILayout.LabelField("Include in Builds", EditorStyles.boldLabel, GUILayout.Width(100));
-			}
-			EditorGUILayout.EndHorizontal();
-		}
-
 		ResurseOptionsGUI();
 
 		GUI.enabled = true;
@@ -538,7 +529,8 @@ public class ProfileEditor : UnityEditor.Editor
 		}
 
 		// Option GUI
-		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
+		var lineHeight = EditorGUIUtility.singleLineHeight + linePadding;
+		var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(lineHeight));
 		{
 			// Variant container
 			if (context.variantType == Recursion.VariantType.VariantContainer) {
@@ -590,7 +582,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 				var level = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
-				profile.EditOption(context.path, GUIContent.none, option, context.node);
+				profile.EditOption(context.path, option, context.node);
 				EditorGUI.indentLevel = level;
 
 				if (!isDefault) {
@@ -613,13 +605,18 @@ public class ProfileEditor : UnityEditor.Editor
 			// Regular option
 			} else {
 				tempContent.text = displayName;
-				profile.EditOption(context.path, tempContent, option, context.node);
+				EditorGUILayout.PrefixLabel(tempContent);
+
+				var level = EditorGUI.indentLevel;
+				EditorGUI.indentLevel = 0;
+				profile.EditOption(context.path, option, context.node);
+				EditorGUI.indentLevel = level;
 			}
 
 			// Include in build toggle
 			if (buildProfile != null) {
 				GUI.color = Color.white;
-				EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.ExpandHeight(true));
+				EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.Height(lineHeight));
 				{
 					if (
 						context.type == Recursion.RecursionType.Nodes

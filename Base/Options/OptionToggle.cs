@@ -14,9 +14,9 @@ namespace sttz.Workbench.BaseOptions
 public abstract class OptionToggle : Option<bool>
 {
 	#if UNITY_EDITOR
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
-		return Save(EditorGUILayout.Toggle(label, Parse(input)));
+		return Save(EditorGUILayout.Toggle(Parse(input)));
 	}
 	#endif
 

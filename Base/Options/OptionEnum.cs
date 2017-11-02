@@ -15,13 +15,13 @@ namespace sttz.Workbench.BaseOptions
 public abstract class OptionEnum<TEnum> : Option<TEnum>
 {
 	#if UNITY_EDITOR
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
 		var enumValue = (Enum)(object)Parse(input);
 		if (!IsMask) {
-			enumValue = EditorGUILayout.EnumPopup(label, enumValue);
+			enumValue = EditorGUILayout.EnumPopup(enumValue);
 		} else {
-			enumValue = EditorGUILayout.EnumMaskField(label, enumValue);
+			enumValue = EditorGUILayout.EnumMaskField(enumValue);
 		}
 		return Save((TEnum)(object)enumValue);
 	}

@@ -22,9 +22,10 @@ namespace sttz.Workbench {
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
 // TODO: Apply scripting define symbols manually? Restore them after build?
-// TODO: Manage non prefixed additional symbols?
 // TODO: Better indication for unavailable options (currently no indication for build-only)
 // TODO: Inject and DontDestroyOnLoad
+// TODO: Default instead of active profile?
+// TODO: OptionContainer
 
 #if UNITY_EDITOR
 
@@ -530,7 +531,7 @@ public abstract class Option
 	/// Option instance. Most notably, the Option's value is not set and a 
 	/// single instance will be used to edit all variants of an Option.
 	/// </remarks>
-	public abstract string EditGUI(GUIContent label, string input);
+	public abstract string EditGUI(string input);
 
 	#endif
 

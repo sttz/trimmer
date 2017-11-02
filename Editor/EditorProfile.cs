@@ -205,11 +205,11 @@ public class EditorProfile : EditableProfile
 	/// <summary>
 	/// Show the edit GUI for the given option.
 	/// </summary>
-	public override void EditOption(string path, GUIContent label, Option option, ValueStore.Node node)
+	public override void EditOption(string path, Option option, ValueStore.Node node)
 	{
 		if (Application.isPlaying) {
 			var oldValue = option.Save();
-			var newValue = option.EditGUI(label, oldValue);
+			var newValue = option.EditGUI(oldValue);
 			if (oldValue != newValue) {
 				option.Load(newValue);
 				option.ApplyFromRoot();
@@ -224,7 +224,7 @@ public class EditorProfile : EditableProfile
 
 		if (editModeOption != null) {
 			var oldValue = editModeOption.Save();
-			var newValue = editModeOption.EditGUI(label, oldValue);
+			var newValue = editModeOption.EditGUI(oldValue);
 			if (oldValue != newValue) {
 				editModeOption.Load(newValue);
 				editModeOption.ApplyFromRoot();
@@ -232,7 +232,7 @@ public class EditorProfile : EditableProfile
 			node.Value = newValue;
 		
 		} else {
-			node.Value = option.EditGUI(label, node.Value);
+			node.Value = option.EditGUI(node.Value);
 		}
 	}
 

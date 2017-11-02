@@ -14,12 +14,12 @@ namespace sttz.Workbench.BaseOptions
 public abstract class OptionFloat : Option<float>
 {
 	#if UNITY_EDITOR
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
 		if (MinValue != null && MaxValue != null) {
-			return Save(EditorGUILayout.Slider(label, Parse(input), (float)MinValue, (float)MaxValue));
+			return Save(EditorGUILayout.Slider(Parse(input), (float)MinValue, (float)MaxValue));
 		} else {
-			return Save(EditorGUILayout.FloatField(label, Parse(input)));
+			return Save(EditorGUILayout.FloatField(Parse(input)));
 		}
 	}
 	#endif

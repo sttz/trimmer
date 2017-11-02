@@ -14,9 +14,9 @@ namespace sttz.Workbench.BaseOptions
 public abstract class OptionString : Option<string>
 {
 	#if UNITY_EDITOR
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
-		return Save(EditorGUILayout.DelayedTextField(label, Parse(input)));
+		return Save(EditorGUILayout.DelayedTextField(Parse(input)));
 	}
 	#endif
 

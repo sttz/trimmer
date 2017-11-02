@@ -20,9 +20,9 @@ namespace sttz.Workbench.BaseOptions
 [Capabilities(OptionCapabilities.CanPlayInEditor)]
 public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
-		return Save((TUnity)EditorGUILayout.ObjectField(label, Parse(input), typeof(TUnity), false));
+		return Save((TUnity)EditorGUILayout.ObjectField(Parse(input), typeof(TUnity), false));
 	}
 
 	override public TUnity Parse(string input)

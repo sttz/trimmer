@@ -86,10 +86,8 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// We implement a custom menu here to work around this and can also hide
     /// some obsolete options (which have been set to 0) and sort them alphabetically.
     /// </summary>
-	public override string EditGUI(GUIContent label, string input)
+	public override string EditGUI(string input)
 	{
-        EditorGUILayout.PrefixLabel(label);
-
         var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
         if (GUILayout.Button(input, "MiniPullDown")) {
             if (optionValues == null) {

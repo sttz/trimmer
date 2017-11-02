@@ -36,7 +36,7 @@ public abstract class EditableProfile : ScriptableObject
     public abstract void SaveIfNeeded();
 	public abstract Recursion.RecursionType GetRecursionType();
     public abstract IEnumerable<Option> GetAllOptions();
-    public abstract void EditOption(string path, GUIContent label, Option option, ValueStore.Node node);
+    public abstract void EditOption(string path, Option option, ValueStore.Node node);
 }
 
 }
