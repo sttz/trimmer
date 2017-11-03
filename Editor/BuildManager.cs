@@ -207,6 +207,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	// -------- Building --------
 
 	/// <summary>
+	/// Wether the current build was started on the command line using
+	/// `-executeMethod sttz.Workbench.Editor.BuildManager.Build`.
+	/// </summary>
+	public static bool IsCommandLineBuild { get; private set; }
+
+	/// <summary>
+	/// The output path set using the command line option `-output "PATH"`.
+	/// (Only set then <see cref="IsCommandLineBuild"/> is true).
+	/// </summary>
+	public static string CommandLineBuildPath { get; private set; }
+
+	/// <summary>
 	/// Populate the <c>BuildPlayerOptions</c> with default values.
 	/// </summary>
 	public static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
@@ -238,7 +250,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		
 		if (target == BuildTarget.Android && EditorUserBuildSettings.exportAsGoogleAndroidProject) {
 			var location = EditorUtility.SaveFolderPanel("Export Google Android Project", buildLocation, "");
-			EditorUserBuildSettings.SetBuildLocation(target, location);
 			return location;
 		}
 
@@ -260,6 +271,98 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var path = (string)method.Invoke(null, args);
 
 		return path;
+	}
+
+	/// <summary>
+	/// Build the profile specified on the command line or the active profile.
+	/// </summary>
+	/// <remarks>
+	/// You can use this method to automate Unity builds using the command line.
+	/// 
+	/// Use the following command to build a Build Profile:
+	/// `unity -quit -batchmode -executeMethod sttz.Workbench.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
+	/// 
+	/// You need to replace `unity` with the path to the Unity executable and `PROFILE_NAME`
+	/// with the name of the profile you want to build. Run this in the folder of your
+	/// Unity project or add `-projectPath "PATH_TO_PROJECT"` to select one.
+	/// 
+	/// When doing a command line build, the path set by the profile is used. If the
+	/// profile doesn't set a path or you want to override it, add the `-output "PATH"`
+	/// option to the arguments.
+	/// 
+	/// See the Unity documentation for [more information on command line usage](https://docs.unity3d.com/Manual/CommandLineArguments.html).
+	/// </remarks>
+	public static string Build()
+	{
+		IsCommandLineBuild = false;
+		CommandLineBuildPath = null;
+		string profileName = null;
+
+		string[] args = Environment.GetCommandLineArgs();
+		for (int i = 0; i < args.Length; i++) {
+			if (args[i] == "sttz.Workbench.Editor.BuildManager.Build") {
+				IsCommandLineBuild = true;
+			} else if (args[i].EqualsIgnoringCase("-profileName")) {
+				if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
+					var err = "-profileName needs to be followed by a profile name.";
+					Debug.LogError(err);
+					return err;
+				}
+				profileName = args[++i];
+			} else if (args[i].EqualsIgnoringCase("-output")) {
+				if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
+					var err = "-output needs to be followed by a path.";
+					Debug.LogError(err);
+					return err;
+				}
+				CommandLineBuildPath = args[++i];
+			}
+		}
+
+		BuildProfile target = null;
+		if (IsCommandLineBuild && profileName != null) {
+			var profileGuids = AssetDatabase.FindAssets("t:BuildProfile");
+			foreach (var guid in profileGuids) {
+				var path = AssetDatabase.GUIDToAssetPath(guid);
+				if (string.IsNullOrEmpty(path)) continue;
+
+				var profile = AssetDatabase.LoadMainAssetAtPath(path) as BuildProfile;
+				if (profile == null) continue;
+
+				if (profile.name.EqualsIgnoringCase(profileName)) {
+					target = profile;
+					break;
+				}
+			}
+
+			if (target == null) {
+				var err = "Build profile named '" + profileName + "' cloud not be found.";
+				Debug.LogError(err);
+				return err;
+			}
+
+			Debug.Log("Building " + target.name + ", selected from command line.");
+		}
+
+		if (target == null) {
+			if (ActiveProfile == null) {
+				var err = "No profile specified and not active profile set: Nothing to build";
+				Debug.LogError(err);
+				return err;
+			}
+			target = ActiveProfile;
+			Debug.Log("Building active profile.");
+		}
+
+		var result = Build(target);
+		if (!string.IsNullOrEmpty(result)) {
+			Debug.LogError(result);
+		}
+
+		IsCommandLineBuild = false;
+		CommandLineBuildPath = null;
+		
+		return result;
 	}
 
 	/// <summary>
@@ -300,13 +403,20 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			options = option.PrepareBuild(options, inclusion);
 		}
 
-		// Ask for location if none has been set
-		if (string.IsNullOrEmpty(options.locationPathName)) {
+		if (IsCommandLineBuild) {
+			// -output overrides path set by profile
+			if (!string.IsNullOrEmpty(CommandLineBuildPath)) {
+				options.locationPathName = CommandLineBuildPath;
+			} else if (string.IsNullOrEmpty(options.locationPathName)) {
+				return "No build path specified. The profile needs to set an output path or one has to be set using the -output argument.";
+			}
+		
+		} else if (string.IsNullOrEmpty(options.locationPathName)) {
+			// Ask for location if none has been set
 			options.locationPathName = PickBuildLocation(options.target);
 			if (string.IsNullOrEmpty(options.locationPathName)) {
 				return "Cancelled build location dialog";
 			}
-			EditorUserBuildSettings.SetBuildLocation(options.target, options.locationPathName);
 		}
 
 		// Make sure the path has the right extension
