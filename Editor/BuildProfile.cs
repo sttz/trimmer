@@ -78,6 +78,16 @@ public class BuildProfile : EditableProfile
 	}
 	private static List<BuildProfile> _buildProfiles;
 
+	/// <summary>
+	/// Look for a Build Profile by its name.
+	/// </summary>
+	public static BuildProfile Find(string name)
+	{
+		return AllBuildProfiles
+			.Where(p => p.name.EqualsIgnoringCase(name))
+			.FirstOrDefault();
+	}
+
 	#if !HAS_CREATE_ASSET_MENU_ATTRIBUTE
 	/// <summary>
 	/// Create a new <see cref="BuildProfile"/> at the selected location in the project's assets.

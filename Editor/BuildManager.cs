@@ -273,6 +273,101 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		return path;
 	}
 
+	#if !UNITY_CLOUD_BUILD
+	// Dummy implementation of cloud build manifest
+	public class CloudBuild
+	{
+		public abstract class BuildManifestObject : ScriptableObject
+		{
+			// Try to get a manifest value - returns true if key was found and could be cast to type T, otherwise returns false.
+			public abstract bool TryGetValue<T>(string key, out T result);
+			// Retrieve a manifest value or throw an exception if the given key isn't found.
+			public abstract T GetValue<T>(string key);
+			// Set the value for a given key.
+			public abstract void SetValue(string key, object value);
+			// Copy values from a dictionary. ToString() will be called on dictionary values before being stored.
+			public abstract void SetValues(Dictionary<string, object> sourceDict);
+			// Remove all key/value pairs.
+			public abstract void ClearValues();
+			// Return a dictionary that represents the current BuildManifestObject.
+			public abstract Dictionary<string, object> ToDictionary();
+			// Return a JSON formatted string that represents the current BuildManifestObject
+			public abstract string ToJson();
+			// Return an INI formatted string that represents the current BuildManifestObject
+			public abstract override string ToString();
+		}
+	}
+	#endif
+
+	/// <summary>
+	/// Entry point for Unity Cloud builds.
+	/// </summary>
+	/// <remarks>
+	/// If you don't configure anything, Unity Cloud Build will build without a 
+	/// profile and all Options will use their default value and will be removed.
+	/// 
+	/// Add the name of the Build Profile you want to build with to the target name
+	/// in Unity Cloud Build, enclosed in double underscores, e.g. `__Profile Name__`.
+	/// Note that since the target name can contain only alphanumeric characters,
+	/// spaces, dashes and underscores, those characters cannot appear in the profile
+	/// name either.
+	/// 
+	/// Also note that the ability for Options to set build options is limited,
+	/// currently only setting a custom  scene list is supported.
+	/// </remarks>
+	public static void UnityCloudBuild(CloudBuild.BuildManifestObject manifest)
+	{
+		// Get profile name from could build target name
+		string targetName;
+		if (!manifest.TryGetValue("cloudBuildTargetName", out targetName)) {
+			Debug.LogError("Could not get target name from cloud build manifest.");
+		} else {
+			var match = Regex.Match(targetName, @"__([\w\-. ]+)__");
+			if (match.Success) {
+				targetName = match.Groups[1].Value;
+				Debug.Log("Parsed build profile name from target name: " + targetName);
+			}
+		}
+
+		BuildProfile buildProfile = null;
+		if (!string.IsNullOrEmpty(targetName)) {
+			buildProfile = BuildProfile.Find(targetName);
+			if (buildProfile == null) {
+				throw new Exception("Build Profile named '" + targetName + "' could not be found.");
+			}
+		}
+
+		if (buildProfile == null) {
+			Debug.LogWarning("No Build Profile selected. Add the Build Profile enclosed in double underscores (__) to the target name.");
+			return;
+		}
+
+		// Prepare build
+		var options = GetDefaultOptions(EditorUserBuildSettings.activeBuildTarget);
+		BuildManager.CurrentProfile = buildProfile;
+
+		// Run options' PrepareBuild
+		CreateOrUpdateBuildOptionsProfile();
+		foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
+			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+			options = option.PrepareBuild(options, inclusion);
+		}
+
+		// Apply scenes
+		if (options.scenes != null && options.scenes.Length > 0) {
+			var scenes = new EditorBuildSettingsScene[options.scenes.Length];
+			for (int i = 0; i < scenes.Length; i++) {
+				scenes[i].enabled = true;
+				scenes[i].path = options.scenes[i];
+			}
+			EditorBuildSettings.scenes = scenes;
+		}
+
+		// TODO: Apply supported BuildOptions
+	}
+
+
 	/// <summary>
 	/// Build the profile specified on the command line or the active profile.
 	/// </summary>
@@ -321,20 +416,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		BuildProfile target = null;
 		if (IsCommandLineBuild && profileName != null) {
-			var profileGuids = AssetDatabase.FindAssets("t:BuildProfile");
-			foreach (var guid in profileGuids) {
-				var path = AssetDatabase.GUIDToAssetPath(guid);
-				if (string.IsNullOrEmpty(path)) continue;
-
-				var profile = AssetDatabase.LoadMainAssetAtPath(path) as BuildProfile;
-				if (profile == null) continue;
-
-				if (profile.name.EqualsIgnoringCase(profileName)) {
-					target = profile;
-					break;
-				}
-			}
-
+			target = BuildProfile.Find(profileName);
 			if (target == null) {
 				var err = "Build profile named '" + profileName + "' cloud not be found.";
 				Debug.LogError(err);
