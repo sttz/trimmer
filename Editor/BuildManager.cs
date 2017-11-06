@@ -316,6 +316,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </remarks>
 	public static void UnityCloudBuild(BuildManifestObject manifest)
 	{
+		Debug.Log("UnityCloudBuild: Parsing profile name...");
+
 		// Get profile name from could build target name
 		string targetName;
 		if (!manifest.TryGetValue("cloudBuildTargetName", out targetName)) {
@@ -328,11 +330,14 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 		}
 
+		Debug.Log("UnityCloudBuild: Looking for profile...");
+
 		BuildProfile buildProfile = null;
 		if (!string.IsNullOrEmpty(targetName)) {
 			buildProfile = BuildProfile.Find(targetName);
 			if (buildProfile == null) {
-				throw new Exception("Build Profile named '" + targetName + "' could not be found.");
+				Debug.LogError("Build Profile named '" + targetName + "' could not be found.");
+				return;
 			}
 		}
 
@@ -340,6 +345,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			Debug.LogWarning("No Build Profile selected. Add the Build Profile enclosed in double underscores (__) to the target name.");
 			return;
 		}
+
+		Debug.Log("UnityCloudBuild: Running PrepareBuild callbacks...");
 
 		// Prepare build
 		var options = GetDefaultOptions(EditorUserBuildSettings.activeBuildTarget);
@@ -353,6 +360,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			options = option.PrepareBuild(options, inclusion);
 		}
 
+		Debug.Log("UnityCloudBuild: Apply scenes...");
+
 		// Apply scenes
 		if (options.scenes != null && options.scenes.Length > 0) {
 			var scenes = new EditorBuildSettingsScene[options.scenes.Length];
@@ -362,6 +371,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			}
 			EditorBuildSettings.scenes = scenes;
 		}
+
+		Debug.Log("UnityCloudBuild: Done!");
 
 		// TODO: Apply supported BuildOptions
 	}
