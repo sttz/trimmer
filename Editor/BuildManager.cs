@@ -366,8 +366,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		if (options.scenes != null && options.scenes.Length > 0) {
 			var scenes = new EditorBuildSettingsScene[options.scenes.Length];
 			for (int i = 0; i < scenes.Length; i++) {
-				scenes[i].enabled = true;
-				scenes[i].path = options.scenes[i];
+				scenes[i] = new EditorBuildSettingsScene(
+					options.scenes[i],
+					true
+				);
 			}
 			EditorBuildSettings.scenes = scenes;
 		}
