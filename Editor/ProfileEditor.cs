@@ -493,7 +493,9 @@ public class ProfileEditor : UnityEditor.Editor
 			return false;
 		}
 
-		GUI.color = new Color(1, 1, 1, optionAvailable ? 1 : unavailableAlpha);
+		var color = GUI.color;
+		color.a = optionAvailable ? 1 : unavailableAlpha;
+		GUI.color = color;
 
 		var expansionPath = pathBase + context.path;
 		var isExpanded = true;
@@ -615,7 +617,10 @@ public class ProfileEditor : UnityEditor.Editor
 
 			// Include in build toggle
 			if (buildProfile != null) {
-				GUI.color = Color.white;
+				color = GUI.color;
+				color.a = 1;
+				GUI.color = color;
+				
 				EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.Height(lineHeight));
 				{
 					if (
