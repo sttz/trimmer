@@ -187,7 +187,7 @@ public enum OptionCapabilities
 	/// and gets loaded in the editor but doesn't process the build and has 
 	/// no assocaited feature.
 	/// </summary>
-	OptionOnly = CanIncludeOption | CanPlayInEditor,
+	PresetOptionOnly = CanIncludeOption | CanPlayInEditor,
 }
 
 /// <summary>
