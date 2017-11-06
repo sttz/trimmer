@@ -12,6 +12,31 @@ using UnityEngine.SceneManagement;
 using System.Reflection;
 using sttz.Workbench.Extensions;
 
+#if UNITY_CLOUD_BUILD
+using UnityEngine.CloudBuild;
+#else
+// Dummy implementation of cloud build manifest
+public abstract class BuildManifestObject : ScriptableObject
+{
+	// Try to get a manifest value - returns true if key was found and could be cast to type T, otherwise returns false.
+	public abstract bool TryGetValue<T>(string key, out T result);
+	// Retrieve a manifest value or throw an exception if the given key isn't found.
+	public abstract T GetValue<T>(string key);
+	// Set the value for a given key.
+	public abstract void SetValue(string key, object value);
+	// Copy values from a dictionary. ToString() will be called on dictionary values before being stored.
+	public abstract void SetValues(Dictionary<string, object> sourceDict);
+	// Remove all key/value pairs.
+	public abstract void ClearValues();
+	// Return a dictionary that represents the current BuildManifestObject.
+	public abstract Dictionary<string, object> ToDictionary();
+	// Return a JSON formatted string that represents the current BuildManifestObject
+	public abstract string ToJson();
+	// Return an INI formatted string that represents the current BuildManifestObject
+	public abstract override string ToString();
+}
+#endif
+
 namespace sttz.Workbench.Editor
 {
 
@@ -273,32 +298,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		return path;
 	}
 
-	#if !UNITY_CLOUD_BUILD
-	// Dummy implementation of cloud build manifest
-	public class CloudBuild
-	{
-		public abstract class BuildManifestObject : ScriptableObject
-		{
-			// Try to get a manifest value - returns true if key was found and could be cast to type T, otherwise returns false.
-			public abstract bool TryGetValue<T>(string key, out T result);
-			// Retrieve a manifest value or throw an exception if the given key isn't found.
-			public abstract T GetValue<T>(string key);
-			// Set the value for a given key.
-			public abstract void SetValue(string key, object value);
-			// Copy values from a dictionary. ToString() will be called on dictionary values before being stored.
-			public abstract void SetValues(Dictionary<string, object> sourceDict);
-			// Remove all key/value pairs.
-			public abstract void ClearValues();
-			// Return a dictionary that represents the current BuildManifestObject.
-			public abstract Dictionary<string, object> ToDictionary();
-			// Return a JSON formatted string that represents the current BuildManifestObject
-			public abstract string ToJson();
-			// Return an INI formatted string that represents the current BuildManifestObject
-			public abstract override string ToString();
-		}
-	}
-	#endif
-
 	/// <summary>
 	/// Entry point for Unity Cloud builds.
 	/// </summary>
@@ -315,7 +314,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// Also note that the ability for Options to set build options is limited,
 	/// currently only setting a custom  scene list is supported.
 	/// </remarks>
-	public static void UnityCloudBuild(CloudBuild.BuildManifestObject manifest)
+	public static void UnityCloudBuild(BuildManifestObject manifest)
 	{
 		// Get profile name from could build target name
 		string targetName;
