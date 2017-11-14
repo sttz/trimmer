@@ -650,13 +650,40 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	public int callbackOrder { get { return 0; } }
 
+	#if UNITY_2017_2_OR_NEWER
+	[InitializeOnLoadMethod]
+	static void RegisterBuildPlayerHandler()
+	{
+		BuildPlayerWindow.RegisterBuildPlayerHandler(BuildPlayerHandler);
+	}
+
+	static void BuildPlayerHandler(BuildPlayerOptions options)
+	{
+		if (CurrentProfile == null 
+			&& !EditorUtility.DisplayDialog(
+				"Workbench: No Active Profile Set", 
+				"There's no active Build Profile set, a null profile will be applied "
+				+ " and all Options removed.\n\n"
+				+ "The active profile can be set in Unity's Preferences under 'Workbench'.", 
+				"Continue Anyway", "Cancel"
+			)) {
+			return;
+		}
+
+		BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(options);
+	}
+	#endif
+
 	public void OnPreprocessBuild(BuildTarget target, string path)
 	{
-		// Warn if no profile is set
 		var buildProfile = CurrentProfile;
+
+		#if !UNITY_2017_2_OR_NEWER
+		// Warning is handled in BuildPlayerHandler for Unity 2017.2+
 		if (buildProfile == null) {
 			Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
 		}
+		#endif
 
 		// Run options' PreprocessBuild and collect scripting define symbols
 		var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
