@@ -91,6 +91,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 			if (value == null) {
 				EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, null);
+				_activeProfile = value;
 				return;
 			}
 
