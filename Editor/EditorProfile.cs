@@ -85,21 +85,21 @@ public class EditorProfile : EditableProfile
 	static void ListenForPlayModeStateChanges()
 	{
 		#if UNITY_2017_2_OR_NEWER
-		EditorApplication.playModeStateChanged += PlayModeStateChange;
+		EditorApplication.playModeStateChanged += OnPlayModeStateChange;
 		#else
-		EditorApplication.playmodeStateChanged += PlayModeStateChange;
+		EditorApplication.playmodeStateChanged += OnPlayModeStateChange;
 		#endif
 	}
 
 	#if UNITY_2017_2_OR_NEWER
-	static void PlayModeStateChange(PlayModeStateChange change)
+	static void OnPlayModeStateChange(PlayModeStateChange change)
 	{
 		if (change == PlayModeStateChange.ExitingPlayMode) {
 			OnExitingPlayMode();
 		}
 	}
 	#else
-	static void PlayModeStateChange()
+	static void OnPlayModeStateChange()
 	{
 		if (EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode) {
 			OnExitingPlayMode();
