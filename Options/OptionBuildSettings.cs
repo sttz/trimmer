@@ -5,10 +5,10 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System.Collections.Generic;
-using sttz.Workbench.Extensions;
-using sttz.Workbench.BaseOptions;
+using sttz.Trimmer.Extensions;
+using sttz.Trimmer.BaseOptions;
 
-namespace sttz.Workbench.Options
+namespace sttz.Trimmer.Options
 {
 
 [Capabilities(OptionCapabilities.ConfiguresBuild)]

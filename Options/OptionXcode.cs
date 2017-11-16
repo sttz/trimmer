@@ -1,7 +1,7 @@
 #if UNITY_EDITOR
 
-using sttz.Workbench.BaseOptions;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.BaseOptions;
+using sttz.Trimmer.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +11,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Reflection;
 
-namespace sttz.Workbench.Options
+namespace sttz.Trimmer.Options
 {
 
 /// <summary>

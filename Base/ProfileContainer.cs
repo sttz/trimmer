@@ -1,11 +1,11 @@
-﻿#if !NO_WORKBENCH || UNITY_EDITOR
+﻿#if !NO_TRIMMER || UNITY_EDITOR
 
 using System.Collections.Generic;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace sttz.Workbench
+namespace sttz.Trimmer
 {
 
 /// <summary>

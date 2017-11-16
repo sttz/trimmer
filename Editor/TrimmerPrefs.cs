@@ -1,15 +1,15 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// Editor Preferences for Workbench.
+/// Editor Preferences for Trimmer.
 /// </summary>
-public static class WorkbenchPrefs
+public static class TrimmerPrefs
 {
-    const string WORKBENCH_PREFIX = "BuildProfile.";
+    const string TRIMMER_PREFIX = "Trimmer.";
     const string SHOW_UNAVAILABLE = "ShowUnavailable";
     const string PLAYMODE_EXIT_SAVE = "PlaymodeExitSave";
 
@@ -18,10 +18,10 @@ public static class WorkbenchPrefs
     /// </summary>
     public static bool ShowUnavailableOptions {
         get {
-            return EditorPrefs.GetBool(WORKBENCH_PREFIX + SHOW_UNAVAILABLE);
+            return EditorPrefs.GetBool(TRIMMER_PREFIX + SHOW_UNAVAILABLE);
         }
         set {
-            EditorPrefs.SetBool(WORKBENCH_PREFIX + SHOW_UNAVAILABLE, value);
+            EditorPrefs.SetBool(TRIMMER_PREFIX + SHOW_UNAVAILABLE, value);
         }
     }
 
@@ -35,14 +35,14 @@ public static class WorkbenchPrefs
     /// </remarks>
     public static bool PlaymodeExitSave {
         get {
-            return EditorPrefs.GetBool(WORKBENCH_PREFIX + PLAYMODE_EXIT_SAVE);
+            return EditorPrefs.GetBool(TRIMMER_PREFIX + PLAYMODE_EXIT_SAVE);
         }
         set {
-            EditorPrefs.SetBool(WORKBENCH_PREFIX + PLAYMODE_EXIT_SAVE, value);
+            EditorPrefs.SetBool(TRIMMER_PREFIX + PLAYMODE_EXIT_SAVE, value);
         }
     }
 
-    [PreferenceItem("Workbench")]
+    [PreferenceItem("Trimmer")]
     static void OnPreferencesGUI()
     {
         EditorGUILayout.LabelField("Editor Profile", EditorStyles.boldLabel);

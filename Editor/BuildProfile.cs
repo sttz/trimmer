@@ -11,9 +11,9 @@ using UnityEngine;
 using UnityEditor;
 using System.Text.RegularExpressions;
 using System.Reflection;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>

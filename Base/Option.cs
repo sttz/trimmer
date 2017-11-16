@@ -1,4 +1,4 @@
-﻿#if !NO_WORKBENCH || UNITY_EDITOR
+﻿#if !NO_TRIMMER || UNITY_EDITOR
 
 // Workaround for docfx documentation building
 #if !UNITY_5 && !UNITY_2017 && !UNITY_2018
@@ -12,18 +12,29 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 using System.Diagnostics;
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace sttz.Workbench {
+namespace sttz.Trimmer {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
 // TODO: Icon
+
+// Trimmer Framework
+
+// Trimmer
+// Tool belt
+// Maintenance Panel
+// Plugboard
+// Knobs and Sliders (K&S)
+// The Screwdriver
+// Adjustment Screw
+// Potentiometer
 
 #if UNITY_EDITOR
 
@@ -31,19 +42,19 @@ namespace sttz.Workbench {
 /// Enum indicating how and option behaves during the build process.
 /// </summary>
 /// <remarks>
-/// Conceptually, Workbench deals with Options that are its building blocks and
+/// Conceptually, Trimmer deals with Options that are its building blocks and
 /// configure some aspect of a project dynamically. That aspect of the project
 /// is referred to as a «feature».
 /// 
 /// When building, there are a few scenarios, how an option and its feature are
 /// compiled:
-/// * Both are included: The build includes both the Workbench Option as well
+/// * Both are included: The build includes both the Trimmer Option as well
 ///   as its associated feature. The Option allows to configure the feature at
 ///   runtime.
 /// * Only the feature is included: The Option only configures the feature in
 ///   the editor. At build-time the Option statically configures the feature
 ///   in the build and is itself not included. The feature cannot be configured
-///   at runtime using Workbench.
+///   at runtime using Trimmer.
 /// * Both are removed: Neither the Option nor its feature are included in the
 ///   build and if set up correctly, the build won't contain a trace that the
 ///   Option or feature ever existed.
@@ -234,7 +245,7 @@ public enum OptionVariance
 /// </summary>
 /// <remarks>
 /// Options are the basic building blocks to integrate your project 
-/// into Workbench. Workbench detects all <see cref="Option"/> classes
+/// into Trimmer. Trimmer detects all <see cref="Option"/> classes
 /// in your project, so there's no additional configuration necessary
 /// besides adding the Option source files to your project.
 /// 
@@ -290,7 +301,7 @@ public abstract class Option
 	/// <remarks>
 	/// TODO
 	/// </remarks>
-	public const string DEFINE_PREFIX = "WB_";
+	public const string DEFINE_PREFIX = "TR_";
 
 	/// <summary>
 	/// Prefix applied after the <see cref="DEFINE_PREFIX"/> for the 
@@ -321,7 +332,7 @@ public abstract class Option
 	/// It's possible to hide an Option in Build Profiles if they don't
 	/// apply to the profile's build targets (i.e. an iOS-only option on
 	/// a Android Build Profile). Unavailable Options can be shown using
-	/// an Option in the Workbench's preferences but they will always
+	/// an Option in Trimmer's preferences but they will always
 	/// be removed from builds.
 	/// 
 	/// **This method only applies to main Options. The availability of
@@ -521,7 +532,7 @@ public abstract class Option
 	/// Do the editor GUI to edit this option (**Editor-only**).
 	/// </summary>
 	/// <remarks>
-	/// The bundled subclasses in <see cref="sttz.Workbench.BaseOptions"/>
+	/// The bundled subclasses in <see cref="sttz.Trimmer.BaseOptions"/>
 	/// already provide implementations for this method. Override it
 	/// to implement your custom GUI for the editor.
 	/// 

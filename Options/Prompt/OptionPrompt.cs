@@ -1,10 +1,10 @@
-﻿#if WB_OptionPrompt || UNITY_EDITOR
+﻿#if TR_OptionPrompt || UNITY_EDITOR
 using System;
-using sttz.Workbench.BaseOptions;
+using sttz.Trimmer.BaseOptions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace sttz.Workbench.Options
+namespace sttz.Trimmer.Options
 {
 
 [Capabilities(OptionCapabilities.PresetDefault)]

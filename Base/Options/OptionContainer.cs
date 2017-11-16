@@ -1,4 +1,4 @@
-#if !NO_WORKBENCH || UNITY_EDITOR
+#if !NO_TRIMMER || UNITY_EDITOR
 
 using System;
 using UnityEngine;
@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace sttz.Workbench.BaseOptions
+namespace sttz.Trimmer.BaseOptions
 {
 
 /// <summary>

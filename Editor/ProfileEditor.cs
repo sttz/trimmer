@@ -7,9 +7,9 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
@@ -158,7 +158,7 @@ public class ProfileEditor : UnityEditor.Editor
 	[MenuItem("CONTEXT/BuildProfile/Toggle Show Unavailable")]
 	static void ToggleShowUnavailable(MenuCommand cmd)
 	{
-		WorkbenchPrefs.ShowUnavailableOptions = !WorkbenchPrefs.ShowUnavailableOptions;
+		TrimmerPrefs.ShowUnavailableOptions = !TrimmerPrefs.ShowUnavailableOptions;
 	}
 
 	// -------- Editor --------
@@ -489,7 +489,7 @@ public class ProfileEditor : UnityEditor.Editor
 			optionAvailable = context.option.IsAvailable(buildProfile.BuildTargets);
 		}
 		
-		if (!WorkbenchPrefs.ShowUnavailableOptions && !optionAvailable) {
+		if (!TrimmerPrefs.ShowUnavailableOptions && !optionAvailable) {
 			return false;
 		}
 

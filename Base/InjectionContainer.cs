@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace sttz.Workbench
+namespace sttz.Trimmer
 {
 
 /// <summary>

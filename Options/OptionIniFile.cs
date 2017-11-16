@@ -1,11 +1,11 @@
-#if WB_OptionIniFile || UNITY_EDITOR
+#if TR_OptionIniFile || UNITY_EDITOR
 using System;
 using System.IO;
-using sttz.Workbench.Extensions;
-using sttz.Workbench.BaseOptions;
+using sttz.Trimmer.Extensions;
+using sttz.Trimmer.BaseOptions;
 using UnityEngine;
 
-namespace sttz.Workbench.Options
+namespace sttz.Trimmer.Options
 {
 
 /// <summary>

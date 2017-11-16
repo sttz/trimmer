@@ -3,13 +3,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using sttz.Workbench;
-using sttz.Workbench.BaseOptions;
+using sttz.Trimmer;
+using sttz.Trimmer.BaseOptions;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace sttz.Workbench.Options
+namespace sttz.Trimmer.Options
 {
 
 /// <summary>

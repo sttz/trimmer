@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 using UnityEditor;
 using UnityEngine;
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>

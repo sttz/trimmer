@@ -1,4 +1,4 @@
-#if !NO_WORKBENCH || UNITY_EDITOR
+#if !NO_TRIMMER || UNITY_EDITOR
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor;
 #endif
 
-namespace sttz.Workbench
+namespace sttz.Trimmer
 {
 
 /// <summary>
@@ -26,7 +26,7 @@ public static class OptionHelper
     /// Name used for the container that holds the singletons
     /// created by <see cref="GetSingleton*"> and <see cref="InjectFeature*"/>.
     /// </summary>
-    const string CONTAINER_NAME = "_Workbench";
+    const string CONTAINER_NAME = "_Trimmer";
 
     /// <summary>
     /// Get a singleton script instance in the current scene.
@@ -207,7 +207,7 @@ public static class OptionHelper
     /// but the native plugins will still remain in the build.
     /// 
     /// This helper method can be used by Options to remove plugins from builds after
-    /// the fact, i.e. in the Option's <see cref="sttz.Workbench.Option.PostprocessBuild*"/>
+    /// the fact, i.e. in the Option's <see cref="sttz.Trimmer.Option.PostprocessBuild*"/>
     /// callback.
     /// 
     /// Note that this method currently only supports removing plugins from standalone

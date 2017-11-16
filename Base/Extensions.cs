@@ -1,4 +1,4 @@
-﻿#if !NO_WORKBENCH || UNITY_EDITOR
+﻿#if !NO_TRIMMER || UNITY_EDITOR
 
 using System;
 using System.Collections.Generic;
@@ -6,12 +6,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace sttz.Workbench.Extensions
+namespace sttz.Trimmer.Extensions
 {
 
 /// <summary>
-/// Extension methods used internally in Workbench.
-/// (In a separate namespace so that importing <c>sttz.Workbench</c> won't import them).
+/// Extension methods used internally in Trimmer.
+/// (In a separate namespace so that importing <c>sttz.Trimmer</c> won't import them).
 /// </summary>
 public static class Extensions
 {

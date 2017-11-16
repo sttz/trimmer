@@ -10,7 +10,7 @@ using UnityEditor.Callbacks;
 using UnityEditor.Build;
 using UnityEngine.SceneManagement;
 using System.Reflection;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 
 #if UNITY_CLOUD_BUILD
 using UnityEngine.CloudBuild;
@@ -37,7 +37,7 @@ public abstract class BuildManifestObject : ScriptableObject
 }
 #endif
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
@@ -51,7 +51,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// <summary>
 	/// Platform name used to save project-specific settings.
 	/// </summary>
-	public const string SettingsPlatformName = "Workbench";
+	public const string SettingsPlatformName = "Trimmer";
 	/// <summary>
 	/// Key used to save the active profile GUID.
 	/// </summary>
@@ -62,9 +62,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	public const string SourceProfileGUIDKey = "SourceProfileGUID";
 
 	/// <summary>
-	/// Scripting define symbol added to remove workbench code in player.
+	/// Scripting define symbol added to remove Trimmer code in player.
 	/// </summary>
-	public const string NO_WORKBENCH = "NO_WORKBENCH";
+	public const string NO_TRIMMER = "NO_TRIMMER";
 
 
 	/// <summary>
@@ -234,7 +234,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	/// <summary>
 	/// Wether the current build was started on the command line using
-	/// `-executeMethod sttz.Workbench.Editor.BuildManager.Build`.
+	/// `-executeMethod sttz.Trimmer.Editor.BuildManager.Build`.
 	/// </summary>
 	public static bool IsCommandLineBuild { get; private set; }
 
@@ -388,7 +388,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// You can use this method to automate Unity builds using the command line.
 	/// 
 	/// Use the following command to build a Build Profile:
-	/// `unity -quit -batchmode -executeMethod sttz.Workbench.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
+	/// `unity -quit -batchmode -executeMethod sttz.Trimmer.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
 	/// 
 	/// You need to replace `unity` with the path to the Unity executable and `PROFILE_NAME`
 	/// with the name of the profile you want to build. Run this in the folder of your
@@ -408,7 +408,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		string[] args = Environment.GetCommandLineArgs();
 		for (int i = 0; i < args.Length; i++) {
-			if (args[i] == "sttz.Workbench.Editor.BuildManager.Build") {
+			if (args[i] == "sttz.Trimmer.Editor.BuildManager.Build") {
 				IsCommandLineBuild = true;
 			} else if (args[i].EqualsIgnoringCase("-profileName")) {
 				if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
@@ -554,7 +554,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	private static void InjectProfileContainer(ValueStore store)
 	{
-		var go = new GameObject("Workbench");
+		var go = new GameObject("Trimmer");
 		var container = go.AddComponent<ProfileContainer>();
 		ProfileContainer.Instance = container;
 		container.store = store;
@@ -661,10 +661,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	{
 		if (CurrentProfile == null 
 			&& !EditorUtility.DisplayDialog(
-				"Workbench: No Active Profile Set", 
+				"Trimmer: No Active Profile Set", 
 				"There's no active Build Profile set, a null profile will be applied "
 				+ " and all Options removed.\n\n"
-				+ "The active profile can be set in Unity's Preferences under 'Workbench'.", 
+				+ "The active profile can be set in Unity's Preferences under 'Trimmer'.", 
 				"Continue Anyway", "Cancel"
 			)) {
 			return;
@@ -690,9 +690,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		previousScriptingDefineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
 		var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
 
-		// Remove all symbols previously added by Workbench
+		// Remove all symbols previously added by Trimmer
 		symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
-		symbols.Remove(NO_WORKBENCH);
+		symbols.Remove(NO_TRIMMER);
 		var current = new HashSet<string>(symbols);
 		
 		includesAnyOption = false;
@@ -709,7 +709,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		if (!includesAnyOption) {
-			symbols.Add(NO_WORKBENCH);
+			symbols.Add(NO_TRIMMER);
 		}
 
 		// Apply scripting define symbols
@@ -718,7 +718,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		var added = symbols.Except(current);
 		var removed = current.Except(symbols);
 		Debug.Log(string.Format(
-			"Workbench: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
+			"Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
 			target, path, 
 			buildOptionsProfile
 				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)

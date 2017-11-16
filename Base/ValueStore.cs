@@ -1,14 +1,14 @@
-﻿#if !NO_WORKBENCH || UNITY_EDITOR
+﻿#if !NO_TRIMMER || UNITY_EDITOR
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace sttz.Workbench
+namespace sttz.Trimmer
 {
 
 // TODO: Way to clean up store from old nodes

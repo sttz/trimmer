@@ -9,9 +9,9 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using sttz.Workbench.Extensions;
+using sttz.Trimmer.Extensions;
 
-namespace sttz.Workbench.Editor
+namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
@@ -109,7 +109,7 @@ public class EditorProfile : EditableProfile
 
 	static void OnExitingPlayMode()
 	{
-		if (WorkbenchPrefs.PlaymodeExitSave && BuildManager.EditorSourceProfile == null) {
+		if (TrimmerPrefs.PlaymodeExitSave && BuildManager.EditorSourceProfile == null) {
 			// Changes were made directly to the options, save them to the store
 			RuntimeProfile.Main.SaveToStore();
 			// Apply the store to the editor profile and save it out
