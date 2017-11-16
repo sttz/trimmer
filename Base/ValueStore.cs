@@ -660,7 +660,7 @@ public static class IniAdapter
 		}
 	}
 
-	static string QuoteParameterIfNeeded(string parameter)
+	public static string QuoteParameterIfNeeded(string parameter)
 	{
 		if (parameter.IndexOf('[') < 0 && parameter.IndexOf(']') < 0) {
 			return parameter;
@@ -669,7 +669,7 @@ public static class IniAdapter
 		return '"' + parameter.Replace("\\", "\\\\").Replace("\"", "\\\"") + '"';
 	}
 
-	static string QuoteValueIfNeeded(string value)
+	public static string QuoteValueIfNeeded(string value)
 	{
 		if (value.Trim() == value) {
 			return value;

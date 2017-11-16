@@ -262,7 +262,7 @@ public class Prompt : MonoBehaviour
 		}
 
 		if (option.Variance != OptionVariance.Single && !option.IsDefaultVariant) {
-			baseInput += "[" + option.VariantParameter + "]";
+			baseInput += "[" + IniAdapter.QuoteParameterIfNeeded(option.VariantParameter) + "]";
 		}
 		
 		completions.Add(baseInput + " = " + option.Save());
