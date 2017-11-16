@@ -109,7 +109,7 @@ public class EditorProfile : EditableProfile
 
 	static void OnExitingPlayMode()
 	{
-		if (WorkbenchPrefs.PlaymodeExitSave) {
+		if (WorkbenchPrefs.PlaymodeExitSave && BuildManager.EditorSourceProfile == null) {
 			// Changes were made directly to the options, save them to the store
 			RuntimeProfile.Main.SaveToStore();
 			// Apply the store to the editor profile and save it out
@@ -182,12 +182,11 @@ public class EditorProfile : EditableProfile
 
 	public override Recursion.RecursionType GetRecursionType()
 	{
-		if (Application.isPlaying) {
+		if (Application.isPlaying && BuildManager.EditorSourceProfile == null) {
 			return Recursion.RecursionType.Options;
 		} else {
 			return Recursion.RecursionType.Nodes;
 		}
-		
 	}
 
 	/// <summary>
