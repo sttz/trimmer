@@ -42,6 +42,7 @@ namespace sttz.Trimmer.Editor
 /// profile in the editor.</para>
 /// </remarks>
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
+[HelpURL("http://sttz.ch/")] // TODO: Update
 public class BuildProfile : EditableProfile
 {
 	// -------- Static --------
@@ -231,7 +232,7 @@ public class BuildProfile : EditableProfile
 	[ContextMenu("Activate Profile")]
 	public void ActivateProfile()
 	{
-		BuildManager.ActiveProfile = this;
+		EditorProfile.SharedInstance.ActiveProfile = this;
 	}
 
 	// -------- Internals --------

@@ -341,6 +341,47 @@ public static class OptionHelper
         }
     }
 
+    // -------- GUID Helper Methods --------
+
+	/// <summary>
+	/// Helper method to get the GUID of an asset object.
+	/// </summary>
+	/// <returns>
+	/// The GUID or null if the object has no GUID (is not an asset).
+	/// </returns>
+	public static string GetAssetGUID(UnityEngine.Object target)
+	{
+		var path = AssetDatabase.GetAssetPath(target);
+		if (string.IsNullOrEmpty(path))
+			return null;
+
+		var guid = AssetDatabase.AssetPathToGUID(path);
+		if (string.IsNullOrEmpty(guid))
+			return null;
+
+		return guid;
+	}
+
+	/// <summary>
+	/// Load an asset by its GUID.
+	/// </summary>
+	/// <returns>
+	/// The object of given type in the asset with the given GUID or null
+	/// if either no asset with this GUID exists or the asset does not contain
+	/// an object of given type.
+	/// </returns>
+	public static T LoadAssetByGUID<T>(string guid) where T : UnityEngine.Object
+	{
+		if (string.IsNullOrEmpty(guid))
+			return null;
+
+		var path = AssetDatabase.GUIDToAssetPath(guid);
+		if (string.IsNullOrEmpty(path))
+			return null;
+
+		return AssetDatabase.LoadAssetAtPath(path, typeof(T)) as T;
+	}
+
     #endif
 }
 

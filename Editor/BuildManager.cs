@@ -15,7 +15,10 @@ using sttz.Trimmer.Extensions;
 #if UNITY_CLOUD_BUILD
 using UnityEngine.CloudBuild;
 #else
-// Dummy implementation of cloud build manifest
+/// <summary>
+/// Dummy implementation of Unity Cloud Build manifest object,
+/// used to avoid errors since the Cloud Build dll is not available.
+/// </summary>
 public abstract class BuildManifestObject : ScriptableObject
 {
 	// Try to get a manifest value - returns true if key was found and could be cast to type T, otherwise returns false.
@@ -46,114 +49,10 @@ namespace sttz.Trimmer.Editor
 /// </summary>
 public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 {
-	// -------- Active Profile --------
-
-	/// <summary>
-	/// Platform name used to save project-specific settings.
-	/// </summary>
-	public const string SettingsPlatformName = "Trimmer";
-	/// <summary>
-	/// Key used to save the active profile GUID.
-	/// </summary>
-	public const string ActiveProfileGUIDKey = "ActiveProfileGUID";
-	/// <summary>
-	/// Key used to save the editor source profile GUID.
-	/// </summary>
-	public const string SourceProfileGUIDKey = "SourceProfileGUID";
-
 	/// <summary>
 	/// Scripting define symbol added to remove Trimmer code in player.
 	/// </summary>
 	public const string NO_TRIMMER = "NO_TRIMMER";
-
-
-	/// <summary>
-	/// The active profile, which is used for regular Unity builds.
-	/// </summary>
-	/// <remarks>
-	/// The active profile is saved per-project in the editor profile's ini
-	/// file (usually <c>Editor.ini</c> in the project folder).
-	/// </remarks>
-	public static BuildProfile ActiveProfile {
-		get {
-			if (_activeProfile == null) {
-				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey);
-				if (string.IsNullOrEmpty(guid))
-					return null;
-
-				_activeProfile = LoadAssetByGUID<BuildProfile>(guid);
-			}
-			return _activeProfile;
-		}
-		set {
-			if (value == _activeProfile)
-				return;
-
-			if (value == null) {
-				EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, null);
-				_activeProfile = value;
-				return;
-			}
-
-			var guid = GetAssetGUID(value);
-			if (string.IsNullOrEmpty(guid))
-				return;
-
-			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, ActiveProfileGUIDKey, guid);
-
-			_activeProfile = value;
-		}
-	}
-	private static BuildProfile _activeProfile;
-
-	/// <summary>
-	/// Profile providing the current configuration for the editor.
-	/// </summary>
-	/// <remarks>
-	/// Instead of using the editor's unique configuration values, it's
-	/// possible to use a build profile's configuration instead, allowing to 
-	/// quickly switch between sets of configuration values.
-	/// </remarks>
-	/// <value>
-	/// <c>null</c> when using the editor's own configuration, otherwise the 
-	/// build profile whose configuration is used.
-	/// </value>
-	public static BuildProfile EditorSourceProfile {
-		get {
-			if (_editorSourceProfile == null) {
-				var guid = EditorUserBuildSettings.GetPlatformSettings(SettingsPlatformName, SourceProfileGUIDKey);
-				if (!string.IsNullOrEmpty(guid)) {
-					_editorSourceProfile = BuildManager.LoadAssetByGUID<BuildProfile>(guid);
-				}
-			}
-			return _editorSourceProfile;
-		}
-		set {
-			if (_editorSourceProfile == value)
-				return;
-			
-			var previousValue = _editorSourceProfile;
-			_editorSourceProfile = value;
-
-			var guid = string.Empty;
-			if (value != null)
-				guid = BuildManager.GetAssetGUID(value);
-
-			EditorUserBuildSettings.SetPlatformSettings(SettingsPlatformName, SourceProfileGUIDKey, guid);
-
-			if (Application.isPlaying) {
-				if (previousValue == null) {
-					// When switching away from editor profile in play mode,
-					// we need to save the changes made to the options
-					RuntimeProfile.Main.SaveToStore();
-					EditorProfile.SharedInstance.store = RuntimeProfile.Main.Store;
-				}
-				CreateOrUpdateMainRuntimeProfile();
-				RuntimeProfile.Main.Apply();
-			}
-		}
-	}
-	private static BuildProfile _editorSourceProfile;
 
 	/// <summary>
 	/// The profile used for the current build.
@@ -166,69 +65,13 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </remarks>
 	public static BuildProfile CurrentProfile {
 		get {
-			return _currentProfile ?? ActiveProfile;
+			return _currentProfile ?? EditorProfile.SharedInstance.ActiveProfile;
 		}
 		set {
 			_currentProfile = value;
 		}
 	}
 	private static BuildProfile _currentProfile;
-
-	/// <summary>
-	/// Show the active build profile in the inspector.
-	/// </summary>
-	[MenuItem("Window/Active Build Profile %&b")]
-	public static void OpenEditorProfile()
-	{
-		Selection.activeObject = ActiveProfile;
-	}
-
-	[MenuItem("Window/Active Build Profile %&b", true)]
-	static bool ValidateOpenEditorProfile()
-	{
-		return ActiveProfile != null;
-	}
-
-	// -------- GUID Helper Methods --------
-
-	/// <summary>
-	/// Helper method to get the GUID of an asset object.
-	/// </summary>
-	/// <returns>
-	/// The GUID or null if the object has no GUID (is not an asset).
-	/// </returns>
-	public static string GetAssetGUID(UnityEngine.Object target)
-	{
-		var path = AssetDatabase.GetAssetPath(target);
-		if (string.IsNullOrEmpty(path))
-			return null;
-
-		var guid = AssetDatabase.AssetPathToGUID(path);
-		if (string.IsNullOrEmpty(guid))
-			return null;
-
-		return guid;
-	}
-
-	/// <summary>
-	/// Load an asset by its GUID.
-	/// </summary>
-	/// <returns>
-	/// The object of given type in the asset with the given GUID or null
-	/// if either no asset with this GUID exists or the asset does not contain
-	/// an object of given type.
-	/// </returns>
-	public static T LoadAssetByGUID<T>(string guid) where T : UnityEngine.Object
-	{
-		if (string.IsNullOrEmpty(guid))
-			return null;
-
-		var path = AssetDatabase.GUIDToAssetPath(guid);
-		if (string.IsNullOrEmpty(path))
-			return null;
-
-		return AssetDatabase.LoadAssetAtPath(path, typeof(T)) as T;
-	}
 
 	// -------- Building --------
 
@@ -376,10 +219,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		Debug.Log("UnityCloudBuild: Done!");
-
-		// TODO: Apply supported BuildOptions
 	}
-
 
 	/// <summary>
 	/// Build the profile specified on the command line or the active profile.
@@ -440,12 +280,12 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		if (target == null) {
-			if (ActiveProfile == null) {
+			if (EditorProfile.SharedInstance.ActiveProfile == null) {
 				var err = "No profile specified and not active profile set: Nothing to build";
 				Debug.LogError(err);
 				return err;
 			}
-			target = ActiveProfile;
+			target = EditorProfile.SharedInstance.ActiveProfile;
 			Debug.Log("Building active profile.");
 		}
 
@@ -563,7 +403,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// <summary>
 	/// Create or udpate the main runtime profile with the apropriate value store.
 	/// </summary>
-	private static void CreateOrUpdateMainRuntimeProfile()
+	internal static void CreateOrUpdateMainRuntimeProfile()
 	{
 		if (!Application.isPlaying) {
 			Debug.LogError("Cannot create main runtime profile when not playing.");

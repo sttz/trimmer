@@ -366,7 +366,7 @@ public class ProfileEditor : UnityEditor.Editor
 					sourceProfilesNames = sourceProfiles.Select(p => p == null ? "Editor" : p.name).ToArray();
 				}
 
-				var sourceProfile = BuildManager.EditorSourceProfile;
+				var sourceProfile = editorProfile.EditorSourceProfile;
 
 				int selected = Array.IndexOf(sourceProfiles, sourceProfile);
 				var newSelected = EditorGUILayout.Popup("Source Profile", selected, sourceProfilesNames);
@@ -376,7 +376,7 @@ public class ProfileEditor : UnityEditor.Editor
 					if (newSelected > 0) {
 						newProfile = sourceProfiles[newSelected];
 					}
-					BuildManager.EditorSourceProfile = newProfile;
+					editorProfile.EditorSourceProfile = newProfile;
 				}
 
 				GUI.enabled = (sourceProfile != null);
@@ -392,7 +392,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	void OptionsGUI()
 	{
-		GUI.enabled = (buildProfile != null || BuildManager.EditorSourceProfile == null);
+		GUI.enabled = (editorProfile == null || editorProfile.EditorSourceProfile == null);
 
 		ResurseOptionsGUI();
 
@@ -466,7 +466,7 @@ public class ProfileEditor : UnityEditor.Editor
 		if (editorProfile != null) {
 			pathBase = "EditorProfile/";
 		} else {
-			pathBase = BuildManager.GetAssetGUID(buildProfile) + "/";
+			pathBase = OptionHelper.GetAssetGUID(buildProfile) + "/";
 		}
 
 		lastCategory = null;

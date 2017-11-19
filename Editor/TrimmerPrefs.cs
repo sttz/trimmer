@@ -42,6 +42,9 @@ public static class TrimmerPrefs
         }
     }
 
+    /// <summary>
+    /// GUI shown in Unity's Preferences window.
+    /// </summary>
     [PreferenceItem("Trimmer")]
     static void OnPreferencesGUI()
     {
@@ -53,8 +56,8 @@ public static class TrimmerPrefs
         EditorGUILayout.LabelField("Build Profiles", EditorStyles.boldLabel);
 
         ShowUnavailableOptions = EditorGUILayout.Toggle("Show Unavailable Options", ShowUnavailableOptions);
-        BuildManager.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
-            "Active Build Profile", BuildManager.ActiveProfile, typeof(BuildProfile), false
+        EditorProfile.SharedInstance.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
+            "Active Build Profile", EditorProfile.SharedInstance.ActiveProfile, typeof(BuildProfile), false
         );
     }
 }
