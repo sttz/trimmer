@@ -99,28 +99,6 @@ public enum OptionInclusion
 	FeatureAndOption = Feature | Option
 }
 
-/// <summary>
-/// Helper class with extensions to check <see cref="OptionInclusion"/> flags.
-/// </summary>
-public static class OptionInclusionExtensions
-{
-	/// <summary>
-	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Option"/> flag.
-	/// </summary>
-	public static bool IncludesOption(this OptionInclusion inclusion)
-	{
-		return (inclusion & OptionInclusion.Option) == OptionInclusion.Option;
-	}
-
-	/// <summary>
-	/// Check wether the <see cref="OptionInclusion"/> mask includes the <see cref="OptionInclusion.Feature"/> flag.
-	/// </summary>
-	public static bool IncludesFeature(this OptionInclusion inclusion)
-	{
-		return (inclusion & OptionInclusion.Feature) == OptionInclusion.Feature;
-	}
-}
-
 #endif
 
 /// <summary>
