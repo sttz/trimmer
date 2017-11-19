@@ -195,7 +195,7 @@ public static class OptionHelper
     /// </summary>
     /// <param name="path">Path to the script (absolute, relative to project directory or on the PATH)</param>
     /// <param name="arguments">Arguments to pass to the script</param>
-    /// <param name="output">The output of the script if it completed successfully</param>
+    /// <param name="output">The standard output of the script</param>
     /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
     public static bool RunScript(string path, string arguments, out string output)
     {
@@ -222,12 +222,13 @@ public static class OptionHelper
             return false;
         }
 
+        output = script.StandardOutput.ReadToEnd();
+
         if (script.ExitCode != 0) {
             Debug.LogError("RunScript: " + scriptName + " returned error: " + script.StandardError.ReadToEnd());
             return false;
         }
 
-        output = script.StandardOutput.ReadToEnd();
         return true;
     }
 
