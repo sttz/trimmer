@@ -65,7 +65,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </remarks>
 	public static BuildProfile CurrentProfile {
 		get {
-			return _currentProfile ?? EditorProfile.SharedInstance.ActiveProfile;
+			return _currentProfile ?? EditorProfile.Instance.ActiveProfile;
 		}
 		set {
 			_currentProfile = value;
@@ -280,12 +280,12 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		}
 
 		if (target == null) {
-			if (EditorProfile.SharedInstance.ActiveProfile == null) {
+			if (EditorProfile.Instance.ActiveProfile == null) {
 				var err = "No profile specified and not active profile set: Nothing to build";
 				Debug.LogError(err);
 				return err;
 			}
-			target = EditorProfile.SharedInstance.ActiveProfile;
+			target = EditorProfile.Instance.ActiveProfile;
 			Debug.Log("Building active profile.");
 		}
 
@@ -410,7 +410,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			return;
 		}
 
-		var store = EditorProfile.SharedInstance.Store;
+		var store = EditorProfile.Instance.Store;
 		if (store != null) {
 			store = store.Clone();
 		}

@@ -56,8 +56,8 @@ public static class TrimmerPrefs
         EditorGUILayout.LabelField("Build Profiles", EditorStyles.boldLabel);
 
         ShowUnavailableOptions = EditorGUILayout.Toggle("Show Unavailable Options", ShowUnavailableOptions);
-        EditorProfile.SharedInstance.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
-            "Active Build Profile", EditorProfile.SharedInstance.ActiveProfile, typeof(BuildProfile), false
+        EditorProfile.Instance.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
+            "Active Build Profile", EditorProfile.Instance.ActiveProfile, typeof(BuildProfile), false
         );
     }
 }

@@ -32,7 +32,7 @@ public class EditorProfile : EditableProfile
 	[MenuItem("Window/Trimmer/Editor Profile %e")]
 	public static void OpenEditorProfile()
 	{
-		Selection.activeObject = SharedInstance;
+		Selection.activeObject = Instance;
 	}
 
 	/// <summary>
@@ -41,19 +41,19 @@ public class EditorProfile : EditableProfile
 	[MenuItem("Window/Trimmer/Active Build Profile %&b")]
 	public static void OpenActiveProfile()
 	{
-		Selection.activeObject = SharedInstance.ActiveProfile;
+		Selection.activeObject = Instance.ActiveProfile;
 	}
 
 	[MenuItem("Window/Trimmer/Active Build Profile %&b", true)]
 	static bool ValidateOpenActiveProfile()
 	{
-		return SharedInstance.ActiveProfile != null;
+		return Instance.ActiveProfile != null;
 	}
 
 	/// <summary>
 	/// The profile used in the editor.
 	/// </summary>
-	public static EditorProfile SharedInstance {
+	public static EditorProfile Instance {
 		get {
 			CreateSharedInstance();
 			return _editorProfile;
@@ -348,7 +348,7 @@ public class EditorProfile : EditableProfile
 		// Delay creation of edit mode profile since some Unity API
 		// is not yet ready when the static constructor is called
 		EditorApplication.delayCall += () => {
-			SharedInstance.InitEditModeProfile();
+			Instance.InitEditModeProfile();
 		};
 	}
 

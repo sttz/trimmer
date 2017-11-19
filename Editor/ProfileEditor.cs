@@ -138,7 +138,7 @@ public class ProfileEditor : UnityEditor.Editor
 	{
 		EditorGUI.BeginChangeCheck();
 		
-		var wasExpanded = EditorProfile.SharedInstance.IsExpanded(path);
+		var wasExpanded = EditorProfile.Instance.IsExpanded(path);
 		if (def) wasExpanded = !wasExpanded;
 		var isExpanded = wasExpanded;
 
@@ -147,7 +147,7 @@ public class ProfileEditor : UnityEditor.Editor
 		if (isExpanded != wasExpanded) {
 			var newValue = isExpanded;
 			if (def) newValue = !newValue;
-			EditorProfile.SharedInstance.SetExpanded(path, newValue);
+			EditorProfile.Instance.SetExpanded(path, newValue);
 		}
 
 		return isExpanded;
@@ -403,7 +403,7 @@ public class ProfileEditor : UnityEditor.Editor
 	{
 		ResurseOptionsGUI(showBuild:true);
 
-		if (EditorProfile.SharedInstance.IsExpanded(pathBase + "_Build")) {
+		if (EditorProfile.Instance.IsExpanded(pathBase + "_Build")) {
 			return;
 		}
 
@@ -501,7 +501,7 @@ public class ProfileEditor : UnityEditor.Editor
 		var isExpanded = true;
 		var wasExpanded = true;
 		if (context.IsRecursable) {
-			isExpanded = wasExpanded = EditorProfile.SharedInstance.IsExpanded(expansionPath);
+			isExpanded = wasExpanded = EditorProfile.Instance.IsExpanded(expansionPath);
 		}
 
 		// Category headers
@@ -661,7 +661,7 @@ public class ProfileEditor : UnityEditor.Editor
 			isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 
 			if (wasExpanded != isExpanded) {
-				EditorProfile.SharedInstance.SetExpanded(expansionPath, isExpanded);
+				EditorProfile.Instance.SetExpanded(expansionPath, isExpanded);
 			}
 		}
 

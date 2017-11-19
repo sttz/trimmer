@@ -232,7 +232,7 @@ public class BuildProfile : EditableProfile
 	[ContextMenu("Activate Profile")]
 	public void ActivateProfile()
 	{
-		EditorProfile.SharedInstance.ActiveProfile = this;
+		EditorProfile.Instance.ActiveProfile = this;
 	}
 
 	// -------- Internals --------
