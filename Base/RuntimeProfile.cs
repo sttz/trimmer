@@ -11,20 +11,26 @@ namespace sttz.Trimmer
 {
 
 /// <summary>
-/// A profile manages options and their default values at runtime.
+/// The Runtime Profile manages Options and their initial values
+/// when playing the project in the editor or in a build.
 /// </summary>
 /// <remarks>
-/// The profile can be enumerated to access the individual options.
+/// The profile can be enumerated to access the individual Options.
+/// 
+/// In case no Options are included in a build, Trimmer will be completely
+/// removed and the RuntimeProfile class will not be available in builds. Use
+/// the `NO_TRIMMER` compilation symbol to check if Trimmer will be removed.
 /// </remarks>
 public class RuntimeProfile : IEnumerable<Option>
 {
 	// -------- Static --------
 
 	/// <summary>
-	/// All available options types.
+	/// All available Options types.
 	/// </summary>
 	/// <remarks>
-	/// All options in the editor and only included options in builds.
+	/// This property will include all Options in the editor but
+	/// only the included Options in builds.
 	/// </remarks>
 	public static IEnumerable<Type> AllOptionTypes {
 		get {
@@ -53,14 +59,18 @@ public class RuntimeProfile : IEnumerable<Option>
 	/// </summary>
 	/// <remarks>
 	/// The main runtime profile is available while playing in the editor,
-	/// during building when postprocessing scenes and in the player when
-	/// any options have been built in.
+	/// during building when postprocessing scenes and in the player if
+	/// any Options have been included.
 	/// </remarks>
 	public static RuntimeProfile Main { get; protected set; }
 
 	/// <summary>
 	/// Create the main runtime profile with the given value store.
 	/// </summary>
+	/// <remarks>
+	/// This method is automatically called by <see cref="Editor.BuildManager"/>
+	/// and <see cref="ProfileContainer"/> and should not be called manually.
+	/// </remarks>
 	public static void CreateMain(ValueStore store)
 	{
 		if (Main == null) {
@@ -76,6 +86,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	/// Options sorted by <see cref="Option.ApplyOrder"/>.
 	/// </summary>
 	protected List<Option> options = new List<Option>();
+
 	/// <summary>
 	/// Options by name.
 	/// </summary>
@@ -86,10 +97,10 @@ public class RuntimeProfile : IEnumerable<Option>
 	/// Values used for this profile.
 	/// </summary>
 	/// <remarks>
-	/// Setting the store causes all options' value to be reset to the
-	/// value from the store, options for which no value is defined in
+	/// Setting the store causes all Options' value to be reset to the
+	/// values from the store, Options for which no value is defined in
 	/// the store are reset to their default value. Setting the store 
-	/// will not apply the option.
+	/// will not apply the Options.
 	/// </remarks>
 	public virtual ValueStore Store {
 		get {
@@ -115,7 +126,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	/// </summary>
 	public RuntimeProfile(ValueStore store)
 	{
-		// Create option instances
+		// Create Option instances
 		foreach (var optionType in AllOptionTypes) {
 			if (ShouldCreateOption(optionType)) {
 				var option = (Option)Activator.CreateInstance(optionType);
@@ -125,7 +136,7 @@ public class RuntimeProfile : IEnumerable<Option>
 		}
 		options.Sort((a, b) => a.ApplyOrder.CompareTo(b.ApplyOrder));
 
-		// Set store, which sets its values on the options
+		// Set store, which sets its values on the Options
 		Store = store;
 	}
 
@@ -133,6 +144,10 @@ public class RuntimeProfile : IEnumerable<Option>
 	/// Try to find an option by its path, allowing to get nested
 	/// child and variant options.
 	/// </summary>
+	/// <remarks>
+	/// Use <see cref="Option.Path"/> to get the path of an existing Option 
+	/// that can then be used with this method.
+	/// </remarks>
 	public Option GetOption(string path)
 	{
 		// Example paths:
@@ -192,7 +207,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Get a root option by name (no nested child or variant options).
+	/// Get a main Option by name (no nested child or variant Options).
 	/// </summary>
 	public Option GetRootOption(string name)
 	{
@@ -204,7 +219,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Clear the profile, resetting all options to their default values.
+	/// Clear the profile, resetting all Options to their default values.
 	/// </summary>
 	public void Clear()
 	{
@@ -214,14 +229,14 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Load the data in the store into the option instances.
+	/// Load the data in the store into the Option instances.
 	/// </summary>
 	public void Load()
 	{
 		// Clear first to remove entries not present in store
 		Clear();
 
-		// Apply values in store to options
+		// Apply values in store to Options
 		foreach (var node in Store.Roots) {
 			Option option;
 			if (!optionsByName.TryGetValue(node.name, out option))
@@ -232,7 +247,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Apply the profile, i.e. apply all options it contains.
+	/// Apply the profile, i.e. apply all Options it contains.
 	/// </summary>
 	public void Apply()
 	{
@@ -242,10 +257,10 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Save the options' current values to the store.
+	/// Save the Options' current values to the store.
 	/// </summary>
 	/// <remarks>
-	/// The store will be cleared of all entries with no maching option instance.
+	/// The store will be cleared of all entries with no maching Option instance.
 	/// </remarks>
 	public void SaveToStore()
 	{
@@ -262,7 +277,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Remove all entries from the store that don't have a matching option instance.
+	/// Remove all entries from the store that don't have a matching Option instance.
 	/// </summary>
 	public void CleanStore()
 	{
@@ -318,7 +333,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Limit the options the profile creates.
+	/// Limit the Options the profile creates.
 	/// </summary>
 	protected virtual bool ShouldCreateOption(Type optionType)
 	{
@@ -334,7 +349,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Clear the option recursively.
+	/// Clear the Option recursively.
 	/// </summary>
 	private void ClearOption(Option option)
 	{
@@ -351,7 +366,7 @@ public class RuntimeProfile : IEnumerable<Option>
 
 	/// <summary>
 	/// Recursive method to apply a node with all its variants and
-	/// children to an option.
+	/// children to an Option.
 	/// </summary>
 	private void LoadNode(Option option, ValueStore.Node node, bool isDefaultNode = false)
 	{
@@ -386,7 +401,7 @@ public class RuntimeProfile : IEnumerable<Option>
 	}
 
 	/// <summary>
-	/// Recursive method to save the option's value and its variants'
+	/// Recursive method to save the Option's value and its variants'
 	/// and children's values to the node.
 	/// </summary>
 	private void SaveNode(ValueStore.Node node, Option option, bool isDefaultNode = false)

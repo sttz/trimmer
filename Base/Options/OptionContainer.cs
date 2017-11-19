@@ -22,7 +22,7 @@ public abstract class OptionContainer : Option
 	#if UNITY_EDITOR
 	public override string EditGUI(string input)
 	{
-        GUILayout.FlexibleSpace();
+		GUILayout.FlexibleSpace();
 		return input;
 	}
 	#endif

@@ -14,6 +14,24 @@ namespace sttz.Trimmer.BaseOptions
 /// <summary>
 /// Option base class with a Unity asset as value.
 /// </summary>
+/// <remarks>
+/// OptionAsset uses two different strategies to serialize asset references
+/// in the editor and in the player.
+/// 
+/// In the editor, asset references are saved as GUIDs and loaded using Unity's
+/// `AssetDatabase` API.
+///
+/// To make sure references are included in builds, the references are injected
+/// into the first scene during build as part of the <see cref="ProfileContainer" />.
+/// The Option then uses the GUID at runtime to look up the reference in the 
+/// container.
+/// 
+/// > [!NOTE]
+/// > The reference will only be injected into the build when the Option is
+/// > included. If only the Option's associated feature is included, the
+/// > reference won't be injected and it's up to the subclass to inject the
+/// > reference as needed.
+/// </remarks>
 public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
 	#if UNITY_EDITOR
@@ -26,6 +44,8 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
 	{
 		base.PostprocessScene(scene, inclusion);
 
+		// Only include reference when Opotion is included,
+		// we're building the first scene and a reference is set
 		if ((inclusion & OptionInclusion.Option) != 0
 				&& scene.buildIndex == 0 
 				&& ProfileContainer.Instance != null

@@ -13,6 +13,10 @@ namespace sttz.Trimmer.BaseOptions
 /// <summary>
 /// Option base class with a boolean as value.
 /// </summary>
+/// <remarks>
+/// Only the strings `yes`, `true`, `y` and `1` (not case sensitive) will be
+/// considered as `true`, all other strings as `false`.
+/// </remarks>
 public abstract class OptionToggle : Option<bool>
 {
 	#if UNITY_EDITOR
@@ -22,7 +26,7 @@ public abstract class OptionToggle : Option<bool>
 	}
 	#endif
 
-	private static string[] trueStrings = new string[] {
+	static string[] trueStrings = new string[] {
 		"yes", "true", "y", "1"
 	};
 

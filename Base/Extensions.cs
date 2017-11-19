@@ -98,10 +98,10 @@ public static class Extensions
 
 	/// <summary>
 	/// Replace all occurences of a string by a new value, ignoring the case
-	/// of the original string and/or the search value.
+	/// of the original string and the search value.
 	/// </summary>
 	/// <remarks>
-	/// Based on this Stackoverflow anser by JeroenV: https://stackoverflow.com/a/25426773/202741
+	/// Based on this Stackoverflow answer by JeroenV: https://stackoverflow.com/a/25426773/202741
 	/// </remarks>
 	public static string ReplaceCaseInsensitive(this string str, string oldValue, string newValue)
 	{

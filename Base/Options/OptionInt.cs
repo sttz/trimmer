@@ -13,6 +13,10 @@ namespace sttz.Trimmer.BaseOptions
 /// <summary>
 /// Option base class with an int as value.
 /// </summary>
+/// <remarks>
+/// If you set <see cref="MinValue"/> and <see cref="MaxValue"/>, the value
+/// will be clamped to this range and displayed as a slider in the editor.
+/// </remarks>
 public abstract class OptionInt : Option<int>
 {
 	#if UNITY_EDITOR
@@ -26,7 +30,14 @@ public abstract class OptionInt : Option<int>
 	}
 	#endif
 
+	/// <summary>
+	/// The minimum value of the int (must be set together with <see cref="MaxValue"/>).
+	/// </summary>
 	public int? MinValue { get; set; }
+
+	/// <summary>
+	/// The maximum value of the int (must be set together with <see cref="MinValue"/>).
+	/// </summary>
 	public int? MaxValue { get; set; }
 
 	override public int Parse(string input)

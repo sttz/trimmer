@@ -23,57 +23,25 @@ namespace sttz.Trimmer {
 
 // TODO: Document editor-only methods/props
 // TODO: Document main-option-only methods/props
-// TODO: Icon
-
-// Trimmer Framework
-
-// Trimmer
-// Tool belt
-// Maintenance Panel
-// Plugboard
-// Knobs and Sliders (K&S)
-// The Screwdriver
-// Adjustment Screw
-// Potentiometer
 
 #if UNITY_EDITOR
 
 /// <summary>
-/// Enum indicating how and option behaves during the build process.
+/// Flags indicating wether an Option and its feature should be included in a build.
 /// </summary>
 /// <remarks>
-/// Conceptually, Trimmer deals with Options that are its building blocks and
-/// configure some aspect of a project dynamically. That aspect of the project
-/// is referred to as a «feature».
+/// In the editor, the inclusion of an Option is set in Build Profiles in
+/// the right-hand column for each main Option. In code, the inclusion
+/// is stored in the Build Profile's <see cref="ValueStore"/>, specifically
+/// in <see cref="ValueStore.RootNode.Inclusion"/>.
 /// 
-/// When building, there are a few scenarios, how an option and its feature are
-/// compiled:
-/// * Both are included: The build includes both the Trimmer Option as well
-///   as its associated feature. The Option allows to configure the feature at
-///   runtime.
-/// * Only the feature is included: The Option only configures the feature in
-///   the editor. At build-time the Option statically configures the feature
-///   in the build and is itself not included. The feature cannot be configured
-///   at runtime using Trimmer.
-/// * Both are removed: Neither the Option nor its feature are included in the
-///   build and if set up correctly, the build won't contain a trace that the
-///   Option or feature ever existed.
+/// The actual symbols being defined also depends on the Option's
+/// <see cref="OptionCapabilities"/>. Only if the Option has the right
+/// capabilities and the inclusion has been set, will the symbols be defined.
 /// 
-/// As an example, assume there's a platform integration that requires an API key.
-/// The feature is the integration script and maybe some conditionally-compiled
-/// snippets of code in other scripts. The Option controls the conditional compilation,
-/// injects the integration script when enabled and configures the API key.
-/// 
-/// When building for another platform, the integration should be completely 
-/// removed, leaving no unrelated code in the build. When doing a release build,
-/// the API key should be baked into the build, the Option removed and no way
-/// left to change the API key at runtime. In a development build, the Option
-/// might be included, to be able to override the API key to one used for testing.
-/// 
-/// In this scenario, different build profiles would configure the build differently:
-/// Profiles for other platforms would completely remove the build and feature,
-/// the release build profile would only remove the Option and the development
-/// profile would include both Option and feature.
+/// > [!NOTE]
+/// > The inclusion only applies to the main Option. All child and variant
+/// > Options will inherit the inclusion from their main parent.
 /// </remarks>
 [Flags]
 public enum OptionInclusion
@@ -115,8 +83,9 @@ public enum OptionInclusion
 /// * If neither <see cref="CanPlayInEditor"/> or <see cref="ExecuteInEditMode"/> is set,
 ///   the Option will not be shown in the Editor Profile.
 /// 
-/// Capabilities are only valid on the main Option, all child and variant Options will
-/// inherit the capabilities from the main Option.
+/// > [!NOTE]
+/// > Capabilities are only valid on the main Option, all child and variant Options will
+/// > inherit the capabilities from the main Option.
 /// </remarks>
 [Flags]
 public enum OptionCapabilities
@@ -139,8 +108,7 @@ public enum OptionCapabilities
 
 	/// <summary>
 	/// Flag indicating the Option integrates into the build process, configuring the build
-	/// options, setting conditional compilation symbols or pre-/post-processes scenes and
-	/// the build.
+	/// options or pre-/post-processes scenes and the build.
 	/// </summary>
 	ConfiguresBuild = 1<<2,
 
@@ -151,7 +119,7 @@ public enum OptionCapabilities
 	CanPlayInEditor = 1<<3,
 
 	/// <summary>
-	/// Flag indicating the Option should be loaded in edit mode as well. If set, the Option
+	/// Flag indicating the Option should be loaded in edit mode. If set, the Option
 	/// will be loaded when not playing in the editor.
 	/// </summary>
 	ExecuteInEditMode = 1<<4,
@@ -166,13 +134,13 @@ public enum OptionCapabilities
 	PresetDefault = CanIncludeOption | ConfiguresBuild | CanPlayInEditor,
 
 	/// <summary>
-	/// Default preset mask. Like <see cref="PresetDefault"/> but also has an associated 
+	/// Preset mask. Like <see cref="PresetDefault"/> but also has an associated 
 	/// feature that can be included/excluded from the build.
 	/// </summary>
 	PresetWithFeature = PresetDefault | HasAssociatedFeature,
 
 	/// <summary>
-	/// Default preset mask. A simple Option that can be included in the build
+	/// Preset mask. A simple Option that can be included in the build
 	/// and gets loaded in the editor but doesn't process the build and has 
 	/// no assocaited feature.
 	/// </summary>
@@ -183,6 +151,14 @@ public enum OptionCapabilities
 /// Attribute used to indicate the <see cref="OptionCapabilities" /> of an 
 /// <see cref="Option"/> subclass.
 /// </summary>
+/// <remarks>
+/// If no attribute is applied, an Option has the 
+/// <see cref="OptionCapabilities.PresetDefault"/> capabilities.
+/// 
+/// > [!NOTE]
+/// > The Capabilities attribute is only valid on the main Option, 
+/// > all child and variant Options will inherit the capabilities from the main Option.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
 [Conditional("UNITY_EDITOR")]
 public class CapabilitiesAttribute : Attribute
@@ -196,8 +172,9 @@ public class CapabilitiesAttribute : Attribute
 }
 
 /// <summary>
-/// Define how an Option can be variant.
+/// Enum defining the variance of an Option.
 /// </summary>
+/// <seealso cref="Option.Variance"/>  
 public enum OptionVariance
 {
 	/// <summary>
@@ -213,48 +190,46 @@ public enum OptionVariance
 
 	/// <summary>
 	/// The Option is an array. It has variants that are ordered by an index and
-	/// the parameter is automatically set.
+	/// the parameter is set automatically.
 	/// </summary>
 	Array
 }
 
 /// <summary>
-/// Base class for Workebnch Options.
+/// Base class for Trimmer Options.
 /// </summary>
 /// <remarks>
 /// Options are the basic building blocks to integrate your project 
-/// into Trimmer. Trimmer detects all <see cref="Option"/> classes
+/// into Trimmer. Trimmer detects all Option classes
 /// in your project, so there's no additional configuration necessary
 /// besides adding the Option source files to your project.
 /// 
 /// Each Option has a value, which you can edit in the editor and which
-/// can also be changed in the player using <see cref="RuntimeProfile"/>.
+/// can also be changed in the player using the <see cref="RuntimeProfile"/>.
 /// The runtime profile is only a script API, use the bundled Options to
 /// change Option values in the player using configuration files 
-/// (<see cref="Options.OptionIniFile"/>) or using a simple GUI 
+/// (<see cref="Options.OptionIniFile"/>) or a simple GUI 
 /// (<see cref="Options.OptionPrompt"/>).
 /// 
 /// Options can model more complicated data than simple values in two ways:
 /// * <b>Variant Options</b> allow to have multiple instances of the same
-///   Option type that differ by their <see cref="Option.VariantParameter"/>,
+///   Option type that differ by their <see cref="VariantParameter"/>,
 ///   e.g. to have a volume Option, which can control multiple channels.
 /// * <b>Child Options</b> allow Options to group multiple different values
 ///   together.
 /// 
-/// Child and variant Options can be nested, with the only limitation that
-/// variant Options cannot be directly nested (but a variant option can
-/// have a variant child option).
+/// To make an Option variant, set its <see cref="Variance"/>. To add child
+/// Options, define Option classes nested inside other Option classes.
 /// 
 /// Most of the time, you want to extend one of the typed base classes
 /// that fit the type of Option you want to create:
 /// * <see cref="BaseOptions.OptionAsset{TUnity}" />
+/// * <see cref="BaseOptions.OptionContainer" />
 /// * <see cref="BaseOptions.OptionEnum{TEnum}" />
 /// * <see cref="BaseOptions.OptionFloat" />
 /// * <see cref="BaseOptions.OptionInt" />
 /// * <see cref="BaseOptions.OptionString" />
 /// * <see cref="BaseOptions.OptionToggle" />
-/// 
-/// 
 /// </remarks>
 public abstract class Option
 {
@@ -274,47 +249,69 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Prefix for the per-option scripting defines.
+	/// Prefix for the Trimmer scripting defines symbols.
 	/// </summary>
 	/// <remarks>
-	/// TODO
+	/// Conditional compilation defines with this prefix are considered
+	/// managed by Trimmer. All symbols with this prefix will be removed
+	/// before a build starts and Options need to re-define their symbols
+	/// in <see cref="GetScriptingDefineSymbols*"/>.
 	/// </remarks>
 	public const string DEFINE_PREFIX = "TR_";
 
 	/// <summary>
 	/// Prefix applied after the <see cref="DEFINE_PREFIX"/> for the 
-	/// Option scripting define.
+	/// Option scripting define symbols.
 	/// </summary>
 	public const string OPTION_PREFIX = "Option";
 
 	#if UNITY_EDITOR
 
 	/// <summary>
-	/// The capabilities of the Option (**Editor-only**).
+	/// The capabilities of the Option.
 	/// </summary>
 	/// <remarks>
 	/// Used to cache the attribute value. To change the capabilities,
 	/// use the <see cref="CapabilitiesAttribute"/>.
+	/// 
+	/// > [!NOTE]
+	/// > This property is only available in the editor.
+	/// 
+	/// > [!NOTE]
+	/// > This property only applies to main Options. Child and variant Options
+	/// > will inherit the capabilities from their main parent.
 	/// </remarks>
 	public OptionCapabilities Capabilities { get; private set; }
 
 	/// <summary>
 	/// The `BuildTarget`s this Option supports. (null = all)
 	/// </summary>
+	/// <remarks>
+	/// > [!NOTE]
+	/// > This property is only available in the editor.
+	/// 
+	/// > [!NOTE]
+	/// > This property only applies to main Options. Child and variant Options
+	/// > will inherit the supported targets from their main parent.
+	/// </remarks>
 	public IEnumerable<BuildTarget> SupportedTargets { get; protected set; }
 
 	/// <summary>
-	/// Determine if the Option is available on the given build targets (**Editor-only**).
+	/// Determines if the Option is available on one of the given build targets.
 	/// </summary>
 	/// <remarks>
 	/// It's possible to hide an Option in Build Profiles if they don't
-	/// apply to the profile's build targets (i.e. an iOS-only option on
-	/// a Android Build Profile). Unavailable Options can be shown using
+	/// apply to the profile's build targets (i.e. an iOS-only Option on
+	/// an Android Build Profile). Unavailable Options can be shown using
 	/// an Option in Trimmer's preferences but they will always
 	/// be removed from builds.
 	/// 
-	/// **This method only applies to main Options. The availability of
-	/// child and variant Options is inherited from their main Option.**
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
+	/// 
+	/// > [!NOTE]
+	/// > This method only applies to main Options. Child and variant Options
+	/// > will inherit the availability from their main parent.
 	/// </remarks>
 	public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
 	{
@@ -330,30 +327,49 @@ public abstract class Option
 	}
 
 	/// <summary>
+	/// Determines if the inclusion of the associated feature should
+	/// be overridden in case only the feature is included but
+	/// isn't properly configured or enabled.
+	/// </summary>
+	/// <remarks>
 	/// This method is only called if the Option has an associated 
-	/// feature and only the feature is included in the build.
+	/// feature and only if the feature is included but the Option is not.
 	/// 
 	/// The method allows the Option to check if the feature is
 	/// properly configured and only include it if it is. Since
-	/// only the feature is included and the option is not, it's
+	/// only the feature is included and the Option is not, it's
 	/// potentially not possible to properly configure the feature
 	/// in the build and therefore it makes no sense to include it.
 	/// 
 	/// Returning `false` will change the inclusion from 
 	/// <see cref="OptionInclusion.Feature"/> to <see cref="OptionInclusion.Remove"/>.
-	/// </summary>
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
+	/// 
+	/// > [!NOTE]
+	/// > This method only applies to main Options. Child and variant Options
+	/// > will inherit the inclusion from their main parent.
+	/// </remarks>
 	public virtual bool ShouldIncludeOnlyFeature()
 	{
 		return true;
 	}
 
 	/// <summary>
-	/// Callback invoked for every scene during build or when a scene is played in the editor (**Editor-only**).
+	/// Callback invoked for every scene during build.
 	/// </summary>
 	/// <remarks>
 	/// This callback gives Options a chance to modify scenes during the
-	/// build process or when playing in the editor. This can be used
-	/// to e.g. inject a script into the scene or remove some game objects.
+	/// build process. This can be used to e.g. inject a script into the 
+	/// scene or remove some game objects.
+	/// 
+	/// Unlike Unity's `OnProcessScene`, this method is not called when
+	/// playing in the editor. Use <see cref="Apply"/> and Unity's 
+	/// `SceneManager` API instead.
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	/// <param name="scene">The scene that is being processed.</param>
 	/// <param name="inclusion">Wether the option is included in the build.</param>
@@ -373,25 +389,30 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// The priority of the Option's processing callbacks (**Editor-only**).
+	/// The priority of the Option's processing callbacks.
 	/// </summary>
 	/// <remarks>
 	/// This determines the order in which all Option's processing callbacks
-	/// are called (<see cref="PostprocessScene"/>, <see cref="PrepareBuild"/>
-	/// and <see cref="PostprocessBuild"/>).
+	/// are called (<see cref="PostprocessScene"/>, <see cref="PrepareBuild"/>,
+	/// <see cref="PreprocessBuild"/> and <see cref="PostprocessBuild"/>).
 	/// 
 	/// Lower values will be called first.
 	/// 
-	/// Note that this only orders the Options between themselves. This does
-	/// not affect the order in regard to other consumers of these Unity events.
+	/// > [!WARNING]
+	/// > This only orders the Options between themselves. This does not affect
+	/// > the order in regard to other consumers of these Unity events.
 	/// 
-	/// **The order only applies to main Options and will be ignored on variant
-	/// or child options.**
+	/// > [!NOTE]
+	/// > This property is only available in the editor.
+	/// 
+	/// > [!NOTE]
+	/// > This property only applies to main Options. Child and variant Options
+	/// > will inherit the order from their main parent.
 	/// </remarks>
 	public int PostprocessOrder { get; protected set; }
 
 	/// <summary>
-	/// Callback invoked before a profile build is started (**Editor-only**).
+	/// Callback invoked before a profile build is started.
 	/// </summary>
 	/// <remarks>
 	/// When a build is started on a <see cref="Editor.BuildProfile"/>, all options
@@ -402,11 +423,15 @@ public abstract class Option
 	/// 
 	/// By default, the build will include the scenes set in Unity's build 
 	/// player window and the options will be set to `BuildOptions.None`.
-	/// If no Option set the location path name, the user will be prompted 
+	/// If no Option sets the location path name, the user will be prompted 
 	/// to choose it.
 	/// 
-	/// Noe that this method will not be called for regular Unity builds,
-	/// started from the build player menu or using the build menu item.
+	/// > [!WARNING]
+	/// > This method will not be called for regular Unity builds,
+	/// > started from the build player window or using the build menu item.
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	/// <param name="options">The current options</param>
 	/// <param name="inclusion">Wether the Option is included in the  build.</param>
@@ -429,14 +454,14 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Callback invoked right before a build (**Editor-only**).
+	/// Callback invoked right before a build.
 	/// </summary>
 	/// <remarks>
-	/// This callback is invoked before the build for both profile builds
+	/// This callback is invoked before the build, for both profile builds
 	/// as well as regular Unity builds.
 	/// 
-	/// Build settings have already been determined at this stage and cannot
-	/// be changed.
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	/// <param name="target">Build target type</param>
 	/// <param name="path">Path to the built project</param>
@@ -457,11 +482,14 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Callback invoked when the build completed (**Editor-only**).
+	/// Callback invoked after the build completed.
 	/// </summary>
 	/// <remarks>
-	/// This callback is invoked after the build has been completed for 
+	/// This callback is invoked after the build has been completed, for 
 	/// both profile builds and regular Unity builds.
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	/// <param name="target">Build target type</param>
 	/// <param name="path">Path to the built project</param>
@@ -482,65 +510,89 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// The scripting define symbols set by this option (**Editor-only**).
+	/// The scripting define symbols set by this Option.
 	/// </summary>
 	/// <remarks>
-	/// By default, this method returns `<see cref="DEFINE_PREFIX"/> + <see cref="Name"/>`
-	/// for main Options that are included in the build and nothing for child or variant
-	/// options or excluded options.
+	/// By default, this method will define 
+	/// <pre><see cref="DEFINE_PREFIX"/> + <see cref="OPTION_PREFIX"/> + <see cref="Name"/></pre>
+	/// if the Option is included and 
+	/// <pre><see cref="DEFINE_PREFIX"/> + <see cref="Name"/></pre>
+	/// if the associated feature is included.
+	/// 
+	/// Only the main Option will set these symbols but child and variant Options
+	/// can set additional symbols.
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	public virtual void GetScriptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
 	{
 		// Only the root option has a toggle in the build profile
-		if (Parent != null || inclusion == OptionInclusion.Remove)
-			return;
+		if (Parent == null) {
+			if ((inclusion & OptionInclusion.Feature) != 0 
+					&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
+				symbols.Add(DEFINE_PREFIX + Name);
+			}
 
-		if ((inclusion & OptionInclusion.Feature) != 0 
-				&& (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
-			symbols.Add(DEFINE_PREFIX + Name);
+			if ((inclusion & OptionInclusion.Option) != 0 
+					&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
+				symbols.Add(DEFINE_PREFIX + OPTION_PREFIX + Name);
+			}
 		}
 
-		if ((inclusion & OptionInclusion.Option) != 0 
-				&& (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
-			symbols.Add(DEFINE_PREFIX + OPTION_PREFIX + Name);
+		if (variants != null) {
+			foreach (var variant in variants) {
+				variant.GetScriptingDefineSymbols(inclusion, symbols);
+			}
+		}
+
+		if (children != null) {
+			foreach (var child in children) {
+				child.GetScriptingDefineSymbols(inclusion, symbols);
+			}
 		}
 	}
 
 	/// <summary>
-	/// Do the editor GUI to edit this option (**Editor-only**).
+	/// Do the editor GUI to edit this option.
 	/// </summary>
 	/// <remarks>
 	/// The bundled subclasses in <see cref="sttz.Trimmer.BaseOptions"/>
 	/// already provide implementations for this method. Override it
 	/// to implement your custom GUI for the editor.
 	/// 
-	/// Note that this method is called on a shared and not fully initialized
-	/// Option instance. Most notably, the Option's value is not set and a 
-	/// single instance will be used to edit all variants of an Option.
+	///  > [!WARNING]
+	/// > This method is called on a shared and not fully initialized
+	/// > Option instance. Most notably, the Option's value is not set and a 
+	/// > single instance will be used to edit all variants of an Option.
+	/// 
+	/// > [!NOTE]
+	/// > This method is only available in the editor.
 	/// </remarks>
 	public abstract string EditGUI(string input);
 
 	#endif
 
 	/// <summary>
-	/// The name of the option.
+	/// The name of the Option.
 	/// </summary>
 	/// <remarks>
 	/// The name is used in the editor, to identify the option in config
-	/// files and to set the Option's scripting define symbol.
+	/// files and to set the Option's scripting define symbols.
 	/// 
 	/// By default, the name is the Option's class name, minus the 
-	/// <see cref="DEFINE_PREFIX"/>. This ensures that the Option's class name
-	/// and the scripting define symbol name match.
+	/// <see cref="OPTION_PREFIX"/>. This ensures that the scripting 
+	/// define symbol set for the Option matches its class name.
 	/// 
-	/// In case you set the name to sometehing that doesn't start with the 
-	/// define prefix, the prefix wil be prepended to the Option's scripting
+	/// In case you set the name to something that doesn't start with the 
+	/// Option prefix, the prefix wil be prepended to the Option's scripting
 	/// define symbol.
 	/// 
 	/// e.g.
-	/// Class Name &#x2192; Option Name &#x2192; Scripting Define Symbol<br/>
-	/// OptionExample &#x2192; Example &#x2192; OptionExample<br/>
-	/// NonDefaultExample &#x2192; NonDefaultExample &#x2192; OptionNonDefaultExample
+	/// | Class Name        | &#x2192; Option Name       | &#x2192; Scripting Define Symbol |
+	/// | ---               | ---                        | ---                              |
+	/// | OptionExample     | &#x2192; Example           | &#x2192; OptionExample           |
+	/// | NonDefaultExample | &#x2192; NonDefaultExample | &#x2192; OptionNonDefaultExample |
 	/// </remarks>
 	public string Name { get; protected set; }
 
@@ -588,7 +640,7 @@ public abstract class Option
 			return _path;
 		}
 	}
-	protected string _path;
+	string _path;
 
 	/// <summary>
 	/// Internal helper method to construct an Option's path recursively.
@@ -612,7 +664,7 @@ public abstract class Option
 
 	/// <summary>
 	/// Internal helper method to invalidate all child/variant Option's
-	/// path recursively.
+	/// paths recursively.
 	/// </summary>
 	public void InvalidatePathRecursive()
 	{
@@ -635,10 +687,15 @@ public abstract class Option
 	/// and then save it to <see cref="Option{TValue}.Value"/>.
 	/// If the input is empty or contains an invalid value, the 
 	/// <see cref="Option{TValue}.DefaultValue"/> should be used instead.
+	/// 
+	/// Load should only parse the value but not yet apply it
+	/// to the project. Use <see cref="Apply"/> to act on the Option's
+	/// value.
 	/// </remarks>
 	public abstract void Load(string input);
+
 	/// <summary>
-	/// Serialize the option's value to a string.
+	/// Serialize the Option's value to a string.
 	/// </summary>
 	/// <remarks>
 	/// The value returned by this method will later be supplied to
@@ -648,7 +705,7 @@ public abstract class Option
 	public abstract string Save();
 
 	/// <summary>
-	/// Control the order Options' <see cref="Apply"/> method get called.
+	/// Control the order Options' <see cref="Apply"/> methods get called.
 	/// </summary>
 	/// <remarks>
 	/// Lower values get called first.
@@ -656,7 +713,7 @@ public abstract class Option
 	public int ApplyOrder { get; protected set; }
 
 	/// <summary>
-	/// Apply the option to the current environment.
+	/// Apply the Option to the current environment.
 	/// </summary>
 	/// <remarks>
 	/// This method is called when the Option should act on its value.
@@ -688,7 +745,7 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Look for the root option and then call its Apply method.
+	/// Look for the root Option and then call its <see cref="Apply"/> method.
 	/// </summary>
 	public void ApplyFromRoot()
 	{
@@ -708,8 +765,9 @@ public abstract class Option
 	/// <remarks>
 	/// All Option classes need to have a constructor with no arguments.
 	/// 
-	/// **Don't override this constructor to initialize your Option
-	/// subclass. Override <see cref="Configure"/> instead.**
+	/// > [!CAUTION]
+	/// > Don't override this constructor to initialize your Option
+	/// > subclass. Override <see cref="Configure"/> instead.
 	/// </remarks>
 	public Option()
 	{
@@ -752,11 +810,11 @@ public abstract class Option
 	/// <summary>
 	/// The variance of the Option.
 	/// </summary>
-	/// <returns>
-	/// By default an Option is invariant and there's only a single instance / value of it.
+	/// <remarks>
+	/// By default, an Option is invariant and there's only a single instance / value of it.
 	/// 
 	/// An Option can also be variant, in which case multiple instances can exist and
-	/// the instances are distinguished by their parameter.
+	/// the instances are distinguished by their <see cref="VariantParameter"/>.
 	/// 
 	/// There are two types of variance, where the only difference is if their parameters
 	/// are set by the user (<see cref="OptionVariance.Dictionary"/>) or if an index
@@ -765,7 +823,7 @@ public abstract class Option
 	/// Variant Options have a default variant (<see cref="IsDefaultVariant"/>), that acts 
 	/// as the container for all other variants and its parameter is always set to 
 	/// the <see cref="VariantDefaultParameter"/>.
-	/// </returns>
+	/// </remarks>
 	public OptionVariance Variance { get; protected set; }
 
 	/// <summary>
@@ -778,19 +836,23 @@ public abstract class Option
 	/// When <see cref="Variance"/> is <see cref="OptionVariance.Array"/>, the
 	/// parameter is assigned automatically and will be overwritten if it's changed.
 	/// 
-	/// To change a parameter, it's best to remove the variant, change the parameter
-	/// and then add it again. This detects duplicate parameters, which can cause
-	/// undefined behavior.
+	/// > [!NOTE]
+	/// > To change a parameter, it's best to remove the variant, change the parameter
+	/// > and then add it again. This detects duplicate parameters, which can cause
+	/// > undefined behavior.
 	/// </remarks>
 	public string VariantParameter { get; set; }
+
 	/// <summary>
 	/// The parameter of the default variant.
 	/// </summary>
 	/// <remarks>
-	/// Variants are created on-demand when a new parameter appears but there
-	/// is always a default variant, which is assigned the default parameter.
+	/// Variants are created on-demand when new parameters appear. To ensure
+	/// the Option can always receive callbacks, a single Option is always
+	/// guaranteed to exist and that Option uses the variant default parameter.
 	/// </remarks>
 	public string VariantDefaultParameter { get; protected set; }
+
 	/// <summary>
 	/// Wether this option instance is the default variant.
 	/// </summary>
@@ -831,10 +893,17 @@ public abstract class Option
 	/// Add a new variant option.
 	/// </summary>
 	/// <remarks>
-	/// Variants can only be added to the <see cref="IsDefaultVariant" /> instance
-	/// of an Option whose <see cref="Variance" /> is not <see cref="OptionVariance.Single" />.
+	/// > [!WARNING]
+	/// > This method can only be called on default variants, where
+	/// > <see cref="IsDefaultVariant" /> is true, and will throw an 
+	/// > exception when called on other Options.
 	/// 
-	/// The default variant acts as a container for all other variants.
+	/// > [!TIP]
+	/// > For array variants, the parameter can be assigned arbirarily and
+	/// > will be overwritten on insertion. However it can be used to control
+	/// > where the variant will be inserted, as parameters will be first
+	/// > sorted before the indices are re-assigned (e.g. inserting "5.5"
+	/// > will insert the variant between "5" and "6").
 	/// </remarks>
 	public Option AddVariant(string parameter)
 	{
@@ -862,11 +931,13 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Get the variant Option for the given parameter.
+	/// Get the variant Option with the given parameter.
 	/// </summary>
 	/// <remarks>
-	/// Variants only exist on the <see cref="IsDefaultVariant" /> instance
-	/// of an Option whose <see cref="Variance" /> is not <see cref="OptionVariance.Single" />.
+	/// > [!WARNING]
+	/// > This method can only be called on default variants, where
+	/// > <see cref="IsDefaultVariant" /> is true, and will throw an 
+	/// > exception when called on other Options.
 	/// 
 	/// `GetVariant` can also be used to get the default variant itself,
 	/// i.e. when <paramref name="parameter"/> equals <see cref="VariantDefaultParameter" />,
@@ -900,8 +971,10 @@ public abstract class Option
 	/// Remove a variant Option.
 	/// </summary>
 	/// <remarks>
-	/// Variants only exist on the <see cref="IsDefaultVariant" /> instance
-	/// of an Option whose <see cref="Variance" /> is not <see cref="OptionVariance.Single" />.
+	/// > [!WARNING]
+	/// > This method can only be called on default variants, where
+	/// > <see cref="IsDefaultVariant" /> is true, and will throw an 
+	/// > exception when called on other Options.
 	/// </remarks>
 	public void RemoveVariant(Option option)
 	{
@@ -919,7 +992,8 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// Internal helper method that ensures parameters in array variants are all numbers and sequential.
+	/// Internal helper method that ensures parameters in array variants 
+	/// are all numbers and sequential.
 	/// </summary>
 	protected void RenumberArrayVariants()
 	{
@@ -942,7 +1016,7 @@ public abstract class Option
 	private List<Option> children;
 
 	/// <summary>
-	/// Wether this option has children.
+	/// Wether this Option has children.
 	/// </summary>
 	public bool HasChildren {
 		get {
@@ -951,10 +1025,10 @@ public abstract class Option
 	}
 
 	/// <summary>
-	/// The children of this option.
+	/// The children of this Option.
 	/// </summary>
 	/// <remarks>
-	/// Child options are nested classes of the current Option class.
+	/// Child Options are nested classes of the current Option class.
 	/// They are detected automatically and instantaited when their
 	/// parent Option is instantiated.
 	/// </remarks>
@@ -1028,12 +1102,14 @@ public abstract class Option
 	// -------- Category --------
 
 	/// <summary>
-	/// Category of the option, only used in the editor.
+	/// Category of the Option.
 	/// </summary>
 	/// <remarks>
 	/// The category is used to group options in the editor.
-	/// Only the main option can have a category, the value is
-	/// ignored for child or variant options.
+	/// 
+	/// > [!NOTE]
+	/// > This property only applies to main Options. Child and variant Options
+	/// > will inherit the category from their main parent.
 	/// </remarks>
 	public string Category {
 		get {
@@ -1046,6 +1122,14 @@ public abstract class Option
 	string _category = "General";
 }
 
+/// <summary>
+/// Option subclass that defines the type of the Option value.
+/// </summary>
+/// <remarks>
+/// This subclass is mostly an informal standard, adopted by all
+/// subclasses in <see cref="sttz.Trimmer.BaseOptions"/> but not
+/// actually used in the rest of Trimmer's code.
+/// </remarks>
 public abstract class Option<TValue> : Option
 {
 	/// <summary>
@@ -1063,10 +1147,7 @@ public abstract class Option<TValue> : Option
 	/// </summary>
 	/// <remarks>
 	/// If the input is empty or parsing fails, <see cref="DefaultValue"/>
-	/// should be used.
-	/// 
-	/// The method can be called on not fully initialized and sahred Option 
-	/// instances and should be careful when relying on external state.
+	/// should be returned.
 	/// </remarks>
 	public abstract TValue Parse(string input);
 
@@ -1076,9 +1157,6 @@ public abstract class Option<TValue> : Option
 	/// <remarks>
 	/// The string returned by Save can later be fed back to <see cref="Parse" />
 	/// and should survive the round-trip without loss.
-	/// 
-	/// The method can be called on not fully initialized and sahred Option 
-	/// instances and should be careful when relying on external state.
 	/// </remarks>
 	public abstract string Save(TValue input);
 }

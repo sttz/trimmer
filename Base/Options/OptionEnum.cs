@@ -14,6 +14,15 @@ namespace sttz.Trimmer.BaseOptions
 /// <summary>
 /// Option base class with an enumeration as value.
 /// </summary>
+/// <remarks>
+/// If the given enum type has the `Flags` attribute applied, the Option
+/// automatically switches to Unity's flags/mask field. You can override 
+/// this by setting <see cref="IsMask"/> in <see cref="Option.Configure"/>.
+/// 
+/// Note that prior to Unity 2017.3 (and its EnumFlagsField method), Unity's
+/// handling of flags enum is severily limited and the enum's values must
+/// be increasing powers of two without gaps.
+/// </remarks>
 public abstract class OptionEnum<TEnum> : Option<TEnum>
 {
 	#if UNITY_EDITOR
@@ -29,7 +38,13 @@ public abstract class OptionEnum<TEnum> : Option<TEnum>
 	}
 	#endif
 
-	private bool? _isMask;
+	/// <summary>
+	/// Set wether the underlying enum is a flags enum and the value should be treated as a mask.
+	/// </summary>
+	/// <remarks>
+	/// Set this property in the Option's <see cref="Option.Configure"/> method. If not set,
+	/// the value defaults to `true` when the enumeration has the `Flags` attribute applied.
+	/// </remarks>
 	public bool IsMask {
 		get {
 			if (_isMask == null) {
@@ -41,6 +56,7 @@ public abstract class OptionEnum<TEnum> : Option<TEnum>
 			_isMask = value;
 		}
 	}
+	private bool? _isMask;
 
 	override public TEnum Parse(string input)
 	{

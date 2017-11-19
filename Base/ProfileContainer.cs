@@ -12,11 +12,14 @@ namespace sttz.Trimmer
 /// Container for the Runtime Profile.
 /// </summary>
 /// <remarks>
-/// For the player, we need to get the <see cref="ValueStore"/> of the build
-/// profile, containing all the option values, into the build. We use this 
-/// container <c>MonoBehaviour</c> to contain the store and inject it into
+/// For the player, we need to get the <see cref="ValueStore"/> of the Build
+/// Profile, containing all the Option values, into the build. We use this 
+/// container `MonoBehaviour` to contain the store and inject it into
 /// the build's scene using <see cref="Editor.BuildManager" /> and 
 /// [IProcessScene](https://docs.unity3d.com/ScriptReference/Build.IProcessScene.html).
+/// 
+/// The container also provides an API to inject additional Unity objects
+/// into the build.
 /// </remarks>
 public class ProfileContainer : MonoBehaviour
 {
@@ -56,7 +59,7 @@ public class ProfileContainer : MonoBehaviour
 	/// </summary>
 	/// <remarks>
 	/// The reference needs to have been added using <see cref="AddReference"/> during
-	/// the the <see cref="Option.PostprocessScene*"/> callback of the first scene.
+	/// the build.
 	/// </remarks>
 	public T GetReference<T>(string guid) where T : Object
 	{
@@ -74,11 +77,20 @@ public class ProfileContainer : MonoBehaviour
 
 	// ------ Behaviour ------
 
+	/// <summary>
+	/// The shared instance of the profile container.
+	/// </summary>
+	/// <remarks>
+	/// This instance is set in the player but not when playing in the editor.
+	/// 
+	/// During build, the shared instance is also set when building the first
+	/// scene (to add references to the build) but not when building 
+	/// subsequent scenes.
+	/// 
+	/// To access the runtime profile, use <see cref="RuntimeProfile.Main"/>.
+	/// </remarks>
 	public static ProfileContainer Instance { get; set; }
 
-	/// <summary>
-	/// Called when a scene is loaded in the player.
-	/// </summary>
 	void OnEnable()
 	{
 		if (Instance != null) {

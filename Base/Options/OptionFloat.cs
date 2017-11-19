@@ -13,6 +13,10 @@ namespace sttz.Trimmer.BaseOptions
 /// <summary>
 /// Option base class with a float as value.
 /// </summary>
+/// <remarks>
+/// If you set <see cref="MinValue"/> and <see cref="MaxValue"/>, the value
+/// will be clamped to this range and displayed as a slider in the editor.
+/// </remarks>
 public abstract class OptionFloat : Option<float>
 {
 	#if UNITY_EDITOR
@@ -26,7 +30,14 @@ public abstract class OptionFloat : Option<float>
 	}
 	#endif
 
+	/// <summary>
+	/// The minimum value of the float (must be set together with <see cref="MaxValue"/>).
+	/// </summary>
 	public float? MinValue { get; set; }
+
+	/// <summary>
+	/// The maximum value of the float (must be set together with <see cref="MinValue"/>).
+	/// </summary>
 	public float? MaxValue { get; set; }
 
 	override public float Parse(string input)

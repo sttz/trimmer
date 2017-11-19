@@ -14,8 +14,16 @@ namespace sttz.Trimmer
 // TODO: Way to clean up store from old nodes
 
 /// <summary>
-/// Store of option values.
+/// Unity compatible store of nested string key/value pairs.
 /// </summary>
+/// <remarks>
+/// The ValueStore is used to serialize the nested Option values in
+/// Unity using its `ISerializationCallbackReceiver` callbacks.
+/// 
+/// Editing Build Profiles or the Editor Profile while not playing
+/// edits the value store directly instead of instantiating
+/// Option instances for every profile.
+/// </remarks>
 [Serializable]
 public class ValueStore : ISerializationCallbackReceiver
 {
@@ -345,6 +353,7 @@ public class ValueStore : ISerializationCallbackReceiver
 	/// Root nodes by name.
 	/// </summary>
 	[NonSerialized] List<RootNode> nodes;
+
 	/// <summary>
 	/// Track if the store roots have been changed.
 	/// </summary>
@@ -516,6 +525,10 @@ public class ValueStore : ISerializationCallbackReceiver
 
 	// -------- Unity Serialization --------
 
+	[SerializeField] List<RootNode> serializedRootNodes;
+	[SerializeField] List<Node> serializedNodes;
+	[SerializeField] int numNodes;
+
 	/// <summary>
 	/// Unity doesn't support serialization of types that contain themselves,
 	/// like in this case <c>Node</c> that contains lists of <c>Node</c>.
@@ -525,13 +538,8 @@ public class ValueStore : ISerializationCallbackReceiver
 	/// unpack the tree before and after Unity serializes it.
 	/// 
 	/// We process the nodes in the same order flattening and unpacking them
-	/// and that allows us to get away with just serializing the list lengths
-	/// instead of some more complex graph structure.
+	/// and that allows us to get away with just serializing the list lengths.
 	/// </summary>
-	[SerializeField] List<RootNode> serializedRootNodes;
-	[SerializeField] List<Node> serializedNodes;
-	[SerializeField] int numNodes;
-
 	void ISerializationCallbackReceiver.OnBeforeSerialize()
 	{
 		serializedRootNodes = new List<RootNode>();
@@ -615,6 +623,18 @@ public class ValueStore : ISerializationCallbackReceiver
 /// <summary>
 /// Helper methods to save a <see cref="ValueStore"/> to an Ini file and loading it back again.
 /// </summary>
+/// <remarks>
+/// The ini file supports comments on lines starting with "#" or "//" but not
+/// trailing comments. Categories are not supported.
+/// 
+/// Each line assigns a value to an Option. The name part in front of the equal
+/// sign can contain child names separted by a dot and variant parameters
+/// enclosed with square brackets. Variant parameters must be quoted with double
+/// quotes if they contain square brackets (and double quotes then escaped).
+/// 
+/// The value after the equal sign will be trimmed. It can be quoted with double
+/// quotes to retain the white space.
+/// </remarks>
 public static class IniAdapter
 {
 	// -------- Ini Serialization --------
@@ -660,6 +680,10 @@ public static class IniAdapter
 		}
 	}
 
+	/// <summary>
+	/// Quote a parameter if it contains square brackets or
+	/// return it as-is otherwise.
+	/// </summary>
 	public static string QuoteParameterIfNeeded(string parameter)
 	{
 		if (parameter.IndexOf('[') < 0 && parameter.IndexOf(']') < 0) {
@@ -669,6 +693,10 @@ public static class IniAdapter
 		return '"' + parameter.Replace("\\", "\\\\").Replace("\"", "\\\"") + '"';
 	}
 
+	/// <summary>
+	/// Quote a value if it contains leading or trailing whitesapce or
+	/// return it as-is otherwise.
+	/// </summary>
 	public static string QuoteValueIfNeeded(string value)
 	{
 		if (value.Trim() == value) {
@@ -681,7 +709,7 @@ public static class IniAdapter
 	// ------ Ini Deserialization ------
 
 	/// <summary>
-	/// Load the values in an INI file into this value store instance,
+	/// Load the values in an Ini file into this value store instance,
 	/// replacing the value store's contents.
 	/// </summary>
 	public static void Load(ValueStore store, string content)
