@@ -50,8 +50,13 @@ public class ProfileContainer : MonoBehaviour
 
 		Assert.AreEqual(referenceGUIDs.Count, references.Count, "GUID/Reference lists are out of sync");
 
-		referenceGUIDs.Add(guid);
-		references.Add(reference);
+		var index = referenceGUIDs.IndexOf(guid);
+		if (index >= 0) {
+			references[index] = reference;
+		} else {
+			referenceGUIDs.Add(guid);
+			references.Add(reference);
+		}
 	}
 
 	/// <summary>
