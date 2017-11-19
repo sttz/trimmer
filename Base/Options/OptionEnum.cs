@@ -32,7 +32,11 @@ public abstract class OptionEnum<TEnum> : Option<TEnum>
 		if (!IsMask) {
 			enumValue = EditorGUILayout.EnumPopup(enumValue);
 		} else {
+			#if UNITY_2017_3_OR_NEWER
+			enumValue = EditorGUILayout.EnumFlagsField(enumValue);
+			#else
 			enumValue = EditorGUILayout.EnumMaskField(enumValue);
+			#endif
 		}
 		return Save((TEnum)(object)enumValue);
 	}
