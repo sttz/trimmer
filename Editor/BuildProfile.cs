@@ -1,8 +1,4 @@
-﻿#if UNITY_5 && !UNITY_5_0 // Introduced in Unity 5.1
-#define HAS_CREATE_ASSET_MENU_ATTRIBUTE
-#endif
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,9 +41,7 @@ namespace sttz.Trimmer.Editor
 /// required, the symbols can always be updated when inspecting the active
 /// profile in the editor.</para>
 /// </remarks>
-#if HAS_CREATE_ASSET_MENU_ATTRIBUTE
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
-#endif
 public class BuildProfile : EditableProfile
 {
 	// -------- Static --------
@@ -87,40 +81,6 @@ public class BuildProfile : EditableProfile
 			.Where(p => p.name.EqualsIgnoringCase(name))
 			.FirstOrDefault();
 	}
-
-	#if !HAS_CREATE_ASSET_MENU_ATTRIBUTE
-	/// <summary>
-	/// Create a new <see cref="BuildProfile"/> at the selected location in the project's assets.
-	/// </summary>
-	/// <remarks>
-	/// This tries to mirror Unity's behavior for its built-in asset types.
-	/// </remarks>
-	[MenuItem("Assets/Create/Build Profile")]
-	public static void CreateBuildProfile()
-	{
-		// Get the first selected folder or the first asset if no folder is selected
-		string profilePath = "Assets";
-		foreach (var guid in Selection.assetGUIDs) {
-			var path = AssetDatabase.GUIDToAssetPath(guid);
-			if (Directory.Exists(path)) {
-				profilePath = path;
-				break;
-			} else if (profilePath == "Assets") {
-				profilePath = path;
-			}
-		}
-
-		if (!Directory.Exists(profilePath)) {
-			profilePath = Path.GetDirectoryName(profilePath);
-		}
-
-		profilePath += Path.DirectorySeparatorChar + "New Build Profile.asset";
-		profilePath = AssetDatabase.GenerateUniqueAssetPath(profilePath);
-
-		var profile = ScriptableObject.CreateInstance<BuildProfile>();
-		AssetDatabase.CreateAsset(profile, profilePath);
-	}
-	#endif
 
 	static BuildTarget[] activeBuildTarget;
 

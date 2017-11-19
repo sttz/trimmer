@@ -1,9 +1,4 @@
-﻿#if UNITY_5 && !UNITY_5_0 // Introduced in Unity 5.1
-#define HAS_HELP_URL_ATTRIBUTE
-#endif
-
-
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -29,9 +24,7 @@ namespace sttz.Trimmer.Editor
 /// to get the instance.</para>
 /// </remarks>
 [InitializeOnLoad]
-#if HAS_HELP_URL_ATTRIBUTE
 [HelpURL("http://sttz.ch/")]
-#endif
 public class EditorProfile : EditableProfile
 {
 	// -------- Static --------
