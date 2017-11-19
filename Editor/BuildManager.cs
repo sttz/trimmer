@@ -44,8 +44,8 @@ namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// The build manager defines which profile is used for builds and 
-/// manages the build process.
+/// The Build Manager controls the build process and calls the Option's
+/// callbacks.
 /// </summary>
 public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 {
@@ -53,25 +53,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// Scripting define symbol added to remove Trimmer code in player.
 	/// </summary>
 	public const string NO_TRIMMER = "NO_TRIMMER";
-
-	/// <summary>
-	/// The profile used for the current build.
-	/// </summary>
-	/// <remarks>
-	/// This allows to temporarily overwrite the active profile.
-	/// Set the current profile to null to revert to the active profile.
-	/// The current profile is not saved, it will be reset after
-	/// script compilation or opening/closing the project.
-	/// </remarks>
-	public static BuildProfile CurrentProfile {
-		get {
-			return _currentProfile ?? EditorProfile.Instance.ActiveProfile;
-		}
-		set {
-			_currentProfile = value;
-		}
-	}
-	private static BuildProfile _currentProfile;
 
 	// -------- Building --------
 
@@ -88,11 +69,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	public static string CommandLineBuildPath { get; private set; }
 
 	/// <summary>
-	/// Populate the <c>BuildPlayerOptions</c> with default values.
+	/// Populate the `BuildPlayerOptions` with default values.
 	/// </summary>
-	public static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
+	static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
 	{
-		// TODO: Use BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions in 2017.2?
 		var playerOptions = new BuildPlayerOptions();
 		playerOptions.target = target;
 		playerOptions.targetGroup = BuildPipeline.GetBuildTargetGroup(target);
@@ -111,9 +91,9 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// Show a dialog to let the user pick a build location.
 	/// </summary>
 	/// <remarks>
-	/// Base on BuildPlayerWindow.PickBuildLocation in private Unity engine code.
+	/// Based on BuildPlayerWindow.PickBuildLocation in private Unity engine code.
 	/// </remarks>
-	public static string PickBuildLocation(BuildTarget target)
+	static string PickBuildLocation(BuildTarget target)
 	{
 		var buildLocation = EditorUserBuildSettings.GetBuildLocation(target);
 		
@@ -147,7 +127,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// </summary>
 	/// <remarks>
 	/// If you don't configure anything, Unity Cloud Build will build without a 
-	/// profile and all Options will use their default value and will be removed.
+	/// profile, all Options will use their default value and will be removed.
 	/// 
 	/// Add the name of the Build Profile you want to build with to the target name
 	/// in Unity Cloud Build, enclosed in double underscores, e.g. `__Profile Name__`.
@@ -194,7 +174,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		// Prepare build
 		var options = GetDefaultOptions(EditorUserBuildSettings.activeBuildTarget);
-		BuildManager.CurrentProfile = buildProfile;
+		currentProfile = buildProfile;
 
 		// Run options' PrepareBuild
 		CreateOrUpdateBuildOptionsProfile();
@@ -301,7 +281,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	}
 
 	/// <summary>
-	/// Build a profile for its default target and with the default build options.
+	/// Build a profile for its default targets and with the default build options.
 	/// </summary>
 	public static string Build(BuildProfile profile)
 	{
@@ -319,16 +299,17 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// Build a profile with the given build options.
 	/// </summary>
 	/// <remarks>
-	/// Note that the <c>BuildPlayerOptions</c> will be passed through the profile's
-	/// options' <see cref="Option.PrepareBuild"/>, which can modify it before
-	/// the build is started.<br />
-	/// Note that if you do not set <c>options.locationPathName</c> and no option sets
-	/// it in the <c>PrepareBuild</c> callback, then a save dialog will be shown.
+	/// The `BuildPlayerOptions` will be passed through the profile's Options'
+	/// <see cref="Option.PrepareBuild"/>, which can modify it before the build is started.
+	/// 
+	/// > [!NOTE]
+	/// > If you do not set `options.locationPathName` and no option sets
+	/// > it in the `PrepareBuild` callback, then a save dialog will be shown.
 	/// </remarks>
 	public static string Build(BuildProfile buildProfile, BuildPlayerOptions options)
 	{
 		// Prepare build
-		BuildManager.CurrentProfile = buildProfile;
+		currentProfile = buildProfile;
 
 		// Run options' PrepareBuild
 		CreateOrUpdateBuildOptionsProfile();
@@ -383,16 +364,21 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 		// Run the build
 		var error = BuildPipeline.BuildPlayer(options);
 
-		BuildManager.CurrentProfile = null;
+		currentProfile = null;
 		return error;
 	}
 
 	// -------- Profiles --------
 
 	/// <summary>
+	/// The build profile used for the current build.
+	/// </summary>
+	static BuildProfile currentProfile;
+
+	/// <summary>
 	/// Create and configure the <see cref="ProfileContainer"/> during the build.
 	/// </summary>
-	private static void InjectProfileContainer(ValueStore store)
+	static void InjectProfileContainer(ValueStore store)
 	{
 		var go = new GameObject("Trimmer");
 		var container = go.AddComponent<ProfileContainer>();
@@ -428,7 +414,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// created to instantiate the necessary Options and then to call the
 	/// build callbacks on them.
 	/// </remarks>
-	private class BuildOptionsProfile : RuntimeProfile
+	class BuildOptionsProfile : RuntimeProfile
 	{
 		/// <summary>
 		/// Option needs to have one of these capabilities to be 
@@ -455,11 +441,11 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	/// Create the build options profile when necessary and
 	/// assign it the current store.
 	/// </summary>
-	private static void CreateOrUpdateBuildOptionsProfile()
+	static void CreateOrUpdateBuildOptionsProfile()
 	{
 		ValueStore store = null;
-		if (CurrentProfile != null) {
-			store = CurrentProfile.Store;
+		if (currentProfile != null) {
+			store = currentProfile.Store;
 		}
 
 		if (store != null) {
@@ -499,6 +485,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	static void BuildPlayerHandler(BuildPlayerOptions options)
 	{
+		// Show a dialog of no active build profile has been set
+		// (Unity < 2017.2 will only get an error in the console)
 		if (CurrentProfile == null 
 			&& !EditorUtility.DisplayDialog(
 				"Trimmer: No Active Profile Set", 
@@ -516,7 +504,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 	public void OnPreprocessBuild(BuildTarget target, string path)
 	{
-		var buildProfile = CurrentProfile;
+		var buildProfile = currentProfile;
 
 		#if !UNITY_2017_2_OR_NEWER
 		// Warning is handled in BuildPlayerHandler for Unity 2017.2+
@@ -561,7 +549,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			"Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
 			target, path, 
 			buildOptionsProfile
-				.Where(o => CurrentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
+				.Where(o => currentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
 				.Select(o => o.Name)
 				.Join(),
 			removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
@@ -570,7 +558,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 	
 	public void OnPostprocessBuild(BuildTarget target, string path)
 	{
-		var buildProfile = CurrentProfile;
+		var buildProfile = currentProfile;
 
 		// Run options' PostprocessBuild		
 		CreateOrUpdateBuildOptionsProfile();
@@ -596,7 +584,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
 		} else {
 			// Inject profile and call PostprocessScene, Apply() isn't called during build
-			var buildProfile = CurrentProfile;
+			var buildProfile = currentProfile;
 			CreateOrUpdateBuildOptionsProfile();
 			
 			if (includesAnyOption && scene.buildIndex == 0) {

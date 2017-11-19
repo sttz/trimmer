@@ -251,11 +251,10 @@ public class ProfileEditor : UnityEditor.Editor
 	GUIStyle includeBackground;
 	GUIStyle separator;
 	GUIStyle inclusionLabel;
+	GUIStyle boldLabel;
 
 	GUIStyle plusStyle;
 	GUIStyle minusStyle;
-	GUIStyle greyFoldout;
-	GUIStyle boldLabel;
 
 	// -------- Fields --------
 
@@ -312,8 +311,6 @@ public class ProfileEditor : UnityEditor.Editor
 		if (includeBackground == null) {
 			includeBackground = new GUIStyle();
 			includeBackground.normal.background = CreateColorTexture(style.includeBackground);
-			//includeBackground.overflow = new RectOffset(20, 20, -3, -3);
-			//includeBackground.margin = includeBackground.padding = new RectOffset();
 		}
 
 		if (separator == null) {
@@ -347,12 +344,6 @@ public class ProfileEditor : UnityEditor.Editor
 			boldLabel = new GUIStyle(EditorStyles.label);
 			boldLabel.font = EditorStyles.boldFont;
 			boldLabel.alignment = TextAnchor.MiddleLeft;
-		}
-
-		if (greyFoldout == null) {
-			greyFoldout = new GUIStyle(EditorStyles.foldout);
-			greyFoldout.font = EditorStyles.boldFont;
-			greyFoldout.normal.textColor = EditorStyles.centeredGreyMiniLabel.normal.textColor;
 		}
 	}
 

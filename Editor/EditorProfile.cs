@@ -76,7 +76,11 @@ public class EditorProfile : EditableProfile
 	[InitializeOnLoadMethod]
 	static void ListenForPlayModeStateChanges()
 	{
+		// Ensure editor profile is loaded
 		CreateSharedInstance();
+
+		// Load edit mode Options
+		Instance.InitEditModeProfile();
 	}
 
 	/// <summary>
@@ -94,8 +98,8 @@ public class EditorProfile : EditableProfile
 	/// The active profile, which is used for regular Unity builds.
 	/// </summary>
 	/// <remarks>
-	/// The active profile is saved per-project in the editor profile's ini
-	/// file (usually <c>Editor.ini</c> in the project folder).
+	/// The active profile is stored per-project in the editor profile
+	/// asset in the project's Library.
 	/// </remarks>
 	public BuildProfile ActiveProfile {
 		get {
@@ -116,12 +120,12 @@ public class EditorProfile : EditableProfile
 	/// </summary>
 	/// <remarks>
 	/// Instead of using the editor's unique configuration values, it's
-	/// possible to use a build profile's configuration instead, allowing to 
+	/// possible to use a Build Profile's configuration instead, allowing to 
 	/// quickly switch between sets of configuration values.
 	/// </remarks>
 	/// <value>
 	/// <c>null</c> when using the editor's own configuration, otherwise the 
-	/// build profile whose configuration is used.
+	/// Build Profile whose configuration is used.
 	/// </value>
 	public BuildProfile EditorSourceProfile {
 		get {
@@ -150,19 +154,9 @@ public class EditorProfile : EditableProfile
 	[SerializeField] BuildProfile _editorSourceProfile;
 
 	/// <summary>
-	/// The value store containing the values for the profile's options.
+	/// The value store containing the values for the editor profile's options.
 	/// </summary>
 	public ValueStore store = new ValueStore();
-
-	public override ValueStore Store {
-		get {
-			if (EditorSourceProfile != null) {
-				return EditorSourceProfile.Store;
-			} else {
-				return store;
-			}
-		}
-	}
 
 	/// <summary>
 	/// Tracks wether the profile needs to be saved to disk.
@@ -173,15 +167,14 @@ public class EditorProfile : EditableProfile
 
 	public EditorProfile()
 	{
-		if (_editorProfile != null) {
-			Debug.LogWarning("Multiple editor profile instances loaded.");
-		} else {
+		if (_editorProfile == null) {
 			_editorProfile = this;
 		}
 	}
 
 	void OnEnable()
 	{
+		// Check only in OnEnable because DestroyImmediate can't be called in constructor
 		if (_editorProfile != this) {
 			Debug.LogWarning("Cleaning up additional editor profile instance.");
 			DestroyImmediate(this);
@@ -234,8 +227,7 @@ public class EditorProfile : EditableProfile
 	}
 
 	/// <summary>
-	/// Save the editor profile. Since it's stored in ProjectSettings,
-	/// it needs to be saved manually.
+	/// Save the editor profile only when it has been changed.
 	/// </summary>
 	public override void SaveIfNeeded()
 	{
@@ -244,6 +236,10 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
+	/// <summary>
+	/// Save the editor profile. Since it's stored in ProjectSettings,
+	/// it needs to be saved manually.
+	/// </summary>
 	public void Save()
 	{
 		profileDirty = false;
@@ -252,6 +248,18 @@ public class EditorProfile : EditableProfile
 			EDITOR_PROFILE_PATH,
 			true
 		);
+	}
+
+	// ------ EditableProfile ------
+
+	public override ValueStore Store {
+		get {
+			if (EditorSourceProfile != null) {
+				return EditorSourceProfile.Store;
+			} else {
+				return store;
+			}
+		}
 	}
 
 	public override Recursion.RecursionType GetRecursionType()
@@ -263,9 +271,6 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 	public override IEnumerable<Option> GetAllOptions()
 	{
 		if (Application.isPlaying) {
@@ -275,9 +280,6 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
-	/// <summary>
-	/// Show the edit GUI for the given option.
-	/// </summary>
 	public override void EditOption(string path, Option option, ValueStore.Node node)
 	{
 		if (Application.isPlaying) {
@@ -312,11 +314,11 @@ public class EditorProfile : EditableProfile
 	// -------- Edit Mode --------
 
 	/// <summary>
-	/// Profile used for options with <see cref="ExecuteInEditMode"/>.
+	/// Profile used for options with <see cref="OptionCapabilities.ExecuteInEditMode"/>.
 	/// </summary>
 	/// <remarks>
-	/// This profile only creates the options that have the <see cref="ExecuteInEditMode"/>
-	/// attribute, avoiding other options to interfere outside of playmode.
+	/// This profile only creates the options that have the <see cref="OptionCapabilities.ExecuteInEditMode"/>
+	/// capability and loads them when not playing.
 	/// </remarks>
 	private class EditModeProfile : RuntimeProfile
 	{
@@ -338,18 +340,6 @@ public class EditorProfile : EditableProfile
 	{
 		editModeProfile = new EditModeProfile(store);
 		editModeProfile.Apply();
-	}
-
-	/// <summary>
-	/// Static constructor.
-	/// </summary>
-	static EditorProfile()
-	{
-		// Delay creation of edit mode profile since some Unity API
-		// is not yet ready when the static constructor is called
-		EditorApplication.delayCall += () => {
-			Instance.InitEditModeProfile();
-		};
 	}
 
 	// -------- Expanded --------

@@ -30,7 +30,7 @@ namespace sttz.Trimmer.Editor
 /// (see <see cref="Options.OptionPrompt"/>). If the ini file or prompt are
 /// disabled for a given build, their respective code won't be compiled.</para>
 /// 
-/// <para>For regular builds, the <see cref="BuildManager.ActiveProfile"/>
+/// <para>For regular builds, the <see cref="EditorProfile.ActiveProfile"/>
 /// defines which profile is used. Alternatively, builds can be made with
 /// non-active profiles using <see cref="BuildManager.Build"/>.</para>
 /// 
