@@ -489,7 +489,7 @@ public abstract class Option
 	/// for main Options that are included in the build and nothing for child or variant
 	/// options or excluded options.
 	/// </remarks>
-	public virtual void GetSctiptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
+	public virtual void GetScriptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
 	{
 		// Only the root option has a toggle in the build profile
 		if (Parent != null || inclusion == OptionInclusion.Remove)

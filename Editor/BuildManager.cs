@@ -701,7 +701,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 			var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 			includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
-			option.GetSctiptingDefineSymbols(inclusion, symbols);
+			option.GetScriptingDefineSymbols(inclusion, symbols);
 
 			if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
 				option.PreprocessBuild(target, path, inclusion);
