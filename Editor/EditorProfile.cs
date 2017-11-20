@@ -110,10 +110,26 @@ public class EditorProfile : EditableProfile
 				return;
 			
 			_activeProfile = value;
+			_activeProfileGUID = null;
 			profileDirty = true;
 		}
 	}
 	[SerializeField] BuildProfile _activeProfile;
+
+	/// <summary>
+	/// The asset GUID of the active Build Profile.
+	/// </summary>
+	public string ActiveProfileGUID {
+		get {
+			if (_activeProfileGUID == null && _activeProfile != null) {
+				var path = AssetDatabase.GetAssetPath(_activeProfile);
+				if (string.IsNullOrEmpty(path)) return null;
+				_activeProfileGUID = AssetDatabase.AssetPathToGUID(path);
+			}
+			return _activeProfileGUID;
+		}
+	}
+	string _activeProfileGUID;
 
 	/// <summary>
 	/// Profile providing the current configuration for the editor.

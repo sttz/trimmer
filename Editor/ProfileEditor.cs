@@ -161,6 +161,99 @@ public class ProfileEditor : UnityEditor.Editor
 		TrimmerPrefs.ShowUnavailableOptions = !TrimmerPrefs.ShowUnavailableOptions;
 	}
 
+	// -------- Badge --------
+
+	const string IconsGuid = "1a23befd4719d4a76b88b096f78a22ad";
+	const string BadgeName = "ActiveBadge";
+	const string BadgeXSName = "ActiveBadgeSmall";
+	static Texture2D badgeTexture;
+	static Texture2D badgeXSTexture;
+
+	static void LoadAssets()
+	{
+		if (badgeTexture != null && badgeXSTexture != null)
+			return;
+
+		var path = AssetDatabase.GUIDToAssetPath(IconsGuid);
+		if (string.IsNullOrEmpty(path))
+			return;
+		
+		var icons = AssetDatabase.LoadAllAssetsAtPath(path);
+		foreach (var icon in icons) {
+			if (!(icon is Texture2D)) continue;
+
+			if (icon.name == BadgeName) {
+				badgeTexture = (Texture2D)icon;
+			} else if (icon.name == BadgeXSName) {
+				badgeXSTexture = (Texture2D)icon;
+			}
+		}
+	}
+
+	[InitializeOnLoadMethod]
+	static void RegisterOnPostIconGUI()
+	{
+		EditorApplication.projectWindowItemOnGUI += OnProjectWindowItemOnGUI;
+
+		var editorType = typeof(UnityEditor.Editor);
+		var OnEditorGUIDelegate = editorType.GetNestedType("OnEditorGUIDelegate", BindingFlags.NonPublic);
+		if (OnEditorGUIDelegate == null) {
+			// Not available in Unity < 2017.1
+			return;
+		}
+
+		var del = Delegate.CreateDelegate(OnEditorGUIDelegate, typeof(ProfileEditor), "OnPostIconGUI", false, false);
+		if (del == null) {
+			Debug.LogWarning("Could not bind OnPostIconGUI as OnEditorGUIDelegate.");
+			return;
+		}
+
+		var OnPostIconGUI = editorType.GetField("OnPostIconGUI", BindingFlags.Static | BindingFlags.NonPublic);
+		if (OnPostIconGUI == null) {
+			Debug.LogWarning("Could not find OnPostIconGUI field on Editor class.");
+			return;
+		}
+
+		var value = (Delegate)OnPostIconGUI.GetValue(null);
+		OnPostIconGUI.SetValue(null, Delegate.Combine(value, del));
+	}
+
+	static void OnPostIconGUI(UnityEditor.Editor editor, Rect drawRect)
+	{
+		if (editor.target != EditorProfile.Instance.ActiveProfile)
+			return;
+
+		LoadAssets();
+		if (badgeTexture == null)
+			return;
+
+		drawRect.x -= 22;
+		GUI.DrawTexture(drawRect, badgeTexture);
+	}
+
+	static void OnProjectWindowItemOnGUI(string guid, Rect selectionRect)
+	{
+		if (guid != EditorProfile.Instance.ActiveProfileGUID)
+			return;
+		
+		LoadAssets();
+		if (badgeXSTexture == null)
+			return;
+
+		var rect = selectionRect;
+		rect.width = badgeXSTexture.width;
+		rect.height = badgeXSTexture.height;
+		if (selectionRect.width / selectionRect.height > 5) {
+			// List mode (slider to the far left)
+			rect.y += selectionRect.height - rect.height;
+		} else {
+			// Grid mode
+			rect.y = selectionRect.width;
+		}
+
+		GUI.DrawTexture(rect, badgeXSTexture);
+	}
+
 	// -------- Editor --------
 
 	private EditableProfile profile;
@@ -193,11 +286,6 @@ public class ProfileEditor : UnityEditor.Editor
 			}
 			delayedRemovals.Clear();
 		}
-	}
-
-	public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
-	{
-		return null;
 	}
 
 	protected void OnEnable()
