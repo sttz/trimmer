@@ -8,12 +8,13 @@ namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// Base class for <c>EditorProfile</c> and <c>BuildProfile</c>.
+/// Base class for <see cref="EditorProfile"/> and <see cref="BuildProfile"/> to
+/// make sharing common editor code easier.
 /// </summary>
 public abstract class EditableProfile : ScriptableObject
 {
     /// <summary>
-	/// Instances of all options used for editor purposes.
+	/// Instances of all Options, used for editor purposes.
 	/// </summary>
 	/// <remarks>
 	/// These options are used for the editor GUI and should not be
@@ -32,11 +33,33 @@ public abstract class EditableProfile : ScriptableObject
 	}
 	private static List<Option> _allOptions;
 
-    public abstract ValueStore Store { get; }
-    public abstract void SaveIfNeeded();
+	/// <summary>
+	/// The store backing the profile.
+	/// </summary>
+	public abstract ValueStore Store { get; }
+
+	/// <summary>
+	/// Callback to save the profile if it has been changed.
+	/// </summary>
+	public abstract void SaveIfNeeded();
+
+	/// <summary>
+	/// Callback to determine the recursion type to use by the editor.
+	/// </summary>
 	public abstract Recursion.RecursionType GetRecursionType();
-    public abstract IEnumerable<Option> GetAllOptions();
-    public abstract void EditOption(string path, Option option, ValueStore.Node node);
+
+	/// <summary>
+	/// Returns all main Options to be displayed in this profile.
+	/// </summary>
+	public abstract IEnumerable<Option> GetAllOptions();
+
+	/// <summary>
+	/// Show the edit GUI for an Option.
+	/// </summary>
+	/// <param name="path">Path to the Option in the profile</param>
+	/// <param name="option">The shared Option instance</param>
+	/// <param name="node">The store node backing the Option (only when available)</param>
+	public abstract void EditOption(string path, Option option, ValueStore.Node node);
 }
 
 }

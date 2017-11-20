@@ -13,33 +13,24 @@ namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// Build Profile defines available options in builds
-/// and their default values using an ini file.
+/// Build Profiles configure builds. They define which Options are
+/// included, how the Options are configured and give Options a 
+/// chance to influence the build process.
 /// </summary>
 /// <remarks>
-/// <para>A build profile defines which <see cref="Option"/> types
-/// are available in debug or release builds. It defines a set of
-/// scripting define symbols based on those options, which allows to
-/// conditionally compile code (and the options themselves) depending
-/// on the availability of the option in the build.</para>
+/// A project can contain multiple Build Profiles and each profile
+/// can build multiple platforms at once. A Build Profile contains
+/// the configuration values for all Options and configures if an
+/// Option or its associated feature are included in the build.
 /// 
-/// <para>A build profile also defines a set of default values for
-/// thos options using an ini file. Depending on the runtime configuration
-/// of the build profile, the values can be changed at runtime using
-/// a dynamically loaded ini file or using an in-game prompt
-/// (see <see cref="Options.OptionPrompt"/>). If the ini file or prompt are
-/// disabled for a given build, their respective code won't be compiled.</para>
+/// The <see cref="EditorProfile"/> is used to configure the project
+/// when playing in the editor.
 /// 
-/// <para>For regular builds, the <see cref="EditorProfile.ActiveProfile"/>
-/// defines which profile is used. Alternatively, builds can be made with
-/// non-active profiles using <see cref="BuildManager.Build"/>.</para>
+/// In the build, <see cref="Options.OptionPrompt"/> and 
+/// <see cref="Options.OptionIniFile"/> can be used to change the 
+/// included Options' configuration.
 /// 
-/// <para>Changing if an option is included in the build for the active
-/// profile might require the scripting define symbols to be changed, which
-/// requires scripts to be recompiled. Be sure to update the symbols
-/// before doing a build or the latest changes won't be reflected. When
-/// required, the symbols can always be updated when inspecting the active
-/// profile in the editor.</para>
+/// See the <see cref="BuildManager"/> for methods to build profiles.
 /// </remarks>
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
 [HelpURL("http://sttz.ch/")] // TODO: Update
@@ -74,7 +65,7 @@ public class BuildProfile : EditableProfile
 	private static List<BuildProfile> _buildProfiles;
 
 	/// <summary>
-	/// Look for a Build Profile by its name.
+	/// Look for a Build Profile by its name (case insensitive).
 	/// </summary>
 	public static BuildProfile Find(string name)
 	{
@@ -95,21 +86,17 @@ public class BuildProfile : EditableProfile
 		| OptionCapabilities.ConfiguresBuild
 	);
 
-	// ------ Fields ------
-
-	/// <summary>
-	/// The value store containing the values for the profile's options.
-	/// </summary>
-	public ValueStore store = new ValueStore();
-
-	public override ValueStore Store {
-		get {
-			return store;
-		}
-	}
+	// ------ Build Targets ------
 
 	[SerializeField] List<BuildTarget> _buildTargets;
 
+	/// <summary>
+	/// The build targets this profile will create builds for.
+	/// </summary>
+	/// <remarks>
+	/// If the profile doesn't define any targets, this method
+	/// will return the active build target.
+	/// </remarks>
 	public IEnumerable<BuildTarget> BuildTargets {
 		get {
 			if (_buildTargets != null && _buildTargets.Count > 0) {
@@ -126,13 +113,18 @@ public class BuildProfile : EditableProfile
 		}
 	}
 
-	// -------- Methods --------
-
+	/// <summary>
+	/// Returns wether the profile has no explicit build targets set
+	/// and builds the active build target instead.
+	/// </summary>
 	public bool UsesActiveBuildTarget()
 	{
 		return (_buildTargets == null || _buildTargets.Count == 0);
 	}
 
+	/// <summary>
+	/// Add a build target to the profile.
+	/// </summary>
 	public void AddBuildTarget(BuildTarget target)
 	{
 		if (_buildTargets == null) {
@@ -144,26 +136,45 @@ public class BuildProfile : EditableProfile
 		_buildTargets.Add(target);
 	}
 
+	/// <summary>
+	/// Remove a build target form the profile.
+	/// </summary>
+	/// <remarks>
+	/// > [!NOTE]
+	/// > If the profile has no build targets set, it will build the
+	/// > active build target.
+	/// </remarks>
 	public void RemoveBuildTarget(BuildTarget target)
 	{
 		if (_buildTargets == null) return;
 		_buildTargets.Remove(target);
 	}
 
-	/// <summary>
-	/// Mark the scriptable object dirty when necessary.
-	/// </summary>
-	public override void SaveIfNeeded()
-	{
-		if (this == null) return;
+	// ------ Context Menu ------
 
-		if (store.IsDirty(true)) {
-			EditorUtility.SetDirty(this);
-		}
+	[ContextMenu("Copy As Ini File")]
+	public void CopyAsIniFile()
+	{
+		EditorGUIUtility.systemCopyBuffer = IniAdapter.Save(store);
 	}
 
+	[ContextMenu("Paste From Ini File")]
+	public void PasteFromIniFile()
+	{
+		Undo.RecordObject(this, "Paste From Ini File");
+		IniAdapter.Load(store, EditorGUIUtility.systemCopyBuffer);
+	}
+
+	[ContextMenu("Activate Profile")]
+	public void ActivateProfile()
+	{
+		EditorProfile.Instance.ActiveProfile = this;
+	}
+
+	// ------ Build Profile ------
+
 	/// <summary>
-	/// Check if an option should be included in builds of this profile.
+	/// Check if an Option should be included in builds of this profile.
 	/// </summary>
 	public OptionInclusion GetInclusionOf(Option option)
 	{
@@ -188,16 +199,26 @@ public class BuildProfile : EditableProfile
 		}
 	}
 
-	/// <summary>
-	/// Check if there are any options included in the build.
-	/// </summary>
-	public bool HasAvailableOptions()
-	{
-		foreach (var option in AllOptions) {
-			if (GetInclusionOf(option) != OptionInclusion.Remove)
-				return true;
+	// ------ Editable Profile ------
+
+	ValueStore store = new ValueStore();
+
+	public override ValueStore Store {
+		get {
+			return store;
 		}
-		return false;
+	}
+
+	public override void SaveIfNeeded()
+	{
+		// Unity overrides the == operator and this will be true if the profile
+		// has been destroyed
+		if (this == null) return;
+
+		// Make sure changes to the store get serialized
+		if (store.IsDirty(true)) {
+			EditorUtility.SetDirty(this);
+		}
 	}
 
 	public override Recursion.RecursionType GetRecursionType()
@@ -216,28 +237,9 @@ public class BuildProfile : EditableProfile
 		node.Value = option.EditGUI(node.Value);
 	}
 
-	[ContextMenu("Copy As Ini File")]
-	public void CopyAsIniFile()
-	{
-		EditorGUIUtility.systemCopyBuffer = IniAdapter.Save(store);
-	}
-
-	[ContextMenu("Paste From Ini File")]
-	public void PasteFromIniFile()
-	{
-		Undo.RecordObject(this, "Paste From Ini File");
-		IniAdapter.Load(store, EditorGUIUtility.systemCopyBuffer);
-	}
-
-	[ContextMenu("Activate Profile")]
-	public void ActivateProfile()
-	{
-		EditorProfile.Instance.ActiveProfile = this;
-	}
-
 	// -------- Internals --------
 
-	protected virtual void OnEnable()
+	void OnEnable()
 	{
 		// Invalidate AllBuildProfiles when a new one is created
 		if (_buildProfiles != null && !_buildProfiles.Contains(this)) {

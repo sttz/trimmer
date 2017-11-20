@@ -10,21 +10,39 @@ namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// The editor profile is a special unique profile that sets the Options'
-/// values in the editor.
+/// The Editor Profile sets the Options' configuration when 
+/// playing the project in the editor.
 /// </summary>
+/// <remarks>
+/// There is only a single instance of the Editor Profile, use
+/// <see cref="Instance"/> to access it. If you want to use a
+/// Build Profile's configuration in the editor, you can set 
+/// <see cref="EditorSourceProfile"/> to override the configuration.
+/// 
+/// The Editor Profile is saved on a per-project basis inside the project's
+/// Library folder. This means the configuration will be local to a project
+/// and won't get checked into version control (the Library folder should
+/// be ignored). Use <see cref="BuildProfile"/>s to create configurations
+/// that can be checked in.
+/// 
+/// The Editor Profile is also used to save other per-project settings
+/// like the <see cref="ActiveProfile"/> or tracking of the expanded
+/// state (<see cref="IsExpanded"/> and <see cref="SetExpanded"/>).
+/// </remarks>
 [HelpURL("http://sttz.ch/")] // TODO: Update
 public class EditorProfile : EditableProfile
 {
-	// -------- Static --------
+	// -------- Configuration --------
 
 	/// <summary>
-	/// Path to the asset used to save the editor profile in.
+	/// Path to the asset used to store the Editor Profile in.
 	/// </summary>
 	/// <remarks>
 	/// The path is relative to the project's folder.
 	/// </remarks>
 	public const string EDITOR_PROFILE_PATH = "Library/TrimmerEditorProfile.asset";
+
+	// ------ Menu Items ------
 
 	/// <summary>
 	/// Menu item to show the Editor Profile in the inspector.
@@ -50,8 +68,10 @@ public class EditorProfile : EditableProfile
 		return Instance.ActiveProfile != null;
 	}
 
+	// ------ Static ------
+
 	/// <summary>
-	/// The profile used in the editor.
+	/// The Editor Profile singleton instance.
 	/// </summary>
 	public static EditorProfile Instance {
 		get {
@@ -91,8 +111,6 @@ public class EditorProfile : EditableProfile
 		OptionCapabilities.CanPlayInEditor
 		| OptionCapabilities.ExecuteInEditMode
 	);
-
-	// -------- Properties --------
 
 	/// <summary>
 	/// The active profile, which is used for regular Unity builds.
@@ -135,12 +153,12 @@ public class EditorProfile : EditableProfile
 	/// Profile providing the current configuration for the editor.
 	/// </summary>
 	/// <remarks>
-	/// Instead of using the editor's unique configuration values, it's
+	/// Instead of using the editor's unique configuration, it's
 	/// possible to use a Build Profile's configuration instead, allowing to 
 	/// quickly switch between sets of configuration values.
 	/// </remarks>
 	/// <value>
-	/// <c>null</c> when using the editor's own configuration, otherwise the 
+	/// `null` when using the editor's own configuration, otherwise the 
 	/// Build Profile whose configuration is used.
 	/// </value>
 	public BuildProfile EditorSourceProfile {
@@ -169,17 +187,12 @@ public class EditorProfile : EditableProfile
 	}
 	[SerializeField] BuildProfile _editorSourceProfile;
 
-	/// <summary>
-	/// The value store containing the values for the editor profile's options.
-	/// </summary>
-	public ValueStore store = new ValueStore();
+	// -------- Instance --------
 
 	/// <summary>
 	/// Tracks wether the profile needs to be saved to disk.
 	/// </summary>
 	bool profileDirty = false;
-
-	// -------- Methods --------
 
 	public EditorProfile()
 	{
@@ -231,6 +244,9 @@ public class EditorProfile : EditableProfile
 	}
 	#endif
 
+	/// <summary>
+	/// Save back the changes made during play mode on exit (when enabled in prefs).
+	/// </summary>
 	void OnExitingPlayMode()
 	{
 		if (TrimmerPrefs.PlaymodeExitSave && EditorSourceProfile == null) {
@@ -243,19 +259,13 @@ public class EditorProfile : EditableProfile
 	}
 
 	/// <summary>
-	/// Save the editor profile only when it has been changed.
+	/// Save the editor profile.
 	/// </summary>
-	public override void SaveIfNeeded()
-	{
-		if (store.IsDirty(true) || profileDirty) {
-			Save();
-		}
-	}
-
-	/// <summary>
-	/// Save the editor profile. Since it's stored in ProjectSettings,
-	/// it needs to be saved manually.
-	/// </summary>
+	/// <remarks>
+	/// The Editor Profile is saved in the Library folder like other Unity
+	/// per-project configuration assets. It uses public but internal methods
+	/// in `UnityEditorInternal.InternalEditorUtility`.
+	/// </remarks>
 	public void Save()
 	{
 		profileDirty = false;
@@ -268,6 +278,8 @@ public class EditorProfile : EditableProfile
 
 	// ------ EditableProfile ------
 
+	ValueStore store = new ValueStore();
+
 	public override ValueStore Store {
 		get {
 			if (EditorSourceProfile != null) {
@@ -275,6 +287,13 @@ public class EditorProfile : EditableProfile
 			} else {
 				return store;
 			}
+		}
+	}
+
+	public override void SaveIfNeeded()
+	{
+		if (store.IsDirty(true) || profileDirty) {
+			Save();
 		}
 	}
 
@@ -365,6 +384,14 @@ public class EditorProfile : EditableProfile
 	/// </summary>
 	[SerializeField] List<int> expanded = new List<int>();
 
+	/// <summary>
+	/// Mark an identifier to expanded or collapsed.
+	/// </summary>
+	/// <remarks>
+	/// Only expanded identifiers are stored in a list of 
+	/// int hash codes. Setting an identifier to collapsed
+	/// removes it from this list.
+	/// </remarks>
 	public void SetExpanded(string identifier, bool isExpanded)
 	{
 		var hash = identifier.GetHashCode();
@@ -378,6 +405,9 @@ public class EditorProfile : EditableProfile
 		}
 	}
 
+	/// <summary>
+	/// Return wether a given identifier is expanded.
+	/// </summary>
 	public bool IsExpanded(string identifier)
 	{
 		var hash = identifier.GetHashCode();
