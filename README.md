@@ -26,17 +26,8 @@ In the editor, Trimmer provides a simple GUI interface to configure your Options
 ### [Full Documentation](https://sttz.ch/trimmer/)
 
 ### Screenshots
-<style>
-.screennshots img {
-    max-width: 325px;
-}
-</style>
-<span class="screennshots">
 
-![Build Profile](https://sttz.ch/trimmer/images/build_profile.png) 
-![Editor Profile](https://sttz.ch/trimmer/images/editor_profile.png)
-
-</span>
+<img src="https://sttz.ch/trimmer/images/build_profile.png" width="325" /> <img src="https://sttz.ch/trimmer/images/editor_profile.png" width="325" />
 
 ### License
 Trimmer is licensed under the GPLv3. A commercial license will be available later on the Unity Asset Store.
