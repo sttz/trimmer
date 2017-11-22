@@ -41,95 +41,95 @@ namespace sttz.Trimmer
 /// </remarks>
 public class ProfileContainer : MonoBehaviour
 {
-	// ------ Profile Store ------
+    // ------ Profile Store ------
 
-	/// <summary>
-	/// Field for the store which Unity will serialize in the build.
-	/// </summary>
-	public ValueStore store;
+    /// <summary>
+    /// Field for the store which Unity will serialize in the build.
+    /// </summary>
+    public ValueStore store;
 
-	// ------ Object References ------
+    // ------ Object References ------
 
-	[SerializeField] List<string> referenceGUIDs;
-	[SerializeField] List<Object> references;
+    [SerializeField] List<string> referenceGUIDs;
+    [SerializeField] List<Object> references;
 
-	/// <summary>
-	/// Add an Unity object reference to be included in the build.
-	/// </summary>
-	/// <remarks>
-	/// This method can be called during the <see cref="Option.PostprocessScene*"/> callback 
-	/// of the first scene (`scene.buildIndex` is 0) to add Unity object references
-	/// that can then be recalled in the build using <see cref="GetReference"/>.
-	/// </remarks>
-	public void AddReference(string guid, Object reference)
-	{
-		if (referenceGUIDs == null) referenceGUIDs = new List<string>();
-		if (references == null) references = new List<Object>();
+    /// <summary>
+    /// Add an Unity object reference to be included in the build.
+    /// </summary>
+    /// <remarks>
+    /// This method can be called during the <see cref="Option.PostprocessScene*"/> callback 
+    /// of the first scene (`scene.buildIndex` is 0) to add Unity object references
+    /// that can then be recalled in the build using <see cref="GetReference"/>.
+    /// </remarks>
+    public void AddReference(string guid, Object reference)
+    {
+        if (referenceGUIDs == null) referenceGUIDs = new List<string>();
+        if (references == null) references = new List<Object>();
 
-		Assert.AreEqual(referenceGUIDs.Count, references.Count, "GUID/Reference lists are out of sync");
+        Assert.AreEqual(referenceGUIDs.Count, references.Count, "GUID/Reference lists are out of sync");
 
-		var index = referenceGUIDs.IndexOf(guid);
-		if (index >= 0) {
-			references[index] = reference;
-		} else {
-			referenceGUIDs.Add(guid);
-			references.Add(reference);
-		}
-	}
+        var index = referenceGUIDs.IndexOf(guid);
+        if (index >= 0) {
+            references[index] = reference;
+        } else {
+            referenceGUIDs.Add(guid);
+            references.Add(reference);
+        }
+    }
 
-	/// <summary>
-	/// Get a Unity object reference in the build.
-	/// </summary>
-	/// <remarks>
-	/// The reference needs to have been added using <see cref="AddReference"/> during
-	/// the build.
-	/// </remarks>
-	public T GetReference<T>(string guid) where T : Object
-	{
-		if (referenceGUIDs == null || referenceGUIDs == null || referenceGUIDs.Count != references.Count)
-			return null;
-		
-		for (int i = 0; i < referenceGUIDs.Count; i++) {
-			if (referenceGUIDs[i].EqualsIgnoringCase(guid)) {
-				return references[i] as T;
-			}
-		}
+    /// <summary>
+    /// Get a Unity object reference in the build.
+    /// </summary>
+    /// <remarks>
+    /// The reference needs to have been added using <see cref="AddReference"/> during
+    /// the build.
+    /// </remarks>
+    public T GetReference<T>(string guid) where T : Object
+    {
+        if (referenceGUIDs == null || referenceGUIDs == null || referenceGUIDs.Count != references.Count)
+            return null;
+        
+        for (int i = 0; i < referenceGUIDs.Count; i++) {
+            if (referenceGUIDs[i].EqualsIgnoringCase(guid)) {
+                return references[i] as T;
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	// ------ Behaviour ------
+    // ------ Behaviour ------
 
-	/// <summary>
-	/// The shared instance of the profile container.
-	/// </summary>
-	/// <remarks>
-	/// This instance is set in the player but not when playing in the editor.
-	/// 
-	/// During build, the shared instance is also set when building the first
-	/// scene (to add references to the build) but not when building 
-	/// subsequent scenes.
-	/// 
-	/// To access the runtime profile, use <see cref="RuntimeProfile.Main"/>.
-	/// </remarks>
-	public static ProfileContainer Instance { get; set; }
+    /// <summary>
+    /// The shared instance of the profile container.
+    /// </summary>
+    /// <remarks>
+    /// This instance is set in the player but not when playing in the editor.
+    /// 
+    /// During build, the shared instance is also set when building the first
+    /// scene (to add references to the build) but not when building 
+    /// subsequent scenes.
+    /// 
+    /// To access the runtime profile, use <see cref="RuntimeProfile.Main"/>.
+    /// </remarks>
+    public static ProfileContainer Instance { get; set; }
 
-	void OnEnable()
-	{
-		if (Instance != null) {
-			Debug.LogWarning("Multiple ProfileContainers loaded!");
-			DestroyImmediate(gameObject);
-			return;
-		}
+    void OnEnable()
+    {
+        if (Instance != null) {
+            Debug.LogWarning("Multiple ProfileContainers loaded!");
+            DestroyImmediate(gameObject);
+            return;
+        }
 
-		Instance = this;
-		DontDestroyOnLoad(gameObject);
-		
-		if (RuntimeProfile.Main == null) {
-			RuntimeProfile.CreateMain(store);
-			RuntimeProfile.Main.Apply();
-		}
-	}
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        
+        if (RuntimeProfile.Main == null) {
+            RuntimeProfile.CreateMain(store);
+            RuntimeProfile.Main.Apply();
+        }
+    }
 }
 
 }

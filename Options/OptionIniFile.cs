@@ -52,21 +52,21 @@ namespace sttz.Trimmer.Options
 [Capabilities(OptionCapabilities.CanIncludeOption)]
 public class OptionIniFile : OptionString
 {
-	protected override void Configure()
-	{
+    protected override void Configure()
+    {
         Category = "Configuration";
-		DefaultValue = "wb.ini";
+        DefaultValue = "wb.ini";
         ApplyOrder = -1000;
-	}
+    }
 
-	public override void Apply()
-	{
-		base.Apply();
+    public override void Apply()
+    {
+        base.Apply();
 
         if (!Application.isEditor) {
             LoadIniFile();
         }
-	}
+    }
 
     /// <summary>
     /// Look for an ini file in the configured search path(s).
@@ -121,13 +121,13 @@ public class OptionIniFile : OptionString
     /// <summary>
     /// <see cref="OptionIniFile"/>
     /// </summary>
-	public class OptionSearchPath : OptionString
-	{
-		protected override void Configure()
-		{
-			DefaultValue = ".";
-		}
-	}
+    public class OptionSearchPath : OptionString
+    {
+        protected override void Configure()
+        {
+            DefaultValue = ".";
+        }
+    }
 }
 
 }

@@ -33,28 +33,28 @@ namespace sttz.Trimmer.Options
 [Capabilities(OptionCapabilities.ConfiguresBuild)]
 public class OptionBuildSettings : OptionEnum<BuildOptions>
 {
-	protected override void Configure()
-	{
+    protected override void Configure()
+    {
         Category = "Build";
         IsMask = true;
-	}
+    }
 
-	public class OptionBuildPath : OptionString
-	{
-		protected override void Configure()
-		{
-			DefaultValue = "Export/%Target%/%ProductName%";
-		}
-	}
+    public class OptionBuildPath : OptionString
+    {
+        protected override void Configure()
+        {
+            DefaultValue = "Export/%Target%/%ProductName%";
+        }
+    }
 
     public class OptionScenes : OptionAsset<SceneAsset>
-	{
-		protected override void Configure()
-		{
+    {
+        protected override void Configure()
+        {
             Variance = OptionVariance.Array;
             VariantDefaultParameter = "0";
-		}
-	}
+        }
+    }
 
     /// <summary>
     /// Replace special variables in a ini file path.
@@ -105,8 +105,8 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// We implement a custom menu here to work around this and can also hide
     /// some obsolete options (which have been set to 0) and sort them alphabetically.
     /// </summary>
-	public override string EditGUI(string input)
-	{
+    public override string EditGUI(string input)
+    {
         var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
         if (GUILayout.Button(input, "MiniPullDown")) {
             if (optionValues == null) {
@@ -135,9 +135,9 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
             pendingUpdates.Remove(nextControlID);
         }
 
-		return input;
-	}
-	#endif
+        return input;
+    }
+    #endif
 }
 
 }

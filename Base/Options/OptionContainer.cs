@@ -37,23 +37,23 @@ namespace sttz.Trimmer.BaseOptions
 /// </remarks>
 public abstract class OptionContainer : Option
 {
-	#if UNITY_EDITOR
-	public override string EditGUI(string input)
-	{
-		GUILayout.FlexibleSpace();
-		return input;
-	}
-	#endif
+    #if UNITY_EDITOR
+    public override string EditGUI(string input)
+    {
+        GUILayout.FlexibleSpace();
+        return input;
+    }
+    #endif
 
-	override public void Load(string input)
-	{
-		// NOP
-	}
+    override public void Load(string input)
+    {
+        // NOP
+    }
 
-	override public string Save()
-	{
-		return string.Empty;
-	}
+    override public string Save()
+    {
+        return string.Empty;
+    }
 }
 
 }

@@ -37,39 +37,39 @@ namespace sttz.Trimmer.BaseOptions
 /// </remarks>
 public abstract class OptionToggle : Option<bool>
 {
-	#if UNITY_EDITOR
-	public override string EditGUI(string input)
-	{
-		return Save(EditorGUILayout.Toggle(Parse(input)));
-	}
-	#endif
+    #if UNITY_EDITOR
+    public override string EditGUI(string input)
+    {
+        return Save(EditorGUILayout.Toggle(Parse(input)));
+    }
+    #endif
 
-	static string[] trueStrings = new string[] {
-		"yes", "true", "y", "1"
-	};
+    static string[] trueStrings = new string[] {
+        "yes", "true", "y", "1"
+    };
 
-	override public bool Parse(string input)
-	{
-		if (string.IsNullOrEmpty(input))
-			return DefaultValue;
+    override public bool Parse(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return DefaultValue;
 
-		return Array.FindIndex(trueStrings, s => s.Equals(input, StringComparison.OrdinalIgnoreCase)) >= 0;
-	}
+        return Array.FindIndex(trueStrings, s => s.Equals(input, StringComparison.OrdinalIgnoreCase)) >= 0;
+    }
 
-	override public void Load(string input)
-	{
-		Value = Parse(input);
-	}
+    override public void Load(string input)
+    {
+        Value = Parse(input);
+    }
 
-	override public string Save(bool input)
-	{
-		return input ? "yes" : "no";
-	}
+    override public string Save(bool input)
+    {
+        return input ? "yes" : "no";
+    }
 
-	override public string Save()
-	{
-		return Save(Value);
-	}
+    override public string Save()
+    {
+        return Save(Value);
+    }
 }
 
 }

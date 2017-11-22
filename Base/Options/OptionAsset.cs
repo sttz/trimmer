@@ -52,78 +52,78 @@ namespace sttz.Trimmer.BaseOptions
 /// </remarks>
 public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
-	#if UNITY_EDITOR
-	public override string EditGUI(string input)
-	{
-		return Save((TUnity)EditorGUILayout.ObjectField(Parse(input), typeof(TUnity), false));
-	}
+    #if UNITY_EDITOR
+    public override string EditGUI(string input)
+    {
+        return Save((TUnity)EditorGUILayout.ObjectField(Parse(input), typeof(TUnity), false));
+    }
 
-	override public void PostprocessScene(Scene scene, OptionInclusion inclusion)
-	{
-		base.PostprocessScene(scene, inclusion);
+    override public void PostprocessScene(Scene scene, OptionInclusion inclusion)
+    {
+        base.PostprocessScene(scene, inclusion);
 
-		// Only include reference when Opotion is included,
-		// we're building the first scene and a reference is set
-		if ((inclusion & OptionInclusion.Option) != 0
-				&& scene.buildIndex == 0 
-				&& ProfileContainer.Instance != null
-				&& Value != null && !string.IsNullOrEmpty(GuidValue)) {
-			ProfileContainer.Instance.AddReference(GuidValue, Value);
-		}
-	}
-	#endif
+        // Only include reference when Opotion is included,
+        // we're building the first scene and a reference is set
+        if ((inclusion & OptionInclusion.Option) != 0
+                && scene.buildIndex == 0 
+                && ProfileContainer.Instance != null
+                && Value != null && !string.IsNullOrEmpty(GuidValue)) {
+            ProfileContainer.Instance.AddReference(GuidValue, Value);
+        }
+    }
+    #endif
 
-	public string GuidValue { get; protected set; }
+    public string GuidValue { get; protected set; }
 
-	override public TUnity Parse(string input)
-	{
-		if (string.IsNullOrEmpty(input))
-			return DefaultValue;
+    override public TUnity Parse(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return DefaultValue;
 
-		#if UNITY_EDITOR
+        #if UNITY_EDITOR
 
-		var path = AssetDatabase.GUIDToAssetPath(input);
-		if (string.IsNullOrEmpty(path))
-			return DefaultValue;
+        var path = AssetDatabase.GUIDToAssetPath(input);
+        if (string.IsNullOrEmpty(path))
+            return DefaultValue;
 
-		var asset = (TUnity)AssetDatabase.LoadAssetAtPath(path, typeof(TUnity));
-		return asset;
+        var asset = (TUnity)AssetDatabase.LoadAssetAtPath(path, typeof(TUnity));
+        return asset;
 
-		#else
-		
-		return ProfileContainer.Instance.GetReference<TUnity>(input);
-		
-		#endif
-	}
+        #else
+        
+        return ProfileContainer.Instance.GetReference<TUnity>(input);
+        
+        #endif
+    }
 
-	public override void Load(string input)
-	{
-		GuidValue = input;
-		Value = Parse(input);
-	}
+    public override void Load(string input)
+    {
+        GuidValue = input;
+        Value = Parse(input);
+    }
 
-	override public string Save(TUnity input)
-	{
-		#if UNITY_EDITOR
+    override public string Save(TUnity input)
+    {
+        #if UNITY_EDITOR
 
-		var path = AssetDatabase.GetAssetPath(input);
-		if (string.IsNullOrEmpty(path))
-			return string.Empty;
+        var path = AssetDatabase.GetAssetPath(input);
+        if (string.IsNullOrEmpty(path))
+            return string.Empty;
 
-		var guid = AssetDatabase.AssetPathToGUID(path);
-		return guid;
+        var guid = AssetDatabase.AssetPathToGUID(path);
+        return guid;
 
-		#else
+        #else
 
-		return GuidValue;
+        return GuidValue;
 
-		#endif
-	}
+        #endif
+    }
 
-	public override string Save()
-	{
-		return Save(Value);
-	}
+    public override string Save()
+    {
+        return Save(Value);
+    }
 }
 
 }

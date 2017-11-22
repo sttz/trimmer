@@ -33,40 +33,40 @@ namespace sttz.Trimmer.BaseOptions
 /// </summary>
 public abstract class OptionString : Option<string>
 {
-	#if UNITY_EDITOR
-	public override string EditGUI(string input)
-	{
-		return Save(EditorGUILayout.DelayedTextField(Parse(input)));
-	}
-	#endif
+    #if UNITY_EDITOR
+    public override string EditGUI(string input)
+    {
+        return Save(EditorGUILayout.DelayedTextField(Parse(input)));
+    }
+    #endif
 
-	public OptionString() : base()
-	{
-		DefaultValue = string.Empty;
-	}
+    public OptionString() : base()
+    {
+        DefaultValue = string.Empty;
+    }
 
-	override public string Parse(string input)
-	{
-		if (string.IsNullOrEmpty(input))
-			return DefaultValue;
+    override public string Parse(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return DefaultValue;
 
-		return input;
-	}
+        return input;
+    }
 
-	override public void Load(string input)
-	{
-		Value = input;
-	}
+    override public void Load(string input)
+    {
+        Value = input;
+    }
 
-	override public string Save(string input)
-	{
-		return input;
-	}
+    override public string Save(string input)
+    {
+        return input;
+    }
 
-	override public string Save()
-	{
-		return Value;
-	}
+    override public string Save()
+    {
+        return Value;
+    }
 }
 
 }

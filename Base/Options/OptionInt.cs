@@ -37,58 +37,58 @@ namespace sttz.Trimmer.BaseOptions
 /// </remarks>
 public abstract class OptionInt : Option<int>
 {
-	#if UNITY_EDITOR
-	public override string EditGUI(string input)
-	{
-		if (MinValue != null && MaxValue != null) {
-			return Save(EditorGUILayout.IntSlider(Parse(input), (int)MinValue, (int)MaxValue));
-		} else {
-			return Save(EditorGUILayout.IntField(Parse(input)));
-		}
-	}
-	#endif
+    #if UNITY_EDITOR
+    public override string EditGUI(string input)
+    {
+        if (MinValue != null && MaxValue != null) {
+            return Save(EditorGUILayout.IntSlider(Parse(input), (int)MinValue, (int)MaxValue));
+        } else {
+            return Save(EditorGUILayout.IntField(Parse(input)));
+        }
+    }
+    #endif
 
-	/// <summary>
-	/// The minimum value of the int (must be set together with <see cref="MaxValue"/>).
-	/// </summary>
-	public int? MinValue { get; set; }
+    /// <summary>
+    /// The minimum value of the int (must be set together with <see cref="MaxValue"/>).
+    /// </summary>
+    public int? MinValue { get; set; }
 
-	/// <summary>
-	/// The maximum value of the int (must be set together with <see cref="MinValue"/>).
-	/// </summary>
-	public int? MaxValue { get; set; }
+    /// <summary>
+    /// The maximum value of the int (must be set together with <see cref="MinValue"/>).
+    /// </summary>
+    public int? MaxValue { get; set; }
 
-	override public int Parse(string input)
-	{
-		if (string.IsNullOrEmpty(input))
-			return DefaultValue;
+    override public int Parse(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return DefaultValue;
 
-		int result;
-		if (int.TryParse(input, out result)) {
-			if (MinValue != null && MaxValue != null) {
-				return Math.Min(Math.Max((int)MinValue, result), (int)MaxValue);
-			} else {
-				return result;
-			}
-		} else {
-			return DefaultValue;
-		}
-	}
+        int result;
+        if (int.TryParse(input, out result)) {
+            if (MinValue != null && MaxValue != null) {
+                return Math.Min(Math.Max((int)MinValue, result), (int)MaxValue);
+            } else {
+                return result;
+            }
+        } else {
+            return DefaultValue;
+        }
+    }
 
-	override public void Load(string input)
-	{
-		Value = Parse(input);
-	}
+    override public void Load(string input)
+    {
+        Value = Parse(input);
+    }
 
-	override public string Save(int input)
-	{
-		return input.ToString();
-	}
+    override public string Save(int input)
+    {
+        return input.ToString();
+    }
 
-	override public string Save()
-	{
-		return Save(Value);
-	}
+    override public string Save()
+    {
+        return Save(Value);
+    }
 }
 
 }

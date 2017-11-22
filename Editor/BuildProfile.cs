@@ -54,203 +54,203 @@ namespace sttz.Trimmer.Editor
 [HelpURL("http://sttz.ch/")] // TODO: Update
 public class BuildProfile : EditableProfile
 {
-	// -------- Static --------
+    // -------- Static --------
 
-	/// <summary>
-	/// Enumeration of all build profiles in the current project.
-	/// </summary>
-	public static IEnumerable<BuildProfile> AllBuildProfiles {
-		get {
-			if (_buildProfiles == null || _buildProfiles.Any(p => p == null)) {
-				_buildProfiles = null;
+    /// <summary>
+    /// Enumeration of all build profiles in the current project.
+    /// </summary>
+    public static IEnumerable<BuildProfile> AllBuildProfiles {
+        get {
+            if (_buildProfiles == null || _buildProfiles.Any(p => p == null)) {
+                _buildProfiles = null;
 
-				var profiles = new List<BuildProfile>();
-				var guids = AssetDatabase.FindAssets("t:BuildProfile");
-				foreach (var guid in guids) {
-					var path = AssetDatabase.GUIDToAssetPath(guid);
-					var profile = AssetDatabase.LoadAssetAtPath(path, typeof(BuildProfile));
-					profiles.Add((BuildProfile)profile);
-				}
+                var profiles = new List<BuildProfile>();
+                var guids = AssetDatabase.FindAssets("t:BuildProfile");
+                foreach (var guid in guids) {
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    var profile = AssetDatabase.LoadAssetAtPath(path, typeof(BuildProfile));
+                    profiles.Add((BuildProfile)profile);
+                }
 
-				// Assign _buildProfiles only here because LoadAssetAtPath will cause
-				// the newly loaded profile's OnEnable to be called, which will check
-				// to invalidate _buildProfiles.
-				_buildProfiles = profiles;
-			}
-			return _buildProfiles;
-		}
-	}
-	private static List<BuildProfile> _buildProfiles;
+                // Assign _buildProfiles only here because LoadAssetAtPath will cause
+                // the newly loaded profile's OnEnable to be called, which will check
+                // to invalidate _buildProfiles.
+                _buildProfiles = profiles;
+            }
+            return _buildProfiles;
+        }
+    }
+    private static List<BuildProfile> _buildProfiles;
 
-	/// <summary>
-	/// Look for a Build Profile by its name (case insensitive).
-	/// </summary>
-	public static BuildProfile Find(string name)
-	{
-		return AllBuildProfiles
-			.Where(p => p.name.EqualsIgnoringCase(name))
-			.FirstOrDefault();
-	}
+    /// <summary>
+    /// Look for a Build Profile by its name (case insensitive).
+    /// </summary>
+    public static BuildProfile Find(string name)
+    {
+        return AllBuildProfiles
+            .Where(p => p.name.EqualsIgnoringCase(name))
+            .FirstOrDefault();
+    }
 
-	static BuildTarget[] activeBuildTarget;
+    static BuildTarget[] activeBuildTarget;
 
-	/// <summary>
-	/// Option needs to have one of these capabilities to be 
-	/// displayed in Build Profiles.
-	/// </summary>
-	const OptionCapabilities requiredCapabilities = (
-		OptionCapabilities.HasAssociatedFeature
-		| OptionCapabilities.CanIncludeOption
-		| OptionCapabilities.ConfiguresBuild
-	);
+    /// <summary>
+    /// Option needs to have one of these capabilities to be 
+    /// displayed in Build Profiles.
+    /// </summary>
+    const OptionCapabilities requiredCapabilities = (
+        OptionCapabilities.HasAssociatedFeature
+        | OptionCapabilities.CanIncludeOption
+        | OptionCapabilities.ConfiguresBuild
+    );
 
-	// ------ Build Targets ------
+    // ------ Build Targets ------
 
-	[SerializeField] List<BuildTarget> _buildTargets;
+    [SerializeField] List<BuildTarget> _buildTargets;
 
-	/// <summary>
-	/// The build targets this profile will create builds for.
-	/// </summary>
-	/// <remarks>
-	/// If the profile doesn't define any targets, this method
-	/// will return the active build target.
-	/// </remarks>
-	public IEnumerable<BuildTarget> BuildTargets {
-		get {
-			if (_buildTargets != null && _buildTargets.Count > 0) {
-				return _buildTargets;
-			} else {
-				if (activeBuildTarget == null 
-						|| activeBuildTarget[0] != EditorUserBuildSettings.activeBuildTarget) {
-					activeBuildTarget = new BuildTarget[] {
-						EditorUserBuildSettings.activeBuildTarget
-					};
-				}
-				return activeBuildTarget;
-			}
-		}
-	}
+    /// <summary>
+    /// The build targets this profile will create builds for.
+    /// </summary>
+    /// <remarks>
+    /// If the profile doesn't define any targets, this method
+    /// will return the active build target.
+    /// </remarks>
+    public IEnumerable<BuildTarget> BuildTargets {
+        get {
+            if (_buildTargets != null && _buildTargets.Count > 0) {
+                return _buildTargets;
+            } else {
+                if (activeBuildTarget == null 
+                        || activeBuildTarget[0] != EditorUserBuildSettings.activeBuildTarget) {
+                    activeBuildTarget = new BuildTarget[] {
+                        EditorUserBuildSettings.activeBuildTarget
+                    };
+                }
+                return activeBuildTarget;
+            }
+        }
+    }
 
-	/// <summary>
-	/// Returns wether the profile has no explicit build targets set
-	/// and builds the active build target instead.
-	/// </summary>
-	public bool UsesActiveBuildTarget()
-	{
-		return (_buildTargets == null || _buildTargets.Count == 0);
-	}
+    /// <summary>
+    /// Returns wether the profile has no explicit build targets set
+    /// and builds the active build target instead.
+    /// </summary>
+    public bool UsesActiveBuildTarget()
+    {
+        return (_buildTargets == null || _buildTargets.Count == 0);
+    }
 
-	/// <summary>
-	/// Add a build target to the profile.
-	/// </summary>
-	public void AddBuildTarget(BuildTarget target)
-	{
-		if (_buildTargets == null) {
-			_buildTargets = new List<BuildTarget>();
-		} else if (_buildTargets.Contains(target)) {
-			return;
-		}
+    /// <summary>
+    /// Add a build target to the profile.
+    /// </summary>
+    public void AddBuildTarget(BuildTarget target)
+    {
+        if (_buildTargets == null) {
+            _buildTargets = new List<BuildTarget>();
+        } else if (_buildTargets.Contains(target)) {
+            return;
+        }
 
-		_buildTargets.Add(target);
-	}
+        _buildTargets.Add(target);
+    }
 
-	/// <summary>
-	/// Remove a build target form the profile.
-	/// </summary>
-	/// <remarks>
-	/// > [!NOTE]
-	/// > If the profile has no build targets set, it will build the
-	/// > active build target.
-	/// </remarks>
-	public void RemoveBuildTarget(BuildTarget target)
-	{
-		if (_buildTargets == null) return;
-		_buildTargets.Remove(target);
-	}
+    /// <summary>
+    /// Remove a build target form the profile.
+    /// </summary>
+    /// <remarks>
+    /// > [!NOTE]
+    /// > If the profile has no build targets set, it will build the
+    /// > active build target.
+    /// </remarks>
+    public void RemoveBuildTarget(BuildTarget target)
+    {
+        if (_buildTargets == null) return;
+        _buildTargets.Remove(target);
+    }
 
-	// ------ Context Menu ------
+    // ------ Context Menu ------
 
-	[ContextMenu("Activate Profile")]
-	public void ActivateProfile()
-	{
-		EditorProfile.Instance.ActiveProfile = this;
-	}
+    [ContextMenu("Activate Profile")]
+    public void ActivateProfile()
+    {
+        EditorProfile.Instance.ActiveProfile = this;
+    }
 
-	// ------ Build Profile ------
+    // ------ Build Profile ------
 
-	/// <summary>
-	/// Check if an Option should be included in builds of this profile.
-	/// </summary>
-	public OptionInclusion GetInclusionOf(Option option)
-	{
-		var node = store.GetRoot(option.Name);
-		if (node == null) {
-			return OptionInclusion.Remove;
-		} else {
-			if (!option.IsAvailable(BuildTargets))
-				return OptionInclusion.Remove;
-			
-			var inclusion = node.Inclusion;
-			if ((option.Capabilities & OptionCapabilities.CanIncludeOption) == 0) {
-				inclusion &= ~OptionInclusion.Option;
-			}
-			if ((option.Capabilities & OptionCapabilities.HasAssociatedFeature) == 0) {
-				inclusion &= ~OptionInclusion.Feature;
-			} else if (inclusion == OptionInclusion.Feature && !option.ShouldIncludeOnlyFeature()) {
-				inclusion &= ~OptionInclusion.Feature;
-			}
-			
-			return inclusion;
-		}
-	}
+    /// <summary>
+    /// Check if an Option should be included in builds of this profile.
+    /// </summary>
+    public OptionInclusion GetInclusionOf(Option option)
+    {
+        var node = store.GetRoot(option.Name);
+        if (node == null) {
+            return OptionInclusion.Remove;
+        } else {
+            if (!option.IsAvailable(BuildTargets))
+                return OptionInclusion.Remove;
+            
+            var inclusion = node.Inclusion;
+            if ((option.Capabilities & OptionCapabilities.CanIncludeOption) == 0) {
+                inclusion &= ~OptionInclusion.Option;
+            }
+            if ((option.Capabilities & OptionCapabilities.HasAssociatedFeature) == 0) {
+                inclusion &= ~OptionInclusion.Feature;
+            } else if (inclusion == OptionInclusion.Feature && !option.ShouldIncludeOnlyFeature()) {
+                inclusion &= ~OptionInclusion.Feature;
+            }
+            
+            return inclusion;
+        }
+    }
 
-	// ------ Editable Profile ------
+    // ------ Editable Profile ------
 
-	[SerializeField] ValueStore store = new ValueStore();
+    [SerializeField] ValueStore store = new ValueStore();
 
-	public override ValueStore Store {
-		get {
-			return store;
-		}
-	}
+    public override ValueStore Store {
+        get {
+            return store;
+        }
+    }
 
-	public override void SaveIfNeeded()
-	{
-		// Unity overrides the == operator and this will be true if the profile
-		// has been destroyed
-		if (this == null) return;
+    public override void SaveIfNeeded()
+    {
+        // Unity overrides the == operator and this will be true if the profile
+        // has been destroyed
+        if (this == null) return;
 
-		// Make sure changes to the store get serialized
-		if (store.IsDirty(true)) {
-			EditorUtility.SetDirty(this);
-		}
-	}
+        // Make sure changes to the store get serialized
+        if (store.IsDirty(true)) {
+            EditorUtility.SetDirty(this);
+        }
+    }
 
-	public override Recursion.RecursionType GetRecursionType()
-	{
-		return Recursion.RecursionType.Nodes;
-	}
+    public override Recursion.RecursionType GetRecursionType()
+    {
+        return Recursion.RecursionType.Nodes;
+    }
 
-	public override IEnumerable<Option> GetAllOptions()
-	{
-		return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
-	}
+    public override IEnumerable<Option> GetAllOptions()
+    {
+        return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
+    }
 
-	public override void EditOption(string path, Option option, ValueStore.Node node)
-	{
-		// For build profiles, the store is always directly edited.
-		node.Value = option.EditGUI(node.Value);
-	}
+    public override void EditOption(string path, Option option, ValueStore.Node node)
+    {
+        // For build profiles, the store is always directly edited.
+        node.Value = option.EditGUI(node.Value);
+    }
 
-	// -------- Internals --------
+    // -------- Internals --------
 
-	void OnEnable()
-	{
-		// Invalidate AllBuildProfiles when a new one is created
-		if (_buildProfiles != null && !_buildProfiles.Contains(this)) {
-			_buildProfiles = null;
-		}
-	}
+    void OnEnable()
+    {
+        // Invalidate AllBuildProfiles when a new one is created
+        if (_buildProfiles != null && !_buildProfiles.Contains(this)) {
+            _buildProfiles = null;
+        }
+    }
 }
 
 }

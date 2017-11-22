@@ -33,119 +33,119 @@ namespace sttz.Trimmer.Extensions
 /// </summary>
 public static class Extensions
 {
-	/// <summary>
-	/// Prepend a value to a sequence of values.
-	/// </summary>
-	public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> values, TSource value)
-	{
-		yield return value;
-		foreach (TSource item in values) {
-			yield return item;
-		}
-	}
+    /// <summary>
+    /// Prepend a value to a sequence of values.
+    /// </summary>
+    public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> values, TSource value)
+    {
+        yield return value;
+        foreach (TSource item in values) {
+            yield return item;
+        }
+    }
 
-	/// <summary>
-	/// Append a value to a sequence of values.
-	/// </summary>
-	public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> values, TSource value)
-	{
-		foreach (TSource item in values) {
-			yield return item;
-		}
-		yield return value;
-	}
+    /// <summary>
+    /// Append a value to a sequence of values.
+    /// </summary>
+    public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> values, TSource value)
+    {
+        foreach (TSource item in values) {
+            yield return item;
+        }
+        yield return value;
+    }
 
-	/// <summary>
-	/// Add all elements from an enumerable to the collection.
-	/// </summary>
-	public static void AddRange<TSource>(this ICollection<TSource> collection, IEnumerable<TSource> elements)
-	{
-		foreach (var element in elements) {
-			collection.Add(element);
-		}
-	}
+    /// <summary>
+    /// Add all elements from an enumerable to the collection.
+    /// </summary>
+    public static void AddRange<TSource>(this ICollection<TSource> collection, IEnumerable<TSource> elements)
+    {
+        foreach (var element in elements) {
+            collection.Add(element);
+        }
+    }
 
-	/// <summary>
-	/// Struct used in <see cref="IterateWith"/> to iterate two
-	/// IEnumerables together.
-	/// </summary>
-	public struct Pair<TFirst, TSecond>
-	{
-		public TFirst First { get; private set; }
-		public TSecond Second { get; private set; }
+    /// <summary>
+    /// Struct used in <see cref="IterateWith"/> to iterate two
+    /// IEnumerables together.
+    /// </summary>
+    public struct Pair<TFirst, TSecond>
+    {
+        public TFirst First { get; private set; }
+        public TSecond Second { get; private set; }
 
-		public Pair(TFirst first, TSecond second)
-		{
-			First = first;
-			Second = second;
-		}
-	}
+        public Pair(TFirst first, TSecond second)
+        {
+            First = first;
+            Second = second;
+        }
+    }
 
-	/// <summary>
-	/// Iterate two enumerations together, ending whenever one of the
-	/// enumerations reaches its end.
-	/// </summary>
-	public static IEnumerable<Pair<TFirst, TSecond>> IterateWith<TFirst, TSecond>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second)
-	{
-		var firstEnumerator = first.GetEnumerator();
-		var secondEnumerator = second.GetEnumerator();
+    /// <summary>
+    /// Iterate two enumerations together, ending whenever one of the
+    /// enumerations reaches its end.
+    /// </summary>
+    public static IEnumerable<Pair<TFirst, TSecond>> IterateWith<TFirst, TSecond>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second)
+    {
+        var firstEnumerator = first.GetEnumerator();
+        var secondEnumerator = second.GetEnumerator();
 
-		while (firstEnumerator.MoveNext() && secondEnumerator.MoveNext()) {
-			yield return new Pair<TFirst, TSecond>(firstEnumerator.Current, secondEnumerator.Current);
-		}
-	}
+        while (firstEnumerator.MoveNext() && secondEnumerator.MoveNext()) {
+            yield return new Pair<TFirst, TSecond>(firstEnumerator.Current, secondEnumerator.Current);
+        }
+    }
 
-	/// <summary>
-	/// Join together a enumerable of strings.
-	/// </summary>
-	public static string Join(this IEnumerable<string> collection, string separator = ", ")
-	{
-		if (collection == null || !collection.Any())
-			return string.Empty;
-		
-		return collection.Aggregate((c, n) => c + separator + n);
-	}
+    /// <summary>
+    /// Join together a enumerable of strings.
+    /// </summary>
+    public static string Join(this IEnumerable<string> collection, string separator = ", ")
+    {
+        if (collection == null || !collection.Any())
+            return string.Empty;
+        
+        return collection.Aggregate((c, n) => c + separator + n);
+    }
 
-	/// <summary>
-	/// Equalses the ignoring case.
-	/// </summary>
-	public static bool EqualsIgnoringCase(this string first, string second)
-	{
-		return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
-	}
+    /// <summary>
+    /// Equalses the ignoring case.
+    /// </summary>
+    public static bool EqualsIgnoringCase(this string first, string second)
+    {
+        return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
+    }
 
-	/// <summary>
-	/// Replace all occurences of a string by a new value, ignoring the case
-	/// of the original string and the search value.
-	/// </summary>
-	/// <remarks>
-	/// Based on this Stackoverflow answer by JeroenV: https://stackoverflow.com/a/25426773/202741
-	/// </remarks>
-	public static string ReplaceCaseInsensitive(this string str, string oldValue, string newValue)
-	{
-		int prevPos = 0;
-		string retval = str;
-		// find the first occurence of oldValue
-		int pos = retval.IndexOf(oldValue, StringComparison.InvariantCultureIgnoreCase);
+    /// <summary>
+    /// Replace all occurences of a string by a new value, ignoring the case
+    /// of the original string and the search value.
+    /// </summary>
+    /// <remarks>
+    /// Based on this Stackoverflow answer by JeroenV: https://stackoverflow.com/a/25426773/202741
+    /// </remarks>
+    public static string ReplaceCaseInsensitive(this string str, string oldValue, string newValue)
+    {
+        int prevPos = 0;
+        string retval = str;
+        // find the first occurence of oldValue
+        int pos = retval.IndexOf(oldValue, StringComparison.InvariantCultureIgnoreCase);
 
-		while (pos > -1) {
-			// remove oldValue from the string
-			retval = retval.Remove(pos, oldValue.Length);
+        while (pos > -1) {
+            // remove oldValue from the string
+            retval = retval.Remove(pos, oldValue.Length);
 
-			// insert newValue in its place
-			retval = retval.Insert(pos, newValue);
+            // insert newValue in its place
+            retval = retval.Insert(pos, newValue);
 
-			// check if oldValue is found further down
-			prevPos = pos + newValue.Length;
-			pos = retval.IndexOf(oldValue, prevPos, StringComparison.InvariantCultureIgnoreCase);
-		}
+            // check if oldValue is found further down
+            prevPos = pos + newValue.Length;
+            pos = retval.IndexOf(oldValue, prevPos, StringComparison.InvariantCultureIgnoreCase);
+        }
 
-		return retval;
-	}
+        return retval;
+    }
 
-	#if UNITY_EDITOR
-	
-	/// <summary>
+    #if UNITY_EDITOR
+    
+    /// <summary>
     /// Get the OptionCapabilities of an Option type defined by the 
     /// CapabilitiesAttribute or OptionCapabilities.Default, if no attribute exists.
     /// </summary>
@@ -162,7 +162,7 @@ public static class Extensions
         return (attr != null ? attr.Capabilities : OptionCapabilities.PresetDefault);
     }
 
-	#endif
+    #endif
 }
 
 /// <summary>
@@ -173,73 +173,73 @@ public static class Extensions
 /// </remarks>
 public sealed class NumericStringComparer : IComparer<string>
 {
-	public static NumericStringComparer Instance {
-		get { return _instance; }
-	}
-	static NumericStringComparer _instance = new NumericStringComparer();
+    public static NumericStringComparer Instance {
+        get { return _instance; }
+    }
+    static NumericStringComparer _instance = new NumericStringComparer();
 
-	public int Compare(string x, string y)
-	{
-		// sort nulls to the start
-		if (x == null)
-			return y == null ? 0 : -1;
-		if (y == null)
-			return 1;
+    public int Compare(string x, string y)
+    {
+        // sort nulls to the start
+        if (x == null)
+            return y == null ? 0 : -1;
+        if (y == null)
+            return 1;
 
-		var ix = 0;
-		var iy = 0;
+        var ix = 0;
+        var iy = 0;
 
-		while (true)
-		{
-			// sort shorter strings to the start
-			if (ix >= x.Length)
-				return iy >= y.Length ? 0 : -1;
-			if (iy >= y.Length)
-				return 1;
+        while (true)
+        {
+            // sort shorter strings to the start
+            if (ix >= x.Length)
+                return iy >= y.Length ? 0 : -1;
+            if (iy >= y.Length)
+                return 1;
 
-			var cx = x[ix];
-			var cy = y[iy];
+            var cx = x[ix];
+            var cy = y[iy];
 
-			int result;
-			if (char.IsDigit(cx) && char.IsDigit(cy))
-				result = CompareInteger(x, y, ref ix, ref iy);
-			else
-				result = cx.CompareTo(y[iy]);
+            int result;
+            if (char.IsDigit(cx) && char.IsDigit(cy))
+                result = CompareInteger(x, y, ref ix, ref iy);
+            else
+                result = cx.CompareTo(y[iy]);
 
-			if (result != 0)
-				return result;
+            if (result != 0)
+                return result;
 
-			ix++;
-			iy++;
-		}
-	}
+            ix++;
+            iy++;
+        }
+    }
 
-	private static int CompareInteger(string x, string y, ref int ix, ref int iy)
-	{
-		var lx = GetNumLength(x, ix);
-		var ly = GetNumLength(y, iy);
+    private static int CompareInteger(string x, string y, ref int ix, ref int iy)
+    {
+        var lx = GetNumLength(x, ix);
+        var ly = GetNumLength(y, iy);
 
-		// shorter number first (note, doesn't handle leading zeroes)
-		if (lx != ly)
-			return lx.CompareTo(ly);
+        // shorter number first (note, doesn't handle leading zeroes)
+        if (lx != ly)
+            return lx.CompareTo(ly);
 
-		for (var i = 0; i < lx; i++)
-		{
-			var result = x[ix++].CompareTo(y[iy++]);
-			if (result != 0)
-				return result;
-		}
+        for (var i = 0; i < lx; i++)
+        {
+            var result = x[ix++].CompareTo(y[iy++]);
+            if (result != 0)
+                return result;
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 
-	private static int GetNumLength(string s, int i)
-	{
-		var length = 0;
-		while (i < s.Length && char.IsDigit(s[i++]))
-			length++;
-		return length;
-	}
+    private static int GetNumLength(string s, int i)
+    {
+        var length = 0;
+        while (i < s.Length && char.IsDigit(s[i++]))
+            length++;
+        return length;
+    }
 }
 
 }
