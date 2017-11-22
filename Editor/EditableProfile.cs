@@ -60,6 +60,21 @@ public abstract class EditableProfile : ScriptableObject
 	/// <param name="option">The shared Option instance</param>
 	/// <param name="node">The store node backing the Option (only when available)</param>
 	public abstract void EditOption(string path, Option option, ValueStore.Node node);
+
+	// ------ Context Menu ------
+
+	[ContextMenu("Copy As Ini File")]
+	public void CopyAsIniFile()
+	{
+		EditorGUIUtility.systemCopyBuffer = IniAdapter.Save(Store);
+	}
+
+	[ContextMenu("Paste From Ini File")]
+	public void PasteFromIniFile()
+	{
+		Undo.RecordObject(this, "Paste From Ini File");
+		IniAdapter.Load(Store, EditorGUIUtility.systemCopyBuffer);
+	}
 }
 
 }
