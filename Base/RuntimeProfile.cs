@@ -26,6 +26,11 @@ public class RuntimeProfile : IEnumerable<Option>
 	// -------- Static --------
 
 	/// <summary>
+    /// Current version of the Trimmer framework.
+    /// </summary>
+    public static readonly Version TRIMMER_VERSION = new Version(0, 1, 0);
+
+	/// <summary>
 	/// All available Options types.
 	/// </summary>
 	/// <remarks>
