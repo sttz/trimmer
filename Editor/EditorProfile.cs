@@ -139,7 +139,7 @@ public class EditorProfile : EditableProfile
 	/// </summary>
 	public string ActiveProfileGUID {
 		get {
-			if (_activeProfileGUID == null && _activeProfile != null) {
+			if (string.IsNullOrEmpty(_activeProfileGUID) && _activeProfile != null) {
 				var path = AssetDatabase.GetAssetPath(_activeProfile);
 				if (string.IsNullOrEmpty(path)) return null;
 				_activeProfileGUID = AssetDatabase.AssetPathToGUID(path);
