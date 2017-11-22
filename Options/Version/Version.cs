@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace sttz.Trimmer.Options
+namespace sttz.Trimmer
 {
 
 /// <summary>
@@ -11,7 +11,7 @@ namespace sttz.Trimmer.Options
 /// This class is following basic semantic versioning principles.
 /// </remarks>
 [Serializable]
-public struct Version
+public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
 {
     // ------ Main Version ------
 
@@ -75,6 +75,19 @@ public struct Version
     static Version _projectVersion;
 
     /// <summary>
+    /// Create a new version instance.
+    /// </summary>
+    public Version(int major, int minor, int patch, int build = 0, string commit = null, string branch = null)
+    {
+        this.major = major;
+        this.minor = minor;
+        this.patch = patch;
+        this.build = build;
+        this.commit = commit;
+        this.branch = branch;
+    }
+
+    /// <summary>
     /// Check if this struct reprsents a valid version.
     /// </summary>
     /// <remarks>
@@ -89,40 +102,127 @@ public struct Version
     }
 
     /// <summary>
-	/// Return the version as major.minor string (e.g. 1.2)
-	/// </summary>
-	public string MajorMinor {
-		get {
-			return string.Format("{0}.{1}", major, minor);
-		}
-	}
+    /// Return the version as major.minor string (e.g. 1.2)
+    /// </summary>
+    public string MajorMinor {
+        get {
+            return string.Format("{0}.{1}", major, minor);
+        }
+    }
 
-	/// <summary>
-	/// Return the version as major.minor.patch string (e.g. 1.2.3)
-	/// </summary>
-	public string MajorMinorPatch {
-		get {
-			return string.Format("{0}.{1}.{2}", major, minor, patch);
-		}
-	}
+    /// <summary>
+    /// Return the version as major.minor.patch string (e.g. 1.2.3)
+    /// </summary>
+    public string MajorMinorPatch {
+        get {
+            return string.Format("{0}.{1}.{2}", major, minor, patch);
+        }
+    }
 
-	/// <summary>
-	/// Return the version as major.minor.patch.build string (e.g. 1.2.3.4)
-	/// </summary>
-	public string MajorMinorPatchBuild {
-		get {
-			return string.Format("{0}.{1}.{2}+{3}", major, minor, patch, build);
-		}
-	}
+    /// <summary>
+    /// Return the version as major.minor.patch.build string (e.g. 1.2.3.4)
+    /// </summary>
+    public string MajorMinorPatchBuild {
+        get {
+            return string.Format("{0}.{1}.{2}+{3}", major, minor, patch, build);
+        }
+    }
 
-	/// <summary>
-	/// Returns the version as a string in the form "major.minor.patch (build)"
-	/// (e.g. "1.2.3 (4)")
-	/// </summary>
-	public override string ToString()
-	{
-		return string.Format("{0}.{1}.{2} ({3})", major, minor, patch, build);
-	}
+    /// <summary>
+    /// Returns the version as a string in the form "major.minor.patch (build)"
+    /// (e.g. "1.2.3 (4)")
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Format("{0}.{1}.{2} ({3})", major, minor, patch, build);
+    }
+
+    // ------ IComparable ------
+
+    public int CompareTo(object obj)
+    {
+        if (obj is Version) {
+            return CompareTo((Version)obj);
+        } else {
+            throw new ArgumentException("Argument is not a Version instance.", "obj");
+        }
+    }
+
+    public int CompareTo(Version other)
+    {
+        var result = major.CompareTo(other.major);
+        if (result != 0) return result;
+
+        result = minor.CompareTo(other.minor);
+        if (result != 0) return result;
+
+        result = patch.CompareTo(other.patch);
+        if (result != 0) return result;
+
+        return build.CompareTo(other.build);
+    }
+
+    // ------ IEquatable ------
+
+    override public bool Equals(object obj)
+    {
+        if (obj is Version) {
+            return Equals((Version)obj);
+        } else {
+            return false;
+        }
+    }
+
+    override public int GetHashCode()
+    {
+        int code = 0;
+        code |= (major & 0x0000000F) << 28;
+        code |= (minor & 0x000000FF) << 20;
+        code |= (patch & 0x000000FF) << 12;
+        code |= (build & 0x00000FFF);
+        return code;
+    }
+
+    public bool Equals(Version other)
+    {
+        return
+            major == other.major
+            && minor == other.minor
+            && patch == other.patch
+            && build == other.build;
+    }
+
+    // ------ Operators ------
+
+    public static bool operator ==(Version lhs, Version rhs)
+    {
+        return lhs.Equals(rhs);
+    }
+
+    public static bool operator !=(Version lhs, Version rhs)
+    {
+        return !lhs.Equals(rhs);
+    }
+
+    public static bool operator <(Version lhs, Version rhs)
+    {
+        return lhs.CompareTo(rhs) < 0;
+    }
+
+    public static bool operator >(Version lhs, Version rhs)
+    {
+        return lhs.CompareTo(rhs) > 0;
+    }
+
+    public static bool operator <=(Version lhs, Version rhs)
+    {
+        return lhs.CompareTo(rhs) <= 0;
+    }
+
+    public static bool operator >=(Version lhs, Version rhs)
+    {
+        return lhs.CompareTo(rhs) >= 0;
+    }
 }
 
 }

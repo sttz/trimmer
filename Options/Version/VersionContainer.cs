@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace sttz.Trimmer.Options
+namespace sttz.Trimmer
 {
 
 /// <summary>
