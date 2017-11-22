@@ -164,8 +164,8 @@ public class ProfileEditor : UnityEditor.Editor
 	// -------- Badge --------
 
 	const string IconsGuid = "1a23befd4719d4a76b88b096f78a22ad";
-	const string BadgeName = "ActiveBadge";
-	const string BadgeXSName = "ActiveBadgeSmall";
+	const string BadgeName = "Active Badge";
+	const string BadgeXSName = "Active Badge Small";
 	static Texture2D badgeTexture;
 	static Texture2D badgeXSTexture;
 
