@@ -69,7 +69,7 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
     /// </summary>
     /// <remarks>
     /// This property will be populated from the <see cref="VersionContainer"/>.
-    /// The <see cref="OptionVersion"/> injects the container into the build,
+    /// The <see cref="Options.OptionVersion"/> injects the container into the build,
     /// so the version is always without additional setup.
     /// </remarks>
     public static Version ProjectVersion {
