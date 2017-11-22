@@ -233,7 +233,7 @@ public class ProfileEditor : UnityEditor.Editor
 
 	static void OnProjectWindowItemOnGUI(string guid, Rect selectionRect)
 	{
-		if (guid != EditorProfile.Instance.ActiveProfileGUID)
+		if (string.IsNullOrEmpty(guid) || guid != EditorProfile.Instance.ActiveProfileGUID)
 			return;
 		
 		LoadAssets();
