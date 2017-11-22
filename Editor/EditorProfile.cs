@@ -47,7 +47,7 @@ namespace sttz.Trimmer.Editor
 /// like the <see cref="ActiveProfile"/> or tracking of the expanded
 /// state (<see cref="IsExpanded"/> and <see cref="SetExpanded"/>).
 /// </remarks>
-[HelpURL("http://sttz.ch/")] // TODO: Update
+[HelpURL("https://sttz.ch/trimmer/manual/using_trimmer.html")]
 public class EditorProfile : EditableProfile
 {
     // -------- Configuration --------
@@ -84,6 +84,12 @@ public class EditorProfile : EditableProfile
     static bool ValidateOpenActiveProfile()
     {
         return Instance.ActiveProfile != null;
+    }
+
+    [MenuItem("Window/Trimmer/Open Documentation...")]
+    public static void OpenDocumentation()
+    {
+        Application.OpenURL("https://sttz.ch/trimmer/");
     }
 
     // ------ Static ------

@@ -51,7 +51,7 @@ namespace sttz.Trimmer.Editor
 /// See the <see cref="BuildManager"/> for methods to build profiles.
 /// </remarks>
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Build Profile")]
-[HelpURL("http://sttz.ch/")] // TODO: Update
+[HelpURL("https://sttz.ch/trimmer/manual/using_trimmer.html")]
 public class BuildProfile : EditableProfile
 {
     // -------- Static --------
