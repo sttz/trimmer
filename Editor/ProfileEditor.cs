@@ -781,7 +781,7 @@ public class ProfileEditor : UnityEditor.Editor
 			if (inclusion == OptionInclusion.Remove) {
 				return inclusionO;
 			} else if (inclusion == OptionInclusion.Option) {
-				return inclusionI;
+				return inclusionII;
 			} else {
 				// Fix invalid value
 				root.Inclusion = OptionInclusion.Remove;
@@ -807,7 +807,8 @@ public class ProfileEditor : UnityEditor.Editor
 			if (capFeature) {
 				menu.AddItem(new GUIContent("Include Feature"), (value & OptionInclusion.Feature) != 0, () => {
 					root.Inclusion ^= OptionInclusion.Feature;
-					if ((root.Inclusion & OptionInclusion.Feature) == 0) {
+					if (capOption && (root.Inclusion & OptionInclusion.Feature) == 0) {
+						// Unsetting feature also unsets option
 						root.Inclusion &= ~OptionInclusion.Option;
 					}
 				});
@@ -818,6 +819,10 @@ public class ProfileEditor : UnityEditor.Editor
 			if (capOption) {
 				menu.AddItem(new GUIContent("Include Option"), (value & OptionInclusion.Option) != 0, () => {
 					root.Inclusion ^= OptionInclusion.Option;
+					if (capFeature && (root.Inclusion & OptionInclusion.Option) != 0) {
+						// Setting option also sets feature
+						root.Inclusion |= OptionInclusion.Feature;
+					}
 				});
 			} else {
 				menu.AddDisabledItem(new GUIContent("Include Option"));
