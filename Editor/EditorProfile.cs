@@ -278,7 +278,7 @@ public class EditorProfile : EditableProfile
 
 	// ------ EditableProfile ------
 
-	ValueStore store = new ValueStore();
+	[SerializeField] ValueStore store = new ValueStore();
 
 	public override ValueStore Store {
 		get {
