@@ -16,9 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#if TR_TrimmerServer || UNITY_EDITOR
+#if TR_OptionTrimmerServer || UNITY_EDITOR
 
 using System;
+using System.Collections.Generic;
 using sttz.Trimmer.BaseOptions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -66,6 +67,15 @@ public class OptionTrimmerServer : OptionToggle
             host.enabled = Value;
             host.serverPort = GetChild<OptionServerPort>().Value;
             host.isDiscoverable = GetChild<OptionDiscoverable>().Value;
+        }
+    }
+
+    override public void GetScriptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
+    {
+        base.GetScriptingDefineSymbols(inclusion, symbols);
+
+        if (inclusion != OptionInclusion.Remove) {
+            symbols.Add("TRIMMER_SERVER");
         }
     }
     #endif

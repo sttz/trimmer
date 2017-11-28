@@ -46,7 +46,7 @@ public class TrimmerClientWindow : EditorWindow
     [MenuItem("Window/Trimmer/Client")]
     static void Open()
     {
-        EditorWindow.GetWindow<TrimmerClientWindow>("Prompt Client");
+        EditorWindow.GetWindow<TrimmerClientWindow>("Trimmer Client");
     }
 
     // ------ Fields ------
