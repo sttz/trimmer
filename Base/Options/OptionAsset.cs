@@ -53,9 +53,11 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityEngine.Object
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
-        return Save((TUnity)EditorGUILayout.ObjectField(Parse(input), typeof(TUnity), false));
+        EditorGUI.BeginChangeCheck();
+        Value = (TUnity)EditorGUILayout.ObjectField(Value, typeof(TUnity), false);
+        return EditorGUI.EndChangeCheck();
     }
 
     override public void PostprocessScene(Scene scene, OptionInclusion inclusion)

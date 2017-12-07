@@ -285,9 +285,11 @@ public class RuntimeProfile : IEnumerable<Option>
     /// <remarks>
     /// The store will be cleared of all entries with no maching Option instance.
     /// </remarks>
-    public void SaveToStore()
+    public void SaveToStore(bool clear = true)
     {
-        Store.Clear();
+        if (clear) {
+            Store.Clear();
+        }
 
         foreach (var option in optionsByName.Values) {
             var rootNode = Store.GetRoot(option.Name);

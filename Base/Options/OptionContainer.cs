@@ -38,10 +38,10 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionContainer : Option
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
         GUILayout.FlexibleSpace();
-        return input;
+        return false;
     }
     #endif
 

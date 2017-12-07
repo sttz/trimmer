@@ -38,13 +38,15 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionInt : Option<int>
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
+        EditorGUI.BeginChangeCheck();
         if (MinValue != null && MaxValue != null) {
-            return Save(EditorGUILayout.IntSlider(Parse(input), (int)MinValue, (int)MaxValue));
+            Value = EditorGUILayout.IntSlider(Value, (int)MinValue, (int)MaxValue);
         } else {
-            return Save(EditorGUILayout.IntField(Parse(input)));
+            Value = EditorGUILayout.IntField(Value);
         }
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 

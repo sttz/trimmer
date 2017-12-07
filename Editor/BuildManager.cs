@@ -195,8 +195,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         currentProfile = buildProfile;
 
         // Run options' PrepareBuild
-        CreateOrUpdateBuildOptionsProfile();
-        foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
             options = option.PrepareBuild(options, inclusion);
@@ -330,8 +329,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         currentProfile = buildProfile;
 
         // Run options' PrepareBuild
-        CreateOrUpdateBuildOptionsProfile();
-        foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
             options = option.PrepareBuild(options, inclusion);
@@ -424,56 +422,15 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
     }
 
     /// <summary>
-    /// Profile used to call Option callbacks during builds.
+    /// Get the edit profile of the current build profile or
+    /// the an empty edit profile if there's none.
     /// </summary>
-    /// <remarks>
-    /// <see cref="BuildProfile"/> only stores the Option values but doesn't
-    /// contain Option instances. During build, this BuildOptionsProfile is 
-    /// created to instantiate the necessary Options and then to call the
-    /// build callbacks on them.
-    /// </remarks>
-    class BuildOptionsProfile : RuntimeProfile
+    static RuntimeProfile GetCurrentEditProfile()
     {
-        /// <summary>
-        /// Option needs to have one of these capabilities to be 
-        /// included in the build options profile.
-        /// </summary>
-        const OptionCapabilities requiredCapabilities = (
-            OptionCapabilities.HasAssociatedFeature
-            | OptionCapabilities.CanIncludeOption
-            | OptionCapabilities.ConfiguresBuild
-        );
-
-        public BuildOptionsProfile(ValueStore store) : base(store) { }
-
-        protected override bool ShouldCreateOption(Type optionType)
-        {
-            var caps = optionType.GetOptionCapabilities();
-            return ((caps & requiredCapabilities) != 0);
-        }
-    }
-
-    static BuildOptionsProfile buildOptionsProfile;
-
-    /// <summary>
-    /// Create the build options profile when necessary and
-    /// assign it the current store.
-    /// </summary>
-    static void CreateOrUpdateBuildOptionsProfile()
-    {
-        ValueStore store = null;
         if (currentProfile != null) {
-            store = currentProfile.Store;
-        }
-
-        if (store != null) {
-            store = store.Clone();
-        }
-
-        if (buildOptionsProfile == null) {
-            buildOptionsProfile = new BuildOptionsProfile(store);
+            return currentProfile.EditProfile;
         } else {
-            buildOptionsProfile.Store = store;
+            return BuildProfile.EmptyEditProfile;
         }
     }
 
@@ -505,7 +462,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
     {
         // Show a dialog of no active build profile has been set
         // (Unity < 2017.2 will only get an error in the console)
-        if (CurrentProfile == null 
+        if (currentProfile == null 
             && !EditorUtility.DisplayDialog(
                 "Trimmer: No Active Profile Set", 
                 "There's no active Build Profile set, a null profile will be applied "
@@ -542,8 +499,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         var current = new HashSet<string>(symbols);
         
         includesAnyOption = false;
-        CreateOrUpdateBuildOptionsProfile();
-        foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
             includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
@@ -566,7 +522,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         Debug.Log(string.Format(
             "Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
             target, path, 
-            buildOptionsProfile
+            GetCurrentEditProfile()
                 .Where(o => currentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
                 .Select(o => o.Name)
                 .Join(),
@@ -579,8 +535,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         var buildProfile = currentProfile;
 
         // Run options' PostprocessBuild		
-        CreateOrUpdateBuildOptionsProfile();
-        foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
             option.PostprocessBuild(target, path, inclusion);
@@ -603,15 +558,14 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         } else {
             // Inject profile and call PostprocessScene, Apply() isn't called during build
             var buildProfile = currentProfile;
-            CreateOrUpdateBuildOptionsProfile();
             
             if (includesAnyOption && scene.buildIndex == 0) {
-                InjectProfileContainer(buildOptionsProfile.Store);
+                InjectProfileContainer(GetCurrentEditProfile().Store);
             } else {
                 ProfileContainer.Instance = null;
             }
 
-            foreach (var option in buildOptionsProfile.OrderBy(o => o.PostprocessOrder)) {
+            foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
                 var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 
                 if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {

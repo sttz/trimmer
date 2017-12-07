@@ -44,19 +44,19 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionEnum<TEnum> : Option<TEnum>
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
-        var enumValue = (Enum)(object)Parse(input);
+        EditorGUI.BeginChangeCheck();
         if (!IsMask) {
-            enumValue = EditorGUILayout.EnumPopup(enumValue);
+            Value = (TEnum)(object)EditorGUILayout.EnumPopup((Enum)(object)Value);
         } else {
             #if UNITY_2017_3_OR_NEWER
-            enumValue = EditorGUILayout.EnumFlagsField(enumValue);
+            Value = (TEnum)(object)EditorGUILayout.EnumFlagsField((Enum)(object)Value);
             #else
-            enumValue = EditorGUILayout.EnumMaskField(enumValue);
+            Value = (TEnum)(object)EditorGUILayout.EnumMaskField((Enum)(object)Value);
             #endif
         }
-        return Save((TEnum)(object)enumValue);
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 

@@ -96,7 +96,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     }
 
     #if UNITY_EDITOR
-    static BuildOptions[] optionValues;
+    static BuildOptions[] optionFlags;
     static Dictionary<int, string> pendingUpdates = new Dictionary<int, string>();
 
     /// <summary>
@@ -105,37 +105,33 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// We implement a custom menu here to work around this and can also hide
     /// some obsolete options (which have been set to 0) and sort them alphabetically.
     /// </summary>
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
+        EditorGUI.BeginChangeCheck();
+
         var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
-        if (GUILayout.Button(input, "MiniPullDown")) {
-            if (optionValues == null) {
-                optionValues = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
-                Array.Sort(optionValues, (a, b) => a.ToString().CompareTo(b.ToString()));
+        if (GUILayout.Button(Value.ToString(), "MiniPullDown")) {
+            if (optionFlags == null) {
+                optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
+                Array.Sort(optionFlags, (a, b) => a.ToString().CompareTo(b.ToString()));
             }
 
-            var options = Parse(input);
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Clear Options"), false, () => {
                 pendingUpdates[nextControlID] = Save(BuildOptions.None);
             });
             menu.AddSeparator("");
-            foreach (var value in optionValues) {
-                if ((int)value == 0) continue;
-                var selected = (options & value) == value;
-                menu.AddItem(new GUIContent(value.ToString()), selected, () => {
-                    options ^= value;
-                    pendingUpdates[nextControlID] = Save(options);
+            foreach (var flag in optionFlags) {
+                if ((int)flag == 0) continue;
+                var selected = (Value & flag) == flag;
+                menu.AddItem(new GUIContent(flag.ToString()), selected, () => {
+                    Value ^= flag;
                 });
             }
             menu.ShowAsContext();
-        
-        } else if (pendingUpdates.ContainsKey(nextControlID)) {
-            input = pendingUpdates[nextControlID];
-            pendingUpdates.Remove(nextControlID);
         }
 
-        return input;
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 }

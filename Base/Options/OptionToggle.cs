@@ -38,9 +38,11 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionToggle : Option<bool>
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
-        return Save(EditorGUILayout.Toggle(Parse(input)));
+        EditorGUI.BeginChangeCheck();
+        Value = EditorGUILayout.Toggle(Value);
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 

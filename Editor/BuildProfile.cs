@@ -206,11 +206,49 @@ public class BuildProfile : EditableProfile
 
     // ------ Editable Profile ------
 
+    /// <summary>
+    /// Profile used to edit build profiles.
+    /// </summary>
+    private class EditBuildProfile : RuntimeProfile
+    {
+        public EditBuildProfile(ValueStore store) : base(store) { }
+
+        protected override bool ShouldCreateOption(Type optionType)
+        {
+            var caps = optionType.GetOptionCapabilities();
+            return (caps & requiredCapabilities) != 0;
+        }
+    }
+
+    /// <summary>
+    /// Edit profile used when there's no active build profile.
+    /// </summary>
+    public static RuntimeProfile EmptyEditProfile {
+        get {
+            if (_emptyProfile == null) {
+                _emptyProfile = new EditBuildProfile(new ValueStore());
+            }
+            return _emptyProfile;
+        }
+    }
+    static EditBuildProfile _emptyProfile;
+
     [SerializeField] ValueStore store = new ValueStore();
 
     public override ValueStore Store {
         get {
             return store;
+        }
+    }
+
+    EditBuildProfile editProfile;
+
+    public override RuntimeProfile EditProfile {
+        get {
+            if (editProfile == null) {
+                editProfile = new EditBuildProfile(store);
+            }
+            return editProfile;
         }
     }
 
@@ -226,20 +264,9 @@ public class BuildProfile : EditableProfile
         }
     }
 
-    public override Recursion.RecursionType GetRecursionType()
+    public override void EditOption(Option option)
     {
-        return Recursion.RecursionType.Nodes;
-    }
-
-    public override IEnumerable<Option> GetAllOptions()
-    {
-        return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
-    }
-
-    public override void EditOption(string path, Option option, ValueStore.Node node)
-    {
-        // For build profiles, the store is always directly edited.
-        node.Value = option.EditGUI(node.Value);
+        option.EditGUI();
     }
 
     // -------- Internals --------

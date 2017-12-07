@@ -38,13 +38,15 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionFloat : Option<float>
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
+        EditorGUI.BeginChangeCheck();
         if (MinValue != null && MaxValue != null) {
-            return Save(EditorGUILayout.Slider(Parse(input), (float)MinValue, (float)MaxValue));
+            Value = EditorGUILayout.Slider(Value, (float)MinValue, (float)MaxValue);
         } else {
-            return Save(EditorGUILayout.FloatField(Parse(input)));
+            Value = EditorGUILayout.FloatField(Value);
         }
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 

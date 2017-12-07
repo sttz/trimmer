@@ -171,6 +171,23 @@ public class ProfileEditor : UnityEditor.Editor
         return isExpanded;
     }
 
+    /// <summary>
+    /// Sort the root options in the given profile first by category and then by name.
+    /// </summary>
+    public static List<Option> SortOptionsByCategoryAndName(IEnumerable<Option> options)
+    {
+        var list = new List<Option>(options);
+        list.Sort((o1, o2) => {
+            var cat = string.CompareOrdinal(o1.Category, o2.Category);
+            if (cat != 0) {
+                return cat;
+            } else {
+                return string.CompareOrdinal(o1.Name, o2.Name);
+            }
+        });
+        return list;
+    }
+
     // ------ Menu ------
 
     [MenuItem("CONTEXT/BuildProfile/Toggle Show Unavailable")]
@@ -312,7 +329,7 @@ public class ProfileEditor : UnityEditor.Editor
         editorProfile = target as EditorProfile;
         buildProfile = target as BuildProfile;
 
-        options = Recursion.SortOptionsByCategoryAndName(profile.GetAllOptions());
+        options = SortOptionsByCategoryAndName(profile.EditProfile);
 
         // Invalidate source profile dropdown
         sourceProfiles = null;
@@ -570,20 +587,46 @@ public class ProfileEditor : UnityEditor.Editor
         categoryExpanded = true;
         optionAvailable = true;
         buildCategory = showBuild;
-        Recursion.Recurse(profile, profile.GetRecursionType(), options, OptionGUI);
+
+        Option.changed = false;
+
+        foreach (var option in options) {
+            OptionGUIRecursive(option);
+        }
+
+        if (Option.changed) {
+            profile.EditProfile.SaveToStore(clear: false);
+        }
     }
 
-    protected bool OptionGUI(Recursion.RecurseOptionsContext context)
+    protected void OptionGUIRecursive(Option option, int depth = 0)
     {
-        var option = context.option;
+        if (!OptionGUI(option, depth)) return;
+
+        if (option.IsDefaultVariant) {
+            if (!OptionGUI(option, depth + 1, showDefaultVariant: true)) return;
+        }
+
+        foreach (var variant in option.Variants) {
+            OptionGUIRecursive(variant, depth + 1);
+        }
+
+        foreach (var child in option.Children) {
+            OptionGUIRecursive(child, depth + 1);
+        }
+    }
+
+    protected bool OptionGUI(Option option, int depth, bool showDefaultVariant = false)
+    {
         var displayName = OptionDisplayName(option.Name);
         var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
 
+        var isRoot = (option.Parent == null && !showDefaultVariant);
         var lastDepth = EditorGUI.indentLevel;
-        EditorGUI.indentLevel = context.depth;
+        EditorGUI.indentLevel = depth;
 
-        if (buildProfile != null && context.IsRoot) {
-            optionAvailable = context.option.IsAvailable(buildProfile.BuildTargets);
+        if (buildProfile != null && isRoot) {
+            optionAvailable = option.IsAvailable(buildProfile.BuildTargets);
         }
         
         if (!TrimmerPrefs.ShowUnavailableOptions && !optionAvailable) {
@@ -594,15 +637,16 @@ public class ProfileEditor : UnityEditor.Editor
         color.a = optionAvailable ? 1 : unavailableAlpha;
         GUI.color = color;
 
-        var expansionPath = pathBase + context.path;
+        var expansionPath = option.Path;
         var isExpanded = true;
         var wasExpanded = true;
-        if (context.IsRecursable) {
+        var expandable = option.HasChildren || (option.IsDefaultVariant && !showDefaultVariant);
+        if (expandable) {
             isExpanded = wasExpanded = EditorProfile.Instance.IsExpanded(expansionPath);
         }
 
         // Category headers
-        if (context.IsRoot) {
+        if (isRoot) {
             var category = option.Category;
             
             var isBuildCategory = (!string.IsNullOrEmpty(category) && category.EqualsIgnoringCase("build"));
@@ -632,47 +676,33 @@ public class ProfileEditor : UnityEditor.Editor
         var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(lineHeight));
         {
             // Variant container
-            if (context.variantType == Recursion.VariantType.VariantContainer) {
+            if (option.IsDefaultVariant && !showDefaultVariant) {
                 EditorGUILayout.LabelField(displayName, width);
                 if (isExpanded && GUILayout.Button(GUIContent.none, plusStyle)) {
-                    AddNewVariant(option, context.node);
+                    AddNewVariant(option);
                 }
                 GUILayout.FlexibleSpace();
 
             // Variant child
-            } else if (
-                context.variantType == Recursion.VariantType.DefaultVariant
-                || context.variantType == Recursion.VariantType.VariantChild
-            ) {
-                var isDefault = (context.variantType == Recursion.VariantType.DefaultVariant);
+            } else if (option.Variance != OptionVariance.Single) {
+                var isDefault = option.IsDefaultVariant;
 
                 if (option.Variance == OptionVariance.Dictionary) {
                     // Disable when editing the default variant
                     EditorGUI.BeginDisabledGroup(isDefault);
                     {
-                        if (context.type == Recursion.RecursionType.Nodes) {
-                            if (isDefault) {
-                                EditorGUILayout.DelayedTextField(option.VariantDefaultParameter, width);
-                            } else {
-                                var newParam = EditorGUILayout.DelayedTextField(context.node.Name, width);
-                                if (newParam != context.node.Name) {
-                                    // Prevent naming the node the same as the default parameter
-                                    if (context.node.Name == option.VariantDefaultParameter
-                                            || context.parentNode.GetVariant(newParam) != null) {
-                                        context.node.Name = FindUniqueVariantName(option, context.parentNode, newParam);
-                                    } else {
-                                        context.node.Name = newParam;
-                                    }
+                        EditorGUI.BeginDisabledGroup(isDefault);
+                        {
+                            var newParam = EditorGUILayout.DelayedTextField(option.VariantParameter, width);
+                            if (newParam != option.VariantParameter) {
+                                if (option.Parent.GetVariant(newParam, false) != null) {
+                                    option.VariantParameter = FindUniqueVariantName(option.Parent, newParam);
+                                } else {
+                                    option.VariantParameter = newParam;
                                 }
                             }
-                        } else {
-                            // TODO: Rename in play mode?
-                            EditorGUI.BeginDisabledGroup(true);
-                            {
-                                EditorGUILayout.DelayedTextField(option.VariantParameter, width);
-                            }
-                            EditorGUI.EndDisabledGroup();
                         }
+                        EditorGUI.EndDisabledGroup();
                     }
                     EditorGUI.EndDisabledGroup();
                 } else {
@@ -681,23 +711,14 @@ public class ProfileEditor : UnityEditor.Editor
 
                 var level = EditorGUI.indentLevel;
                 EditorGUI.indentLevel = 0;
-                profile.EditOption(context.path, option, context.node);
+                profile.EditOption(option);
                 EditorGUI.indentLevel = level;
 
                 if (!isDefault) {
                     if (GUILayout.Button(GUIContent.none, minusStyle)) {
-                        if (context.type == Recursion.RecursionType.Nodes) {
-                            delayedRemovals.Add(() => {
-                                context.parentNode.RemoveVariant(context.node.Name);
-                                if (option.Variance == OptionVariance.Array) {
-                                    context.parentNode.NumberVariantsSequentially();
-                                }
-                            });
-                        } else {
-                            delayedRemovals.Add(() => {
-                                context.parentOption.RemoveVariant(option);
-                            });
-                        }
+                        delayedRemovals.Add(() => {
+                            option.Parent.RemoveVariant(option);
+                        });
                     }
                 }
 
@@ -708,7 +729,7 @@ public class ProfileEditor : UnityEditor.Editor
 
                 var level = EditorGUI.indentLevel;
                 EditorGUI.indentLevel = 0;
-                profile.EditOption(context.path, option, context.node);
+                profile.EditOption(option);
                 EditorGUI.indentLevel = level;
             }
 
@@ -721,24 +742,20 @@ public class ProfileEditor : UnityEditor.Editor
                 EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.Height(lineHeight));
                 {
                     if (
-                        context.type == Recursion.RecursionType.Nodes
-                        && context.IsRoot
+                        buildProfile != null
+                        && isRoot
                         && (
                             (option.Capabilities & OptionCapabilities.CanIncludeOption) != 0
                             || (option.Capabilities & OptionCapabilities.HasAssociatedFeature) != 0
                         )
                     ) {
-                        var root = (ValueStore.RootNode)context.node;
-                        var value = root.Inclusion;
-                        if (!optionAvailable) {
-                            value = OptionInclusion.Remove;
-                            GUI.enabled = false;
-                        }
+                        EditorGUI.BeginDisabledGroup(!optionAvailable);
+                        var root = buildProfile.Store.GetOrCreateRoot(option.Name);
                         GUILayout.Label(LabelForInclusion(root, option.Capabilities), inclusionLabel);
                         if (optionAvailable) {
                             DoInclusionMenu(root, option.Capabilities);
                         }
-                        GUI.enabled = true;
+                        EditorGUI.EndDisabledGroup();
                     } else {
                         EditorGUILayout.Space();
                     }
@@ -753,7 +770,7 @@ public class ProfileEditor : UnityEditor.Editor
         EditorGUILayout.EndHorizontal();
 
         // Expansion toggle
-        if (context.IsRecursable) {
+        if (expandable) {
             rect.y += EditorStyles.foldout.padding.top + linePadding / 2;
             isExpanded = EditorGUI.Foldout(rect, isExpanded, GUIContent.none, true);
 
@@ -865,26 +882,18 @@ public class ProfileEditor : UnityEditor.Editor
         }
     }
 
-    void AddNewVariant(Option option, ValueStore.Node node)
+    void AddNewVariant(Option option)
     {
         if (option.Variance == OptionVariance.Single)
             throw new Exception("Option is not variant.");
 
-        var parameter = FindUniqueVariantName(option, node);
-
-        if (node != null) {
-            node.AddVariant(parameter, string.Empty);
-            if (option.Variance == OptionVariance.Array) {
-                node.NumberVariantsSequentially();
-            }
-        } else {
-            option.AddVariant(parameter);
-        }
+        var parameter = FindUniqueVariantName(option);
+        option.AddVariant(parameter);
     }
 
     static Regex RemoveTrailingNumbersRegex = new Regex(@"^(.*?)\d*$");
 
-    string FindUniqueVariantName(Option option, ValueStore.Node node, string baseParam = null)
+    string FindUniqueVariantName(Option option, string baseParam = null)
     {
         if (baseParam == null) {
             baseParam = option.VariantDefaultParameter;
@@ -897,10 +906,7 @@ public class ProfileEditor : UnityEditor.Editor
         string parameter;
         do {
             parameter = baseParam + (i++).ToString();
-        } while (
-            (node == null && option.GetVariant(parameter) != null)
-            || (node != null && node.GetVariant(parameter) != null)
-        );
+        } while (option.GetVariant(parameter, false) != null);
 
         return parameter;
     }

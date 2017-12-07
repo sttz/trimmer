@@ -34,9 +34,11 @@ namespace sttz.Trimmer.BaseOptions
 public abstract class OptionString : Option<string>
 {
     #if UNITY_EDITOR
-    public override string EditGUI(string input)
+    public override bool EditGUI()
     {
-        return Save(EditorGUILayout.DelayedTextField(Parse(input)));
+        EditorGUI.BeginChangeCheck();
+        Value = EditorGUILayout.DelayedTextField(Value);
+        return EditorGUI.EndChangeCheck();
     }
     #endif
 

@@ -286,6 +286,11 @@ public abstract class Option
     #if UNITY_EDITOR
 
     /// <summary>
+    /// Used to track if Option values have changed when editing.
+    /// </summary>
+    public static bool changed = false;
+
+    /// <summary>
     /// The capabilities of the Option.
     /// </summary>
     /// <remarks>
@@ -579,15 +584,10 @@ public abstract class Option
     /// already provide implementations for this method. Override it
     /// to implement your custom GUI for the editor.
     /// 
-    ///  > [!WARNING]
-    /// > This method is called on a shared and not fully initialized
-    /// > Option instance. Most notably, the Option's value is not set and a 
-    /// > single instance will be used to edit all variants of an Option.
-    /// 
     /// > [!NOTE]
     /// > This method is only available in the editor.
     /// </remarks>
-    public abstract string EditGUI(string input);
+    public abstract bool EditGUI();
 
     #endif
 
@@ -1153,7 +1153,19 @@ public abstract class Option<TValue> : Option
     /// <summary>
     /// The typed value of the Option.
     /// </summary>
-    public TValue Value { get; set; }
+    public TValue Value {
+        get {
+            return _value;
+        }
+        set {
+            _value = value;
+
+            #if UNITY_EDITOR
+            changed = true;
+            #endif
+        }
+    }
+    TValue _value;
 
     /// <summary>
     /// The default value, used when input is empty or invalid.

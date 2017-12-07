@@ -202,7 +202,7 @@ public class EditorProfile : EditableProfile
                     // When switching away from editor profile in play mode,
                     // we need to save the changes made to the options
                     RuntimeProfile.Main.SaveToStore();
-                    store = RuntimeProfile.Main.Store;
+                    SetStore(RuntimeProfile.Main.Store);
                 }
                 BuildManager.CreateOrUpdateMainRuntimeProfile();
                 RuntimeProfile.Main.Apply();
@@ -276,9 +276,8 @@ public class EditorProfile : EditableProfile
         if (TrimmerPrefs.PlaymodeExitSave && EditorSourceProfile == null) {
             // Changes were made directly to the options, save them to the store
             RuntimeProfile.Main.SaveToStore();
-            // Apply the store to the editor profile and save it out
-            store = RuntimeProfile.Main.Store;
-            Save();
+            // Apply the store to the editor profile
+            SetStore(RuntimeProfile.Main.Store);
         }
     }
 
@@ -314,6 +313,14 @@ public class EditorProfile : EditableProfile
         }
     }
 
+    void SetStore(ValueStore newStore)
+    {
+        store = newStore;
+        if (editProfile != null) {
+            editProfile.Store = newStore;
+        }
+    }
+
     public override void SaveIfNeeded()
     {
         if (store.IsDirty(true) || profileDirty) {
@@ -321,31 +328,10 @@ public class EditorProfile : EditableProfile
         }
     }
 
-    public override Recursion.RecursionType GetRecursionType()
-    {
-        if (Application.isPlaying && EditorSourceProfile == null) {
-            return Recursion.RecursionType.Options;
-        } else {
-            return Recursion.RecursionType.Nodes;
-        }
-    }
-
-    public override IEnumerable<Option> GetAllOptions()
+    public override void EditOption(Option option)
     {
         if (Application.isPlaying) {
-            return RuntimeProfile.Main;
-        } else {
-            return AllOptions.Where(o => (o.Capabilities & requiredCapabilities) != 0);
-        }
-    }
-
-    public override void EditOption(string path, Option option, ValueStore.Node node)
-    {
-        if (Application.isPlaying) {
-            var oldValue = option.Save();
-            var newValue = option.EditGUI(oldValue);
-            if (oldValue != newValue) {
-                option.Load(newValue);
+            if (option.EditGUI()) {
                 option.ApplyFromRoot();
             }
             return;
@@ -353,24 +339,49 @@ public class EditorProfile : EditableProfile
         
         Option editModeOption = null;
         if (editModeProfile != null) {
-            editModeOption = editModeProfile.GetOption(path);
+            editModeOption = editModeProfile.GetOption(option.Path);
         }
 
         if (editModeOption != null) {
-            var oldValue = editModeOption.Save();
-            var newValue = editModeOption.EditGUI(oldValue);
-            if (oldValue != newValue) {
-                editModeOption.Load(newValue);
+            if (editModeOption.EditGUI()) {
                 editModeOption.ApplyFromRoot();
             }
-            node.Value = newValue;
         
         } else {
-            node.Value = option.EditGUI(node.Value);
+            option.EditGUI();
         }
     }
 
     // -------- Edit Mode --------
+
+    /// <summary>
+    /// Profile used to edit build profiles.
+    /// </summary>
+    private class EditEditorProfile : RuntimeProfile
+    {
+        public EditEditorProfile(ValueStore store) : base(store) { }
+
+        protected override bool ShouldCreateOption(Type optionType)
+        {
+            var caps = optionType.GetOptionCapabilities();
+            return (caps & requiredCapabilities) != 0;
+        }
+    }
+
+    EditEditorProfile editProfile;
+
+    public override RuntimeProfile EditProfile {
+        get {
+            if (Application.isPlaying) {
+                return RuntimeProfile.Main;
+            } else {
+                if (editProfile == null) {
+                    editProfile = new EditEditorProfile(store);
+                }
+                return editProfile;
+            }
+        }
+    }
 
     /// <summary>
     /// Profile used for options with <see cref="OptionCapabilities.ExecuteInEditMode"/>.
