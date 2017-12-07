@@ -853,13 +853,25 @@ public abstract class Option
     /// 
     /// When <see cref="Variance"/> is <see cref="OptionVariance.Array"/>, the
     /// parameter is assigned automatically and will be overwritten if it's changed.
-    /// 
-    /// > [!NOTE]
-    /// > To change a parameter, it's best to remove the variant, change the parameter
-    /// > and then add it again. This detects duplicate parameters, which can cause
-    /// > undefined behavior.
     /// </remarks>
-    public string VariantParameter { get; set; }
+    public string VariantParameter {
+        get {
+            return _variantParameter;
+        }
+        set {
+            Assert.IsTrue(Variance != OptionVariance.Single, "Cannot set VariantParameter, option is not variant.");
+
+            if (_variantParameter == value)
+                return;
+
+            if (Parent != null && Parent.GetVariant(value, false) != null) {
+                throw new Exception("A variant with parameter '" + value + "' already exists.");
+            }
+
+            _variantParameter = value;
+        }
+    }
+    string _variantParameter;
 
     /// <summary>
     /// The parameter of the default variant.
