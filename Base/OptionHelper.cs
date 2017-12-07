@@ -285,9 +285,13 @@ public static class OptionHelper
     static Dictionary<BuildTarget, PluginDescription> pluginDescs
         = new Dictionary<BuildTarget, PluginDescription>() {
 
+        #if UNITY_2017_3_OR_NEWER
+        { BuildTarget.StandaloneOSX, pluginsOSX },
+        #else
         { BuildTarget.StandaloneOSXIntel, pluginsOSX },
         { BuildTarget.StandaloneOSXIntel64, pluginsOSX },
         { BuildTarget.StandaloneOSXUniversal, pluginsOSX },
+        #endif
 
         { BuildTarget.StandaloneWindows, pluginsWindows },
         { BuildTarget.StandaloneWindows64, pluginsWindows },
