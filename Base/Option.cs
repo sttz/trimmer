@@ -810,7 +810,6 @@ public abstract class Option
         
         if (Variance != OptionVariance.Single) {
             IsDefaultVariant = true;
-            VariantParameter = VariantDefaultParameter;
             if (string.IsNullOrEmpty(VariantDefaultParameter)) {
                 if (Variance == OptionVariance.Array) {
                     VariantDefaultParameter = "0";
@@ -818,6 +817,7 @@ public abstract class Option
                     VariantDefaultParameter = "Default";
                 }
             }
+            VariantParameter = VariantDefaultParameter;
         }
 
         CreateChildren();
