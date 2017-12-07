@@ -21,6 +21,8 @@ using UnityEngine;
 namespace sttz.Trimmer.Options
 {
 
+#if TRIMMER_SERVER || UNITY_EDITOR
+
 /// <summary>
 /// Script used to host <see cref="TrimmerServer"/>.
 /// </summary>
@@ -56,5 +58,7 @@ public class TrimmerServerHost : MonoBehaviour
         server.Update();
     }
 }
+
+#endif
 
 }

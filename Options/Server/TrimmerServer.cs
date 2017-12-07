@@ -521,6 +521,6 @@ public class TrimmerServer
     }
 }
 
-}
-
 #endif
+
+}
