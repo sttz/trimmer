@@ -390,6 +390,9 @@ public class RuntimeProfile : IEnumerable<Option>
         }
     }
 
+    static HashSet<string> loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    static List<Option> variantsCopy = new List<Option>();
+
     /// <summary>
     /// Recursive method to apply a node with all its variants and
     /// children to an Option.
@@ -404,18 +407,31 @@ public class RuntimeProfile : IEnumerable<Option>
                 LoadNode(option, defaultNode, isDefaultNode:true);
             }
 
-            if (node.variants != null) {
+            if (node.VariantCount > 0) {
                 foreach (var variantNode in node.variants) {
-                    if (variantNode.Name.EqualsIgnoringCase(option.VariantDefaultParameter))
+                    if (variantNode.name.EqualsIgnoringCase(option.VariantDefaultParameter))
                         continue;
+                    loaded.Add(variantNode.name);
                     var variantOption = option.GetVariant(variantNode.name);
                     LoadNode(variantOption, variantNode);
                 }
+
+                // Remove variants that don't exist in the node
+                variantsCopy.AddRange(option.Variants);
+                foreach (var variantOption in variantsCopy) {
+                    if (!loaded.Contains(variantOption.VariantParameter)) {
+                        option.RemoveVariant(variantOption);
+                    }
+                }
+                variantsCopy.Clear();
+                loaded.Clear();
+            } else {
+                option.ClearVariants();
             }
         } else {
             option.Load(node.value ?? string.Empty);
 
-            if (node.children != null) {
+            if (node.ChildCount > 0) {
                 foreach (var childNode in node.children) {
                     var childOption = option.GetChild(childNode.name);
                     if (childOption != null) {
