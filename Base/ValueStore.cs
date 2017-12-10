@@ -326,6 +326,14 @@ public class ValueStore : ISerializationCallbackReceiver
 
             return clone;
         }
+
+        override public string ToString()
+        {
+            return string.Format(
+                "[Node {0} = {1}, children = {2}, variants = {3}, isDirty = {4}]",
+                name, value, ChildCount, VariantCount, isDirty
+            );
+        }
     }
 
     /// <summary>
@@ -364,6 +372,14 @@ public class ValueStore : ISerializationCallbackReceiver
             #endif
             
             return clone;
+        }
+
+        override public string ToString()
+        {
+            return string.Format(
+                "[RootNode {0} = {1}, children = {2}, variants = {3}, isDirty = {4}, inclusion = {5}]",
+                name, value, ChildCount, VariantCount, isDirty, inclusion
+            );
         }
     }
 
