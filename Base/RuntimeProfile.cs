@@ -191,11 +191,12 @@ public class RuntimeProfile : IEnumerable<Option>
         ParseParameter(ref part, out param);
 
         var current = GetRootOption(part);
+        if (current == null) return null;
+
         if (param != null) {
             current = current.GetVariant(param);
+            if (current == null) return null;
         }
-
-        if (current == null) return null;
 
         for (int i = 1; i < parts.Length; i++) {
             part = parts[i];
