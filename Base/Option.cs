@@ -1022,6 +1022,26 @@ public abstract class Option
     }
 
     /// <summary>
+    /// Remove all variant Options.
+    /// </summary>
+    /// <remarks>
+    /// > [!WARNING]
+    /// > This method can only be called on default variants, where
+    /// > <see cref="IsDefaultVariant" /> is true, and will throw an 
+    /// > exception when called on other Options.
+    /// </remarks>
+    public void ClearVariants()
+    {
+        Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to ClearVariants, option is not variant.");
+        Assert.IsTrue(IsDefaultVariant, "Invalid call to ClearVariants, option is not the default variant.");
+
+        foreach (var variant in variants) {
+            variant.Parent = null;
+        }
+        variants.Clear();
+    }
+
+    /// <summary>
     /// Internal helper method that ensures parameters in array variants 
     /// are all numbers and sequential.
     /// </summary>
