@@ -403,25 +403,6 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
     }
 
     /// <summary>
-    /// Create or udpate the main runtime profile with the apropriate value store.
-    /// </summary>
-    internal static void CreateOrUpdateMainRuntimeProfile()
-    {
-        if (!Application.isPlaying) {
-            Debug.LogError("Cannot create main runtime profile when not playing.");
-            return;
-        }
-
-        var store = EditorProfile.Instance.Store;
-        if (store != null) {
-            store = store.Clone();
-        }
-        
-        RuntimeProfile.CreateMain(store);
-        RuntimeProfile.Main.CleanStore();
-    }
-
-    /// <summary>
     /// Get the edit profile of the current build profile or
     /// the an empty edit profile if there's none.
     /// </summary>
@@ -548,29 +529,24 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
     public void OnProcessScene(Scene scene)
     {
-        if (!BuildPipeline.isBuildingPlayer) {
-            // When playing only inject runtime profile, Options can use Apply()
-            if (RuntimeProfile.Main == null) {
-                CreateOrUpdateMainRuntimeProfile();
-                RuntimeProfile.Main.Apply();
-            }
+        // OnProcessScene is also called when playing in the editor
+        if (!BuildPipeline.isBuildingPlayer)
+            return;
 
+        // Inject profile and call PostprocessScene, Apply() isn't called during build
+        var buildProfile = currentProfile;
+        
+        if (includesAnyOption && scene.buildIndex == 0) {
+            InjectProfileContainer(GetCurrentEditProfile().Store);
         } else {
-            // Inject profile and call PostprocessScene, Apply() isn't called during build
-            var buildProfile = currentProfile;
-            
-            if (includesAnyOption && scene.buildIndex == 0) {
-                InjectProfileContainer(GetCurrentEditProfile().Store);
-            } else {
-                ProfileContainer.Instance = null;
-            }
+            ProfileContainer.Instance = null;
+        }
 
-            foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-                var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
 
-                if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
-                    option.PostprocessScene(scene, inclusion);
-                }
+            if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
+                option.PostprocessScene(scene, inclusion);
             }
         }
     }

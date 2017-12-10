@@ -202,10 +202,18 @@ public class EditorProfile : EditableProfile
                     // When switching away from editor profile in play mode,
                     // we need to save the changes made to the options
                     RuntimeProfile.Main.SaveToStore();
-                    SetStore(RuntimeProfile.Main.Store);
+                    PlayModeStore = RuntimeProfile.Main.Store.Clone();
                 }
-                BuildManager.CreateOrUpdateMainRuntimeProfile();
+                CreateOrUpdateMainRuntimeProfile();
                 RuntimeProfile.Main.Apply();
+            }
+
+            if (editProfile != null) {
+                if (_editorSourceProfile != null) {
+                    editProfile.Store = _editorSourceProfile.Store;
+                } else {
+                    editProfile.Store = store;
+                }
             }
         }
     }
@@ -252,6 +260,77 @@ public class EditorProfile : EditableProfile
         #endif
     }
 
+    /// <summary>
+    /// Save the editor profile.
+    /// </summary>
+    /// <remarks>
+    /// The Editor Profile is saved in the Library folder like other Unity
+    /// per-project configuration assets. It uses public but internal methods
+    /// in `UnityEditorInternal.InternalEditorUtility`.
+    /// </remarks>
+    public void Save()
+    {
+        profileDirty = false;
+        UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
+            new UnityEngine.Object[] { this },
+            EDITOR_PROFILE_PATH,
+            true
+        );
+    }
+
+    // ------ Play Mode ------
+
+    /// <summary>
+    /// Store used when playing in the editor.
+    /// </summary>
+    public ValueStore PlayModeStore {
+        get {
+            return _playModeStore;
+        }
+        private set {
+            _playModeStore = value;
+        }
+    }
+    [NonSerialized] ValueStore _playModeStore;
+
+    /// <summary>
+    /// Callback responsible for loading RuntimeProfile.Main when playing
+    /// in the editor.
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod]
+    static void OnRuntimeMethodLoad()
+    {
+        CreateOrUpdateMainRuntimeProfile();
+        RuntimeProfile.Main.Apply();
+    }
+
+    /// <summary>
+    /// Create or udpate the main runtime profile with the apropriate value store.
+    /// </summary>
+    static void CreateOrUpdateMainRuntimeProfile()
+    {
+        if (!Application.isPlaying) {
+            Debug.LogError("Cannot create main runtime profile when not playing.");
+            return;
+        }
+
+        ValueStore currentStore = null;
+        if (Instance.EditorSourceProfile != null) {
+            currentStore = Instance.EditorSourceProfile.Store;
+        } else if (Instance.PlayModeStore != null) {
+            currentStore = Instance.PlayModeStore;
+        } else {
+            currentStore = Instance.store;
+        }
+
+        if (currentStore != null) {
+            currentStore = currentStore.Clone();
+        }
+        
+        RuntimeProfile.CreateMain(currentStore);
+        RuntimeProfile.Main.CleanStore();
+    }
+
     #if UNITY_2017_2_OR_NEWER
     void OnPlayModeStateChange(PlayModeStateChange change)
     {
@@ -273,30 +352,17 @@ public class EditorProfile : EditableProfile
     /// </summary>
     void OnExitingPlayMode()
     {
-        if (TrimmerPrefs.PlaymodeExitSave && EditorSourceProfile == null) {
-            // Changes were made directly to the options, save them to the store
-            RuntimeProfile.Main.SaveToStore();
-            // Apply the store to the editor profile
-            SetStore(RuntimeProfile.Main.Store);
+        if (TrimmerPrefs.PlaymodeExitSave) {
+            if (EditorSourceProfile == null) {
+                // Runtime profile contains latest changes
+                RuntimeProfile.Main.SaveToStore();
+                store = RuntimeProfile.Main.Store.Clone();
+            } else if (PlayModeStore != null) {
+                // Play Mode store contains changes before switching to source profile
+                store = PlayModeStore;
+            }
+            editProfile = null;
         }
-    }
-
-    /// <summary>
-    /// Save the editor profile.
-    /// </summary>
-    /// <remarks>
-    /// The Editor Profile is saved in the Library folder like other Unity
-    /// per-project configuration assets. It uses public but internal methods
-    /// in `UnityEditorInternal.InternalEditorUtility`.
-    /// </remarks>
-    public void Save()
-    {
-        profileDirty = false;
-        UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(
-            new UnityEngine.Object[] { this },
-            EDITOR_PROFILE_PATH,
-            true
-        );
     }
 
     // ------ EditableProfile ------
@@ -305,19 +371,7 @@ public class EditorProfile : EditableProfile
 
     public override ValueStore Store {
         get {
-            if (EditorSourceProfile != null) {
-                return EditorSourceProfile.Store;
-            } else {
-                return store;
-            }
-        }
-    }
-
-    void SetStore(ValueStore newStore)
-    {
-        store = newStore;
-        if (editProfile != null) {
-            editProfile.Store = newStore;
+            return store;
         }
     }
 
@@ -376,7 +430,11 @@ public class EditorProfile : EditableProfile
                 return RuntimeProfile.Main;
             } else {
                 if (editProfile == null) {
-                    editProfile = new EditEditorProfile(store);
+                    var currentStore = store;
+                    if (EditorSourceProfile != null) {
+                        currentStore = EditorSourceProfile.Store;
+                    }
+                    editProfile = new EditEditorProfile(currentStore);
                 }
                 return editProfile;
             }
