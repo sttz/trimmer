@@ -1101,7 +1101,7 @@ public abstract class Option
 
         var nested = type.GetNestedTypes(BindingFlags.Public);
         foreach (var nestedType in nested) {
-            if (!typeof(Option).IsAssignableFrom(nestedType))
+            if (nestedType.IsAbstract || !typeof(Option).IsAssignableFrom(nestedType))
                 continue;
 
             if (children == null)
