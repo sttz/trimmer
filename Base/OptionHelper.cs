@@ -25,6 +25,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Text;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -203,8 +204,15 @@ public static class OptionHelper
     /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
     public static bool RunScript(string path, string arguments)
     {
-        string output;
-        return RunScript(path, arguments, out output);
+        string output, error;
+
+        var exitCode = RunScript(path, arguments, out output, out error);
+        if (exitCode != 0) {
+            Debug.LogError("RunScript: " + Path.GetFileName(path) + " returned error: " + error);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -217,11 +225,48 @@ public static class OptionHelper
     /// <returns>`true` if the script runs successfully, `false` on error (details will be logged)</returns>
     public static bool RunScript(string path, string arguments, out string output)
     {
+        string error;
+
+        var exitCode = RunScript(path, arguments, out output, out error);
+        if (exitCode != 0) {
+            Debug.LogError("RunScript: " + Path.GetFileName(path) + " returned error: " + error);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Run an external process/script with given arguments, wait for it to exit
+    /// and capture its output and/or errors.
+    /// </summary>
+    /// <param name="path">Path to the script (absolute, relative to project directory or on the PATH)</param>
+    /// <param name="arguments">Arguments to pass to the script</param>
+    /// <param name="output">The standard output of the script</param>
+    /// <param name="error">The standard error of the script</param>
+    /// <returns>The exit code of the script.</returns>
+    public static int RunScript(string path, string arguments, out string output, out string error)
+    {
+        return RunScript(path, arguments, null, out output, out error);
+    }
+
+    /// <summary>
+    /// Run an external process/script with given arguments, write the given input
+    /// to its standard input, wait for it to exit and capture its output and/or errors.
+    /// </summary>
+    /// <param name="path">Path to the script (absolute, relative to project directory or on the PATH)</param>
+    /// <param name="arguments">Arguments to pass to the script</param>
+    /// <param name="input">Input written to the script's standard input</param>
+    /// <param name="output">The standard output of the script</param>
+    /// <param name="error">The standard error of the script</param>
+    /// <returns>The exit code of the script.</returns>
+    public static int RunScript(string path, string arguments, string input, out string output, out string error)
+    {
         output = null;
 
         if (string.IsNullOrEmpty(path)) {
-            Debug.LogError("RunScript: path null or empty");
-            return false;
+            error = "RunScript: path null or empty";
+            return 127;
         }
 
         var scriptName = Path.GetFileName(path);
@@ -232,22 +277,44 @@ public static class OptionHelper
         script.StartInfo.FileName = path;
         script.StartInfo.Arguments = arguments;
 
+        if (!string.IsNullOrEmpty(input)) {
+            script.StartInfo.RedirectStandardInput = true;
+        }
+
+        var outputBuilder = new StringBuilder();
+        script.OutputDataReceived += (s, a) => {
+            outputBuilder.AppendLine(a.Data);
+        };
+        var errorBuilder = new StringBuilder();
+        script.ErrorDataReceived += (s, a) => {
+            errorBuilder.AppendLine(a.Data);
+        };
+
         try {
             script.Start();
+
+            script.BeginOutputReadLine();
+            script.BeginErrorReadLine();
+
+            if (!string.IsNullOrEmpty(input)) {
+                // Unity's old Mono runtime writes a BOM to the input stream,
+                // tripping up the command. Ceate a new writer with an encoding
+                // that has BOM disabled.
+                var writer = new StreamWriter(script.StandardInput.BaseStream, new System.Text.UTF8Encoding(false));
+                writer.Write(input);
+                writer.Close();
+            }
+
             script.WaitForExit();
         } catch (Exception e) {
-            Debug.LogError("RunScript: Exception running " + scriptName + ": " + e.Message);
-            return false;
+            error = "RunScript: Exception running " + scriptName + ": " + e.Message;
+            return -1;
         }
 
-        output = script.StandardOutput.ReadToEnd();
+        output = outputBuilder.ToString();
+        error = errorBuilder.ToString();
 
-        if (script.ExitCode != 0) {
-            Debug.LogError("RunScript: " + scriptName + " returned error: " + script.StandardError.ReadToEnd());
-            return false;
-        }
-
-        return true;
+        return script.ExitCode;
     }
 
     #endif
