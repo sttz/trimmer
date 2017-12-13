@@ -106,6 +106,45 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
     }
 
     /// <summary>
+    /// Parse a version string in the format "x.x.x".
+    /// </summary>
+    public static Version Parse(string input)
+    {
+        string error;
+        return Parse(input, out error);
+    }
+
+    /// <summary>
+    /// Parse a version string in the format "x.x.x".
+    /// </summary>
+    public static Version Parse(string input, out string error)
+    {
+        var version = new Version();
+
+        var parts = input.Split('.');
+        if (parts.Length > 4) {
+            error = "Version: Too many components in input '" + input + "'";
+            return default(Version);
+        }
+
+        if (parts.Length > 0 && (!int.TryParse(parts[0], out version.major) || version.major < 0)) {
+            error = "Version: The major version part is not a positive number: " + parts[0];
+            return default(Version);
+        }
+        if (parts.Length > 1 && (!int.TryParse(parts[1], out version.minor) || version.minor < 0)) {
+            error = "Version: The minor version part is not a positive number: " + parts[1];
+            return default(Version);
+        }
+        if (parts.Length > 2 && (!int.TryParse(parts[2], out version.patch) || version.patch < 0)) {
+            error = "Version: The patch version part is not a positive number: " + parts[2];
+            return default(Version);
+        }
+
+        error = null;
+        return version;
+    }
+
+    /// <summary>
     /// Check if this struct reprsents a valid version.
     /// </summary>
     /// <remarks>
@@ -138,7 +177,7 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
     }
 
     /// <summary>
-    /// Return the version as major.minor.patch.build string (e.g. 1.2.3.4)
+    /// Return the version as major.minor.patch.build string (e.g. 1.2.3+4)
     /// </summary>
     public string MajorMinorPatchBuild {
         get {

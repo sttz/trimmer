@@ -170,24 +170,10 @@ public class OptionVersion : OptionContainer
         }
 
         // -- Parse version
-        var version = new Version();
-
-        var parts = versionString.Split('.');
-        if (parts.Length > 3) {
-            Debug.LogError("OptionVersion: The project version should follow the semantic version format: 0.0.0");
-            return default(Version);
-        }
-
-        if (parts.Length > 0 && (!int.TryParse(parts[0], out version.major) || version.major < 0)) {
-            Debug.LogError("OptionVersion: The major version part is not a positive number: " + parts[0]);
-            return default(Version);
-        }
-        if (parts.Length > 1 && (!int.TryParse(parts[1], out version.minor) || version.minor < 0)) {
-            Debug.LogError("OptionVersion: The minor version part is not a positive number: " + parts[1]);
-            return default(Version);
-        }
-        if (parts.Length > 2 && (!int.TryParse(parts[2], out version.patch) || version.patch < 0)) {
-            Debug.LogError("OptionVersion: The patch version part is not a positive number: " + parts[2]);
+        string error;
+        var version = Version.Parse(versionString, out error);
+        if (error != null) {
+            Debug.LogError(error);
             return default(Version);
         }
 
