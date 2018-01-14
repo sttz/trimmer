@@ -263,7 +263,7 @@ public class RuntimeProfile : IEnumerable<Option>
         // Apply values in store to Options
         foreach (var node in Store.Roots) {
             Option option;
-            if (!optionsByName.TryGetValue(node.name, out option))
+            if (!optionsByName.TryGetValue(node.Name, out option))
                 continue;
 
             LoadNode(option, node);
@@ -309,10 +309,10 @@ public class RuntimeProfile : IEnumerable<Option>
     {
         foreach (var root in Store.Roots.ToArray()) {
             Option option;
-            if (optionsByName.TryGetValue(root.name, out option)) {
+            if (optionsByName.TryGetValue(root.Name, out option)) {
                 CleanStoreRecursive(root, option);
             } else {
-                Store.RemoveRoot(root.name);
+                Store.RemoveRoot(root.Name);
             }
         }
     }
@@ -321,36 +321,32 @@ public class RuntimeProfile : IEnumerable<Option>
     {
         if (!isDefaultNode && option.IsDefaultVariant) {
             // Value and children are stored in the default parameter sub-node
-            node.value = null;
-            if (node.children != null) {
-                node.children.Clear();
-            }
+            node.Value = null;
+            node.ClearChildren();
 
-            if (node.variants != null && node.variants.Count > 0) {
-                foreach (var variant in node.variants.ToArray()) {
-                    if (variant.name.EqualsIgnoringCase(option.VariantDefaultParameter)) {
+            if (node.VariantCount > 0) {
+                foreach (var variant in node.Variants.ToArray()) {
+                    if (variant.Name.EqualsIgnoringCase(option.VariantDefaultParameter)) {
                         CleanStoreRecursive(variant, option, isDefaultNode:true);
                         continue;
                     }
-                    var variantOption = option.GetVariant(variant.name, create:false);
+                    var variantOption = option.GetVariant(variant.Name, create:false);
                     if (variantOption == null) {
-                        node.RemoveVariant(variant.name);
+                        node.RemoveVariant(variant.Name);
                     } else {
                         CleanStoreRecursive(variant, variantOption);
                     }
                 }
             }
         } else {
-            if (node.variants != null) {
-                node.variants.Clear();
-            }
+            node.ClearVariants();
         }
 
-        if (node.children != null && node.children.Count > 0) {
-            foreach (var child in node.children.ToArray()) {
-                var childOption = option.GetChild(child.name);
+        if (node.ChildCount > 0) {
+            foreach (var child in node.Children.ToArray()) {
+                var childOption = option.GetChild(child.Name);
                 if (childOption == null) {
-                    node.RemoveChild(child.name);
+                    node.RemoveChild(child.Name);
                 } else {
                     CleanStoreRecursive(child, childOption);
                 }
@@ -408,11 +404,11 @@ public class RuntimeProfile : IEnumerable<Option>
             }
 
             if (node.VariantCount > 0) {
-                foreach (var variantNode in node.variants) {
-                    if (variantNode.name.EqualsIgnoringCase(option.VariantDefaultParameter))
+                foreach (var variantNode in node.Variants) {
+                    if (variantNode.Name.EqualsIgnoringCase(option.VariantDefaultParameter))
                         continue;
-                    loaded.Add(variantNode.name);
-                    var variantOption = option.GetVariant(variantNode.name);
+                    loaded.Add(variantNode.Name);
+                    var variantOption = option.GetVariant(variantNode.Name);
                     LoadNode(variantOption, variantNode);
                 }
 
@@ -429,11 +425,11 @@ public class RuntimeProfile : IEnumerable<Option>
                 option.ClearVariants();
             }
         } else {
-            option.Load(node.value ?? string.Empty);
+            option.Load(node.Value ?? string.Empty);
 
             if (node.ChildCount > 0) {
-                foreach (var childNode in node.children) {
-                    var childOption = option.GetChild(childNode.name);
+                foreach (var childNode in node.Children) {
+                    var childOption = option.GetChild(childNode.Name);
                     if (childOption != null) {
                         LoadNode(childOption, childNode);
                     }
@@ -457,7 +453,7 @@ public class RuntimeProfile : IEnumerable<Option>
                 SaveNode(variantNode, variantOption);
             }
         } else {
-            node.value = option.Save();
+            node.Value = option.Save();
 
             foreach (var childOption in option.Children) {
                 var childNode = node.GetOrCreateChild(childOption.Name);

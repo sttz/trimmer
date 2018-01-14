@@ -189,6 +189,16 @@ public class ValueStore : ISerializationCallbackReceiver
         }
 
         /// <summary>
+        /// Remove all variant nodes.
+        /// </summary>
+        public void ClearVariants()
+        {
+            if (variants != null) {
+                variants.Clear();
+            }
+        }
+
+        /// <summary>
         /// Set variants parameters to a sequential index,
         /// assigned based on natural sort order of existing
         /// parameters.
@@ -287,6 +297,16 @@ public class ValueStore : ISerializationCallbackReceiver
                     isDirty = true;
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Remove all child nodes.
+        /// </summary>
+        public void ClearChildren()
+        {
+            if (children != null) {
+                children.Clear();
             }
         }
 
