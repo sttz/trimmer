@@ -142,6 +142,9 @@ public class OptionKeyStore : OptionContainer
     {
         base.PreprocessBuild(target, path, inclusion);
 
+        if (target != BuildTarget.Android)
+            return;
+
         if (validation == Error.Unknonw) {
             validation = Validate();
         }
@@ -161,7 +164,7 @@ public class OptionKeyStore : OptionContainer
 
         if (GetChild<OptionUseKeychain>().Value && Keychain.Main != null) {
             PlayerSettings.Android.keystorePass = Keychain.Main.GetPassword(KeychainService, keystore);
-            PlayerSettings.Android.keystorePass = Keychain.Main.GetPassword(KeychainService, keystore + "#" + alias);
+            PlayerSettings.Android.keyaliasPass = Keychain.Main.GetPassword(KeychainService, keystore + "#" + alias);
         } else {
             PlayerSettings.Android.keystorePass = GetChild<OptionStorePassword>().Value;
             PlayerSettings.Android.keyaliasPass = GetChild<OptionAliasPassword>().Value;
