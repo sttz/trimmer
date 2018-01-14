@@ -297,7 +297,7 @@ public class EditorProfile : EditableProfile
     /// Callback responsible for loading RuntimeProfile.Main when playing
     /// in the editor.
     /// </summary>
-    [RuntimeInitializeOnLoadMethod]
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void OnRuntimeMethodLoad()
     {
         CreateOrUpdateMainRuntimeProfile();
