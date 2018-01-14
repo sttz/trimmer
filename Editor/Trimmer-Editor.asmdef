@@ -1,0 +1,10 @@
+{
+    "name": "Trimmer-Editor",
+    "references": [
+        "Trimmer"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}
