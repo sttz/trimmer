@@ -97,7 +97,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
     #if UNITY_EDITOR
     static BuildOptions[] optionFlags;
-    static Dictionary<int, string> pendingUpdates = new Dictionary<int, string>();
 
     /// <summary>
     /// Unity's EnumMaskPopup doesn't work with enums where the flags are not
@@ -109,8 +108,20 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     {
         EditorGUI.BeginChangeCheck();
 
-        var nextControlID = GUIUtility.GetControlID(FocusType.Passive) + 1;
-        if (GUILayout.Button(Value.ToString(), "MiniPullDown")) {
+        string name = "Multiple...";
+
+        // Unity defines some deprecated flags as 0 as well (e.g. 
+        // StripDebugSymbols or CompressTextures), which can get
+        // C# confused and pick the wrong one, so hardcode 0 == None.
+        if (Value == 0) {
+            name = "None";
+
+        // Check if mask is power of two, which means only one flag is set
+        } else if ((Value & (Value - 1)) == 0) {
+            name = Value.ToString();
+        }
+
+        if (GUILayout.Button(name, "MiniPullDown")) {
             if (optionFlags == null) {
                 optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
                 Array.Sort(optionFlags, (a, b) => a.ToString().CompareTo(b.ToString()));
@@ -118,7 +129,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Clear Options"), false, () => {
-                pendingUpdates[nextControlID] = Save(BuildOptions.None);
+                Value = 0;
             });
             menu.AddSeparator("");
             foreach (var flag in optionFlags) {
