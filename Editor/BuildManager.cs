@@ -380,6 +380,10 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         // Run the build
         var error = BuildPipeline.BuildPlayer(options);
 
+        if (!string.IsNullOrEmpty(error)) {
+            OnBuildError(options.target, error);
+        }
+
         currentProfile = null;
         return error;
     }
@@ -427,8 +431,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 
     // ------ Unity Callbacks ------
 
-    string previousScriptingDefineSymbols;
-    bool includesAnyOption;
+    static string previousScriptingDefineSymbols;
+    static bool includesAnyOption;
 
     public int callbackOrder { get { return 0; } }
 
@@ -511,6 +515,16 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         ));
     }
     
+    // Unfortunately not a proper Unity event
+    public static void OnBuildError(BuildTarget target, string error)
+    {
+        // TODO: Add Option callback?
+
+        // Restore original scripting define symbols
+        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+    }
+
     public void OnPostprocessBuild(BuildTarget target, string path)
     {
         var buildProfile = currentProfile;
