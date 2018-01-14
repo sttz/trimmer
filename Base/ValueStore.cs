@@ -396,10 +396,17 @@ public class ValueStore : ISerializationCallbackReceiver
 
         override public string ToString()
         {
+            #if UNITY_EDITOR
             return string.Format(
                 "[RootNode {0} = {1}, children = {2}, variants = {3}, isDirty = {4}, inclusion = {5}]",
                 name, value, ChildCount, VariantCount, isDirty, inclusion
             );
+            #else
+            return string.Format(
+                "[RootNode {0} = {1}, children = {2}, variants = {3}, isDirty = {4}]",
+                name, value, ChildCount, VariantCount, isDirty
+            );
+            #endif
         }
     }
 
