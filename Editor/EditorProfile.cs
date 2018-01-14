@@ -398,11 +398,14 @@ public class EditorProfile : EditableProfile
 
         if (editModeOption != null) {
             if (editModeOption.EditGUI()) {
+                Option.changed = true;
                 editModeOption.ApplyFromRoot();
             }
         
         } else {
-            option.EditGUI();
+            if (option.EditGUI()) {
+                Option.changed = true;
+            }
         }
     }
 

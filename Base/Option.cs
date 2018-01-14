@@ -1185,19 +1185,7 @@ public abstract class Option<TValue> : Option
     /// <summary>
     /// The typed value of the Option.
     /// </summary>
-    public TValue Value {
-        get {
-            return _value;
-        }
-        set {
-            _value = value;
-
-            #if UNITY_EDITOR
-            changed = true;
-            #endif
-        }
-    }
-    TValue _value;
+    public TValue Value { get; set; }
 
     /// <summary>
     /// The default value, used when input is empty or invalid.

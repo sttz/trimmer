@@ -596,6 +596,7 @@ public class ProfileEditor : UnityEditor.Editor
 
         if (Option.changed) {
             profile.EditProfile.SaveToStore(clear: false);
+            profile.SaveIfNeeded();
         }
     }
 

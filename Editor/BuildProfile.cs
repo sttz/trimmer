@@ -266,7 +266,9 @@ public class BuildProfile : EditableProfile
 
     public override void EditOption(Option option)
     {
-        option.EditGUI();
+        if (option.EditGUI()) {
+            Option.changed = true;
+        }
     }
 
     // -------- Internals --------
