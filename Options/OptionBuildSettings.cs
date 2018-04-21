@@ -96,7 +96,8 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     }
 
     #if UNITY_EDITOR
-    static BuildOptions[] optionFlags;
+    static string[] optionFlags;
+    static BuildOptions[] optionValues;
 
     /// <summary>
     /// Unity's EnumMaskPopup doesn't work with enums where the flags are not
@@ -106,6 +107,15 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// </summary>
     public override bool EditGUI()
     {
+        if (optionFlags == null) {
+            // We need to use GetNames instead of GetValues here, because
+            // some versions of Unity (seen on 2017.4 with .Net 4.6) will 
+            // add all 0-value flags to the ToString of all values.
+            optionFlags = Enum.GetNames(typeof(BuildOptions));
+            Array.Sort(optionFlags, (a, b) => a.CompareTo(b));
+            optionValues = optionFlags.Select(v => (BuildOptions)Enum.Parse(typeof(BuildOptions), v)).ToArray();
+        }
+
         EditorGUI.BeginChangeCheck();
 
         string name = "Multiple...";
@@ -118,24 +128,23 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
         // Check if mask is power of two, which means only one flag is set
         } else if ((Value & (Value - 1)) == 0) {
-            name = Value.ToString();
+            var index = Array.IndexOf(optionValues, Value);
+            if (index >= 0) {
+                name = optionFlags[index];
+            }
         }
 
         if (GUILayout.Button(name, "MiniPullDown")) {
-            if (optionFlags == null) {
-                optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
-                Array.Sort(optionFlags, (a, b) => a.ToString().CompareTo(b.ToString()));
-            }
-
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Clear Options"), false, () => {
                 Value = 0;
             });
             menu.AddSeparator("");
-            foreach (var flag in optionFlags) {
+            for (int i = 0; i < optionFlags.Length; i++) {
+                var flag = optionValues[i];
                 if ((int)flag == 0) continue;
                 var selected = (Value & flag) == flag;
-                menu.AddItem(new GUIContent(flag.ToString()), selected, () => {
+                menu.AddItem(new GUIContent(optionFlags[i]), selected, () => {
                     Value ^= flag;
                 });
             }
