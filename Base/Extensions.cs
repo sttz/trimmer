@@ -33,6 +33,7 @@ namespace sttz.Trimmer.Extensions
 /// </summary>
 public static class Extensions
 {
+    #if NET_2_0 || NET_2_0_SUBSET || NET_4_6
     /// <summary>
     /// Prepend a value to a sequence of values.
     /// </summary>
@@ -54,6 +55,7 @@ public static class Extensions
         }
         yield return value;
     }
+    #endif
 
     /// <summary>
     /// Add all elements from an enumerable to the collection.
