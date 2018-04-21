@@ -60,8 +60,10 @@ public class RuntimeProfile : IEnumerable<Option>
             if (_options == null) {
                 _options = new List<Type>();
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-                    if (assembly is System.Reflection.Emit.AssemblyBuilder)
-                        continue;
+                    #if NET_2_0 || NET_2_0_SUBSET
+                        if (assembly is System.Reflection.Emit.AssemblyBuilder)
+                            continue;
+                    #endif
                     _options.AddRange(assembly.GetExportedTypes()
                         .Where(t => 
                             t.IsClass 
