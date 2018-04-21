@@ -1035,6 +1035,8 @@ public abstract class Option
         Assert.IsTrue(Variance != OptionVariance.Single, "Invalid call to ClearVariants, option is not variant.");
         Assert.IsTrue(IsDefaultVariant, "Invalid call to ClearVariants, option is not the default variant.");
 
+        if (variants == null) return;
+
         foreach (var variant in variants) {
             variant.Parent = null;
         }
