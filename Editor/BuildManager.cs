@@ -65,7 +65,12 @@ namespace sttz.Trimmer.Editor
 /// The Build Manager controls the build process and calls the Option's
 /// callbacks.
 /// </summary>
-public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
+public class BuildManager : 
+#if UNITY_2018_1_OR_NEWER
+IProcessSceneWithReport, IPreprocessBuildWithReport, IPostprocessBuildWithReport
+#else
+IProcessScene, IPreprocessBuild, IPostprocessBuild
+#endif
 {
     /// <summary>
     /// Scripting define symbol added to remove Trimmer code in player.
@@ -378,11 +383,26 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         }
 
         // Run the build
-        var error = BuildPipeline.BuildPlayer(options);
+        string error = null;
 
-        if (!string.IsNullOrEmpty(error)) {
-            OnBuildError(options.target, error);
-        }
+        #if UNITY_2018_1_OR_NEWER
+            var report = BuildPipeline.BuildPlayer(options);
+
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) {
+                var errors = report.steps
+                    .SelectMany(s => s.messages)
+                    .Where(m => m.type == LogType.Error)
+                    .Select(m => m.content);
+                error = string.Join("\n", errors.ToArray());
+                OnBuildError(options.target, error);
+            }
+        #else
+            error = BuildPipeline.BuildPlayer(options);
+
+            if (!string.IsNullOrEmpty(error)) {
+                OnBuildError(options.target, error);
+            }
+        #endif
 
         currentProfile = null;
         return error;
@@ -462,9 +482,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
     }
     #endif
 
+#if UNITY_2018_1_OR_NEWER
+    public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
+#else
     public void OnPreprocessBuild(BuildTarget target, string path)
+#endif
     {
         var buildProfile = currentProfile;
+
+        #if UNITY_2018_1_OR_NEWER
+        var target = report.summary.platform;
+        var path = report.summary.outputPath;
+        #endif
 
         #if !UNITY_2017_2_OR_NEWER
         // Warning is handled in BuildPlayerHandler for Unity 2017.2+
@@ -525,9 +554,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
     }
 
+#if UNITY_2018_1_OR_NEWER
+    public void OnPostprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
+#else
     public void OnPostprocessBuild(BuildTarget target, string path)
+#endif
     {
         var buildProfile = currentProfile;
+
+        #if UNITY_2018_1_OR_NEWER
+        var target = report.summary.platform;
+        var path = report.summary.outputPath;
+        #endif
 
         // Run options' PostprocessBuild		
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
@@ -541,7 +579,11 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
     }
 
+#if UNITY_2018_1_OR_NEWER
+    public void OnProcessScene(Scene scene, UnityEditor.Build.Reporting.BuildReport report)
+#else
     public void OnProcessScene(Scene scene)
+#endif
     {
         // OnProcessScene is also called when playing in the editor
         if (!BuildPipeline.isBuildingPlayer)
