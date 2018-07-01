@@ -257,7 +257,7 @@ public static class OptionHelper
     /// </summary>
     /// <param name="path">Path to the script (absolute, relative to project directory or on the PATH)</param>
     /// <param name="arguments">Arguments to pass to the script</param>
-    /// <param name="input">Input written to the script's standard input</param>
+    /// <param name="input">Input written to the script's standard input (or null)</param>
     /// <param name="output">The standard output of the script</param>
     /// <param name="error">The standard error of the script</param>
     /// <returns>The exit code of the script.</returns>
@@ -316,6 +316,103 @@ public static class OptionHelper
         error = errorBuilder.ToString();
 
         return script.ExitCode;
+    }
+
+    /// <summary>
+    /// Asynchronous RunScript method. Instead of blocking until the script is finished, this method
+    /// takes three methods that are called with the output of the script as it's being read as well
+    /// as one with the exit code once the script has finished.
+    /// </summary>
+    /// <param name="path">Path to the script (absolute, relative to project directory or on the PATH)</param>
+    /// <param name="arguments">Arguments to pass to the script</param>
+    /// <param name="input">Input written to the script's standard input (or null)</param>
+    /// <param name="onOutput">Method called with each output line</param>
+    /// <param name="onError">Method called with each error line</param>
+    /// <param name="onExit">Method called with the exit code</param>
+    /// <returns>A callback that can be used to stop the script (parameter: false = termiante, true = kill)</returns>
+    public static Action<bool> RunScriptAsnyc(string path, string arguments, string input, Action<string> onOutput, Action<string> onError, Action<int> onExit)
+    {
+        if (string.IsNullOrEmpty(path)) {
+            if (onError != null) onError("RunScript: path null or empty");
+            return null;
+        }
+
+        var startInfo = new System.Diagnostics.ProcessStartInfo();
+        startInfo.FileName = path;
+        startInfo.Arguments = arguments;
+
+        return RunScriptAsnyc(startInfo, input, onOutput, onError, onExit);
+    }
+
+    /// <summary>
+    /// Asynchronous RunScript method. Instead of blocking until the script is finished, this method
+    /// takes three methods that are called with the output of the script as it's being read as well
+    /// as one with the exit code once the script has finished.
+    /// </summary>
+    /// <param name="startInfo">Process start configuration (note that UseShellExecute, RedirectStandardOutput and RedirectStandardError will be overwritten)</param>
+    /// <param name="input">Input written to the script's standard input (or null)</param>
+    /// <param name="onOutput">Method called with each output line</param>
+    /// <param name="onError">Method called with each error line</param>
+    /// <param name="onExit">Method called with the exit code</param>
+    /// <returns>A callback that can be used to stop the script (parameter: false = termiante, true = kill)</returns>
+    public static Action<bool> RunScriptAsnyc(System.Diagnostics.ProcessStartInfo startInfo, string input, Action<string> onOutput, Action<string> onError, Action<int> onExit)
+    {
+        var scriptName = Path.GetFileName(startInfo.FileName);
+
+        var script = new System.Diagnostics.Process();
+        script.StartInfo = startInfo;
+        script.StartInfo.UseShellExecute = false;
+        script.StartInfo.RedirectStandardOutput = true;
+        script.StartInfo.RedirectStandardError = true;
+        script.EnableRaisingEvents = true;
+
+        if (!string.IsNullOrEmpty(input)) {
+            script.StartInfo.RedirectStandardInput = true;
+        }
+
+        script.OutputDataReceived += (s, a) => {
+            if (onOutput != null) {
+                onOutput(a.Data);
+            }
+        };
+        script.ErrorDataReceived += (s, a) => {
+            if (onError != null) {
+                onError(a.Data);
+            }
+        };
+        script.Exited += (s, a) => {
+            if (onExit != null) {
+                onExit(script.ExitCode);
+            }
+        };
+
+        try {
+            script.Start();
+
+            script.BeginOutputReadLine();
+            script.BeginErrorReadLine();
+
+            if (!string.IsNullOrEmpty(input)) {
+                // Unity's old Mono runtime writes a BOM to the input stream,
+                // tripping up the command. Ceate a new writer with an encoding
+                // that has BOM disabled.
+                var writer = new StreamWriter(script.StandardInput.BaseStream, new System.Text.UTF8Encoding(false));
+                writer.Write(input);
+                writer.Close();
+            }
+        } catch (Exception e) {
+            if (onError != null) onError("RunScript: Exception running " + scriptName + ": " + e.Message);
+            return null;
+        }
+
+        return (kill) => {
+            if (script.HasExited) return;
+            if (kill) {
+                script.Kill();
+            } else {
+                script.CloseMainWindow();
+            }
+        };
     }
 
     #endif
