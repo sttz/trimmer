@@ -90,8 +90,6 @@ public class Prompt : MonoBehaviour
             Destroy(this);
             return;
         }
-
-        DontDestroyOnLoad(gameObject);
         Instance = this;
     }
 
