@@ -19,6 +19,7 @@
 #if UNITY_EDITOR
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using sttz.Trimmer;
@@ -26,6 +27,7 @@ using sttz.Trimmer.BaseOptions;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor.iOS.Xcode;
 
 namespace sttz.Trimmer.Options
 {
@@ -120,6 +122,105 @@ public class OptionVersion : OptionContainer
         }
     }
 
+    /// <summary>
+    /// Apply the version to the product (app bundle or exe)
+    /// </summary>
+    /// <remarks>
+    /// Updating the app bundle version requires the Unity iOS support to be installed,
+    /// the exe updating requires python with the pefile installed.
+    /// </remarks>
+    public class OptionApplyToProduct : OptionToggle
+    {
+        override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+        {
+            base.PostprocessBuild(target, path, inclusion);
+
+            if (inclusion == OptionInclusion.Remove || !Value)
+                return;
+
+            if (target == BuildTarget.StandaloneOSX) {
+                UpdateVersionMac(path, Version.ProjectVersion);
+            } else if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64) {
+                UpdateVersionWindows(path, Version.ProjectVersion);
+            }
+        }
+
+        public static bool UpdateVersionMac(string path, Version version)
+        {
+            var infoPlistPath = System.IO.Path.Combine(path, "Contents/Info.plist");
+            if (!File.Exists(infoPlistPath)) {
+                Debug.LogError("OptionVersion: Info plist not found at path: " + infoPlistPath);
+                return false;
+            }
+
+            var doc = new PlistDocument();
+            doc.ReadFromFile(infoPlistPath);
+
+            doc.root.SetString("CFBundleGetInfoString", string.Format(
+                "{0} {1} ({2})",
+                Application.productName, version.MajorMinorPatch, version.build
+            ));
+
+            doc.WriteToFile(infoPlistPath);
+            return true;
+        }
+
+        const string PythonUpdateWindows = @"
+import sys
+
+try:
+    import pefile
+except ImportError, e:
+    print 'ERROR: Required Python package pefile not installed: ' + str(e)
+    sys.exit(20)
+
+path = sys.argv[1]
+major = sys.argv[2]
+minor = sys.argv[3]
+patch = sys.argv[4]
+build = sys.argv[5]
+
+version = '{0}.{1}.{2}'.format(major, minor, patch)
+major_int = int(major)
+minor_int = int(minor)
+patch_int = int(patch)
+build_int = int(build)
+
+pe = pefile.PE(path)
+
+oldFileVersion = pe.FileInfo[0].StringTable[0].entries['FileVersion']
+pe.FileInfo[0].StringTable[0].entries['FileVersion'] = build.ljust(len(oldFileVersion))
+
+oldProductVersion = pe.FileInfo[0].StringTable[0].entries['ProductVersion']
+pe.FileInfo[0].StringTable[0].entries['ProductVersion'] = version.ljust(len(oldFileVersion))
+
+ms = (major_int << 16) | (minor_int & 0x0000ffff)
+ls = (patch_int << 16) | (build_int & 0x0000ffff)
+
+pe.VS_FIXEDFILEINFO.FileVersionMS = ms
+pe.VS_FIXEDFILEINFO.FileVersionLS = ls
+
+pe.VS_FIXEDFILEINFO.ProductVersionMS = ms
+pe.VS_FIXEDFILEINFO.ProductVersionLS = ls
+
+pe.write(filename=path)
+";
+
+        public static bool UpdateVersionWindows(string path, Version version)
+        {
+            var args = string.Format(
+                "- '{0}' {1} {2} {3} {4}",
+                path, version.major, version.minor, version.patch, version.build
+            );
+            string output, error;
+            var exitcode = OptionHelper.RunScript("python", args, PythonUpdateWindows, out output, out error);
+            if (exitcode != 0) {
+                Debug.LogError("OptionVersion: Failed to run pyhthon to update version: " + output);
+                return false;
+            }
+            return true;
+        }
+    }
 
     override public void Apply()
     {
