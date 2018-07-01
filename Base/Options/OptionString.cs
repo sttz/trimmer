@@ -44,7 +44,9 @@ public abstract class OptionString : Option<string>
 
     public OptionString() : base()
     {
-        DefaultValue = string.Empty;
+        if (DefaultValue == null) {
+            DefaultValue = string.Empty;
+        }
     }
 
     override public string Parse(string input)
@@ -57,7 +59,7 @@ public abstract class OptionString : Option<string>
 
     override public void Load(string input)
     {
-        Value = input;
+        Value = Parse(input);
     }
 
     override public string Save(string input)
@@ -67,7 +69,7 @@ public abstract class OptionString : Option<string>
 
     override public string Save()
     {
-        return Value;
+        return Save(Value);
     }
 }
 
