@@ -113,6 +113,7 @@ public static class OptionHelper
         if (container == null) {
             if (!create) return null;
             container = new GameObject(CONTAINER_NAME);
+            container.AddComponent<InjectionContainer>();
         }
 
         var script = container.GetComponent<T>();
