@@ -152,6 +152,7 @@ public class BuildProfile : EditableProfile
         }
 
         _buildTargets.Add(target);
+        EditorUtility.SetDirty(this);
     }
 
     /// <summary>
@@ -166,6 +167,8 @@ public class BuildProfile : EditableProfile
     {
         if (_buildTargets == null) return;
         _buildTargets.Remove(target);
+        EditorUtility.SetDirty(this);
+    }
 
     /// <summary>
     /// Get the path to the last build of this profile for the given target.
