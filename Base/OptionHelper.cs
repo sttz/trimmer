@@ -421,111 +421,42 @@ public static class OptionHelper
 
     #if UNITY_EDITOR
 
-    class PluginDescription
+    static bool DontIncludeInBuild(string path)
     {
-        public string[] deployPaths;
-        public string[] extensions;
+        return false;
     }
 
-    static PluginDescription pluginsOSX = new PluginDescription() {
-        deployPaths = new string[] { "Contents/Plugins" },
-        extensions = new string[] { ".bundle" }
-    };
-    static PluginDescription pluginsWindows = new PluginDescription() {
-        deployPaths = new string[] {
-            "",
-            "{Product}_Data/Plugins", 
-        },
-        extensions = new string[] { ".dll" }
-    };
-    static PluginDescription pluginsLinux = new PluginDescription() {
-        deployPaths = new string[] { 
-            "{Product}_Data/Plugins", 
-            "{Product}_Data/Plugins/x86", 
-            "{Product}_Data/Plugins/x86_64", 
-        },
-        extensions = new string[] { ".so" }
-    };
-
-    static Dictionary<BuildTarget, PluginDescription> pluginDescs
-        = new Dictionary<BuildTarget, PluginDescription>() {
-
-        #if UNITY_2017_3_OR_NEWER
-        { BuildTarget.StandaloneOSX, pluginsOSX },
-        #else
-        { BuildTarget.StandaloneOSXIntel, pluginsOSX },
-        { BuildTarget.StandaloneOSXIntel64, pluginsOSX },
-        { BuildTarget.StandaloneOSXUniversal, pluginsOSX },
-        #endif
-
-        { BuildTarget.StandaloneWindows, pluginsWindows },
-        { BuildTarget.StandaloneWindows64, pluginsWindows },
-
-        { BuildTarget.StandaloneLinux, pluginsLinux },
-        { BuildTarget.StandaloneLinux64, pluginsLinux },
-        { BuildTarget.StandaloneLinuxUniversal, pluginsLinux },
-    };
-
     /// <summary>
-    /// Remove a plugin from the build.
+    /// Prevent plugins from being included in the build. This method should be called
+    /// from an Option's <see cref="Option.PreprocessBuild"/>.
     /// </summary>
     /// <remarks>
-    /// A feature that an Option is configuring might use native plugins that Unity
-    /// always includes in builds that the plugin supports. Depending on the Option's
-    /// configuration, the feature using the native plugins might be removed completely
-    /// but the native plugins will still remain in the build.
-    /// 
-    /// This helper method can be used by Options to remove plugins from builds after
-    /// the fact, i.e. in the Option's <see cref="Option.PostprocessBuild*"/>
-    /// callback.
-    /// 
-    /// Note that this method currently only supports removing plugins from standalone
-    /// build targets.
+    /// This method uses `PluginImporter.SetIncludeInBuildDelegate` to prevent the plugins
+    /// from being included. This may interfere with other scripts using the same method.
     /// </remarks>
-    public static void RemovePluginFromBuild(BuildTarget target, string pathToBuiltProject, Regex pluginNameMatch)
+    /// <param name="pluginGuids">The GUIDs of the plugins to exclude from the current build.</param>
+    static public void RemovePluginsFromBuild(IEnumerable<string> pluginGuids)
     {
-        // TODO: Check out Unity 2017.2's PluginImporter.SetIncludeInBuildDelegate,
-        // which could potentially replace this functionality
+        foreach (var guid in pluginGuids) {
+            RemovePluginFromBuild(guid);
+        }
+    }
 
-        PluginDescription desc;
-        if (!pluginDescs.TryGetValue(target, out desc)) {
-            Debug.LogError(string.Format("Build target {0} not supported for plugin removal.", target));
+    static public void RemovePluginFromBuild(string guid)
+    {
+        var path = AssetDatabase.GUIDToAssetPath(guid);
+        if (string.IsNullOrEmpty(path)) {
+            Debug.LogWarning("RemovePluginsFromBuild: No plugin found for GUID: " + guid);
             return;
         }
 
-        if (File.Exists(pathToBuiltProject)) {
-            pathToBuiltProject = System.IO.Path.GetDirectoryName(pathToBuiltProject);
+        var importer = AssetImporter.GetAtPath(path) as PluginImporter;
+        if (importer == null) {
+            Debug.LogWarning("RemovePluginsFromBuild: No plugin importer for path: '" + path + "' (guid: " + guid + ")");
+            return;
         }
 
-        foreach (var pathTemplate in desc.deployPaths) {
-            var path = pathTemplate.Replace("{Product}", PlayerSettings.productName);
-            path = System.IO.Path.Combine(pathToBuiltProject, path);
-
-            if (!Directory.Exists(path)) {
-                Debug.Log("Plugin path does not exist: " + path);
-                continue;
-            }
-
-            foreach (var entry in Directory.GetFileSystemEntries(path)) {
-                var extension = System.IO.Path.GetExtension(entry);
-                if (!desc.extensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) {
-                    Debug.Log("Extension does not match: " + entry);
-                    continue;
-                }
-
-                var fileName = System.IO.Path.GetFileNameWithoutExtension(entry);
-                if (!pluginNameMatch.IsMatch(fileName)) {
-                    Debug.Log("Name does not match: " + entry);
-                    continue;
-                }
-
-                Debug.Log("Removing plugin: " + entry);
-                if (File.Exists(entry))
-                    File.Delete(entry);
-                else
-                    Directory.Delete(entry, true);
-            }
-        }
+        importer.SetIncludeInBuildDelegate(DontIncludeInBuild);
     }
 
     // -------- GUID Helper Methods --------
