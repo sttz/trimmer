@@ -56,6 +56,14 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         }
     }
 
+    public class OptionSaveBuildInfo : OptionToggle
+    {
+        protected override void Configure()
+        {
+            DefaultValue = true;
+        }
+    }
+
     /// <summary>
     /// Replace special variables in a ini file path.
     /// </summary>
@@ -95,6 +103,22 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         return options;
     }
 
+    override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    {
+        base.PostprocessBuild(target, path, inclusion);
+
+        if (GetChild<OptionSaveBuildInfo>().Value) {
+            if (BuildInfo.Current == null) {
+                Debug.LogWarning("Save build info: BuildInfo.Current not set");
+            } else {
+                var infoPath = OptionHelper.GetBuildBasePath(path);
+                infoPath = System.IO.Path.Combine(infoPath, BuildInfo.DEFAULT_NAME);
+
+                var json = BuildInfo.Current.ToJson();
+                File.WriteAllText(infoPath, json);
+            }
+        }
+    }
 
     static BuildOptions[] optionFlags;
 

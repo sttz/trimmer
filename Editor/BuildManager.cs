@@ -409,6 +409,27 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         return error;
     }
 
+    // -------- BuildInfo --------
+
+    /// <summary>
+    /// Generate the BuildInfo for the current build.
+    /// </summary>
+    static void GenerateBuildInfo()
+    {
+        var profileGuid = "";
+        if (currentProfile != null) {
+            var path = AssetDatabase.GetAssetPath(currentProfile);
+            profileGuid = AssetDatabase.AssetPathToGUID(path);
+        }
+
+        BuildInfo.Current = new BuildInfo() {
+            version = Version.ProjectVersion,
+            profileGuid = profileGuid,
+            buildTime = DateTime.UtcNow.ToString("o"),
+            buildGuid = Guid.NewGuid().ToString()
+        };
+    }
+
     // -------- Profiles --------
 
     /// <summary>
@@ -528,6 +549,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         if (!includesAnyOption) {
             symbols.Add(NO_TRIMMER);
         }
+
+        GenerateBuildInfo();
 
         // Apply scripting define symbols
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));

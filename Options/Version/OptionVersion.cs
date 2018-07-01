@@ -120,7 +120,6 @@ public class OptionVersion : OptionContainer
         }
     }
 
-    static Version projectVersion;
 
     override public void Apply()
     {
@@ -136,10 +135,10 @@ public class OptionVersion : OptionContainer
 
         if (inclusion == OptionInclusion.Remove) return;
 
-        projectVersion = DetermineProjectVersion(target);
+        Version.ProjectVersion = DetermineProjectVersion(target);
 
         if (incrementBuildNumber) {
-            projectVersion = IncrementBuildNumber(projectVersion, target);
+            Version.ProjectVersion = IncrementBuildNumber(Version.ProjectVersion, target);
         }
     }
 
@@ -149,7 +148,7 @@ public class OptionVersion : OptionContainer
 
         var script = OptionHelper.InjectFeature<VersionContainer>(scene, OptionInclusion.Feature);
         if (script != null) {
-            script.version = projectVersion;
+            script.version = Version.ProjectVersion;
         }
     }
 
