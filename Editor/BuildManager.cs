@@ -65,12 +65,7 @@ namespace sttz.Trimmer.Editor
 /// The Build Manager controls the build process and calls the Option's
 /// callbacks.
 /// </summary>
-public class BuildManager : 
-#if UNITY_2018_1_OR_NEWER
-IProcessSceneWithReport, IPreprocessBuildWithReport, IPostprocessBuildWithReport
-#else
-IProcessScene, IPreprocessBuild, IPostprocessBuild
-#endif
+public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
 {
     /// <summary>
     /// Scripting define symbol added to remove Trimmer code in player.

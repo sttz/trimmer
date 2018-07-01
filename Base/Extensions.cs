@@ -33,7 +33,7 @@ namespace sttz.Trimmer.Extensions
 /// </summary>
 public static class Extensions
 {
-    #if NET_2_0 || NET_2_0_SUBSET || NET_4_6
+    #if NET_2_0 || NET_2_0_SUBSET
     /// <summary>
     /// Prepend a value to a sequence of values.
     /// </summary>
