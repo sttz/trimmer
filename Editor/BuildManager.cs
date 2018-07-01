@@ -89,7 +89,7 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
     /// <summary>
     /// Populate the `BuildPlayerOptions` with default values.
     /// </summary>
-    static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
+    static public BuildPlayerOptions GetDefaultOptions(BuildTarget target)
     {
         var playerOptions = new BuildPlayerOptions();
         playerOptions.target = target;
@@ -390,12 +390,18 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
                     .Select(m => m.content);
                 error = string.Join("\n", errors.ToArray());
                 OnBuildError(options.target, error);
+            } else {
+                Debug.Log(string.Format("Trimmer: Built {0} to '{1}'", options.target, options.locationPathName));
+                buildProfile.SetLastBuildPath(options.target, options.locationPathName);
             }
         #else
             error = BuildPipeline.BuildPlayer(options);
 
             if (!string.IsNullOrEmpty(error)) {
                 OnBuildError(options.target, error);
+            } else {
+                Debug.Log(string.Format("Trimmer: Built {0} to '{1}'", options.target, options.locationPathName));
+                buildProfile.SetLastBuildPath(options.target, options.locationPathName);
             }
         #endif
 
@@ -547,6 +553,8 @@ public class BuildManager : IProcessScene, IPreprocessBuild, IPostprocessBuild
         // Restore original scripting define symbols
         var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+
+        Debug.LogError(string.Format("Trimmer: Build failed for platform {0}: {1}", target, error));
     }
 
 #if UNITY_2018_1_OR_NEWER

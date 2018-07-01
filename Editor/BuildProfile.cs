@@ -166,6 +166,35 @@ public class BuildProfile : EditableProfile
     {
         if (_buildTargets == null) return;
         _buildTargets.Remove(target);
+
+    /// <summary>
+    /// Get the path to the last build of this profile for the given target.
+    /// </summary>
+    /// <remarks>
+    /// Build paths are only saved on the instance and are lost once
+    /// Unity does a domain reload or restarts.
+    /// </remarks>
+    /// <returns>The path or null if no path is recorded.</returns>
+    public string GetLastBuildPath(BuildTarget target)
+    {
+        return EditorUserBuildSettings.GetPlatformSettings(
+            target.ToString(), 
+            GetLastBuildPathSettingName()
+        );
+    }
+
+    public void SetLastBuildPath(BuildTarget target, string path)
+    {
+        EditorUserBuildSettings.SetPlatformSettings(
+            target.ToString(),
+            GetLastBuildPathSettingName(),
+            path
+        );
+    }
+
+    private string GetLastBuildPathSettingName()
+    {
+        return OptionHelper.GetAssetGUID(this) + ":lastBuildPath";
     }
 
     // ------ Context Menu ------

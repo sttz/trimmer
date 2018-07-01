@@ -531,14 +531,13 @@ public class ProfileEditor : UnityEditor.Editor
                 var menu = new GenericMenu();
                 var type = typeof(BuildTarget);
                 var obsoleteType = typeof(ObsoleteAttribute);
-                foreach (var name in Enum.GetNames(type).OrderBy(b => b)) {
-                    var value = (BuildTarget)Enum.Parse(type, name);
-                    var isObsolete = type.GetMember(name).First().GetCustomAttributes(obsoleteType, true).Length > 0;
+                foreach (var target in Enum.GetValues(type).Cast<BuildTarget>().OrderBy(b => b.ToString())) {
+                    var isObsolete = type.GetMember(target.ToString()).First().GetCustomAttributes(obsoleteType, true).Length > 0;
                     if (isObsolete 
-                        || (int)value < 0 
-                        || (!usesActive && buildProfile.BuildTargets.Contains(value)))
+                        || (int)target < 0 
+                        || (!usesActive && buildProfile.BuildTargets.Contains(target)))
                         continue;
-                    menu.AddItem(new GUIContent(name), false, AddBuildTarget, value);
+                    menu.AddItem(new GUIContent(target.ToString()), false, AddBuildTarget, target);
                 }
                 menu.ShowAsContext();
             }
@@ -558,6 +557,16 @@ public class ProfileEditor : UnityEditor.Editor
                 EditorGUILayout.LabelField(target.ToString());
             }
             EditorGUI.EndDisabledGroup();
+
+            var path = buildProfile.GetLastBuildPath(target);
+            if (!string.IsNullOrEmpty(path) && GUILayout.Button("Show", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+                EditorUtility.RevealInFinder(path);
+            }
+            if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+                BuildManager.Build(buildProfile, BuildManager.GetDefaultOptions(target));
+                GUIUtility.ExitGUI();
+            }
+
             EditorGUILayout.EndHorizontal();
         }
 

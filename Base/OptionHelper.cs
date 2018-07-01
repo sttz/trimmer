@@ -500,6 +500,26 @@ public static class OptionHelper
         return AssetDatabase.LoadAssetAtPath(path, typeof(T)) as T;
     }
 
+    // -------- Build Paths --------
+
+    /// <summary>
+    /// Build paths returned from Unity can point either to the executable
+    /// (e.g. exe or app bundle) or the root directory of the export 
+    /// (e.g. XCode project). This method turns the first into the second
+    /// and leaves the second unchanged, so you can get the base directory
+    /// for all build targets.
+    /// </summary>
+    /// <param name="buildPath"></param>
+    /// <returns></returns>
+    public static string GetBuildBasePath(string buildPath)
+    {
+        if (File.Exists(buildPath) || Path.GetExtension(buildPath) == ".app") {
+            return Path.GetDirectoryName(buildPath);
+        }
+
+        return buildPath;
+    }
+
     #endif
 }
 
