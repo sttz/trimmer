@@ -13,9 +13,23 @@ namespace sttz.Trimmer.Editor
 public abstract class DistroBase : ScriptableObject
 {
     [HideInInspector] public List<BuildProfile> builds;
-    [HideInInspector] public bool forceBuild;
 
-    public virtual bool CanRunWithoutBuilds { get { return false; } }
+    public virtual bool CanRunWithoutBuildTargets { get { return false; } }
+
+    /// <summary>
+    /// Structure used to represent a set of builds.
+    /// </summary>
+    public struct BuildPath
+    {
+        public BuildTarget target;
+        public string path;
+
+        public BuildPath(BuildTarget target, string path)
+        {
+            this.target = target;
+            this.path = path;
+        }
+    }
 
     public bool IsRunning {
         get {
@@ -36,21 +50,6 @@ public abstract class DistroBase : ScriptableObject
     }
     bool _isRunning;
 
-    public bool HasBuilds()
-    {
-        if (builds == null || builds.Count == 0) {
-            return false;
-        }
-
-        foreach (var profile in builds) {
-            if (profile == null) continue;
-            if (profile.BuildTargets.Any()) return true;
-        }
-
-        return false;
-    }
-
-    public bool HasAllBuilds()
     {
         foreach (var profile in builds) {
             if (profile == null) continue;
@@ -68,14 +67,7 @@ public abstract class DistroBase : ScriptableObject
     [ContextMenu("Build")]
     public bool Build()
     {
-        foreach (var profile in builds) {
-            if (profile == null) continue;
-            var error = BuildManager.Build(profile);
-            if (!string.IsNullOrEmpty(error)) {
-                return false;
-            }
-        }
-        return true;
+        return BuildAndGetBuildPaths(true) != null;
     }
 
     [ContextMenu("Distribute")]
@@ -84,6 +76,10 @@ public abstract class DistroBase : ScriptableObject
         RunCoroutine(DistributeCoroutine());
     }
 
+    public void Distribute(bool forceBuild)
+    {
+        RunCoroutine(DistributeCoroutine(forceBuild));
+    }
     public virtual void Cancel()
     {
         if (runningScripts != null) {
@@ -93,17 +89,13 @@ public abstract class DistroBase : ScriptableObject
         }
     }
 
-    public virtual IEnumerator DistributeCoroutine()
+    public virtual IEnumerable<BuildPath> BuildAndGetBuildPaths(bool forceBuild = false)
     {
-        if (IsRunning) {
-            yield return false; yield break;
-        }
-
-        IsRunning = true;
-
         var paths = new Dictionary<BuildTarget, string>();
 
-        foreach (var profile in builds) {
+        // Some Unity versions' (seen on 2018.2b11) ReorderableList can change
+        // the list during the build and cause the foreach to raise an exception
+        foreach (var profile in builds.ToArray()) {
             if (profile == null) continue;
             foreach (var target in profile.BuildTargets) {
                 var path = profile.GetLastBuildPath(target);
@@ -111,8 +103,7 @@ public abstract class DistroBase : ScriptableObject
                     var options = BuildManager.GetDefaultOptions(target);
                     var error = BuildManager.Build(profile, options);
                     if (!string.IsNullOrEmpty(error)) {
-                        IsRunning = false;
-                        yield return false; yield break;
+                        return null;
                     }
                     path = profile.GetLastBuildPath(target);
                 }
@@ -120,20 +111,36 @@ public abstract class DistroBase : ScriptableObject
             }
         }
 
-        if (paths.Count == 0 && !CanRunWithoutBuilds) {
+        return paths.Select(p => new BuildPath(p.Key, p.Value));
+    }
+    public virtual IEnumerator DistributeCoroutine(bool forceBuild = false)
+    {
+        if (IsRunning) {
+            yield return false; yield break;
+        }
+
+        IsRunning = true;
+
+        var paths = BuildAndGetBuildPaths(forceBuild);
+        if (paths == null) {
+            IsRunning = false;
+            yield return false; yield break;
+        }
+
+        if (!CanRunWithoutBuildTargets && !paths.Any()) {
             Debug.LogError(name + ": No build paths for distribution");
             IsRunning = false;
             yield return false; yield break;
         }
 
-        yield return DistributeCoroutine(paths);
+        yield return DistributeCoroutine(paths, forceBuild);
 
         IsRunning = false;
 
         yield return GetSubroutineResult<bool>();
     }
 
-    protected abstract IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths);
+    protected abstract IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild);
 
     // -------- Execute Script --------
 

@@ -34,7 +34,7 @@ public class ItchDistro : DistroBase
         { BuildTarget.Android, "android" },
     };
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         if (!File.Exists(butlerPath)) {
             Debug.LogError("ItchDistro: Butler path not set or file does not exist.");
@@ -47,8 +47,8 @@ public class ItchDistro : DistroBase
         }
 
         foreach (var pair in buildPaths) {
-            if (!ChannelNames.ContainsKey(pair.Key)) {
-                Debug.LogWarning("ItchDistro: Build target " + pair.Key + " not supported, skipping.");
+            if (!ChannelNames.ContainsKey(pair.target)) {
+                Debug.LogWarning("ItchDistro: Build target " + pair.target + " not supported, skipping.");
                 continue;
             }
 
@@ -62,13 +62,13 @@ public class ItchDistro : DistroBase
         yield return true;
     }
 
-    IEnumerator Distribute(KeyValuePair<BuildTarget, string> buildPath)
+    IEnumerator Distribute(BuildPath buildPath)
     {
-        Debug.Log("ItchDistro: Pushing " + buildPath.Key);
+        Debug.Log("ItchDistro: Pushing " + buildPath.target);
 
-        var path = OptionHelper.GetBuildBasePath(buildPath.Value);
+        var path = OptionHelper.GetBuildBasePath(buildPath.path);
 
-        var channel = ChannelNames[buildPath.Key];
+        var channel = ChannelNames[buildPath.target];
         if (!string.IsNullOrEmpty(channelSuffix)) {
             channel += "-" + channelSuffix;
         }

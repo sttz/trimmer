@@ -49,7 +49,7 @@ public class SteamDistro : DistroBase
     /// </summary>
     public string appScript;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         // Check SDK
         var cmd = FindSteamCmd();
@@ -89,7 +89,7 @@ public class SteamDistro : DistroBase
         var tempDir = FileUtil.GetUniqueTempPathInProject();
         Directory.CreateDirectory(tempDir);
 
-        var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.Key));
+        var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.target));
         var convertError = false;
         foreach (var file in Directory.GetFiles(scriptsFolder)) {
             if (Path.GetExtension(file).ToLower() != ".vdf") continue;
@@ -112,14 +112,14 @@ public class SteamDistro : DistroBase
                     return "";
                 }
 
-                if (!buildPaths.Any(p => p.Key == target)) {
+                if (!buildPaths.Any(p => p.target == target)) {
                     Debug.LogError("SteamDistro: Build target '" + platformName + "' not part of given build profile(s) in VDF script:" + file);
                     convertError = true;
                     return "";
                 }
                 targets.Remove(target);
 
-                var path = buildPaths.Where(p => p.Key == target).Select(p => p.Value).First();
+                var path = buildPaths.Where(p => p.target == target).Select(p => p.path).First();
                 path = OptionHelper.GetBuildBasePath(path);
 
                 return Path.GetFullPath(path);

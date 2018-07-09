@@ -34,7 +34,7 @@ public class ScriptDistro : DistroBase
     public string arguments;
     public bool individual;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         if (string.IsNullOrEmpty(scriptPath)) {
             Debug.LogError("ScriptDistro: Script path not set.");
@@ -63,19 +63,19 @@ public class ScriptDistro : DistroBase
         yield return true;
     }
 
-    string ReplaceVariablesIndividual(string input, KeyValuePair<BuildTarget, string> buildPath)
+    string ReplaceVariablesIndividual(string input, BuildPath buildPath)
     {
-        input = input.Replace("{target}",  "'" + buildPath.Key.ToString() + "'");
-        input = input.Replace("{path}",    "'" + buildPath.Value + "'");
+        input = input.Replace("{target}",  "'" + buildPath.target.ToString() + "'");
+        input = input.Replace("{path}",    "'" + buildPath.path + "'");
         input = input.Replace("{project}", "'" + Application.dataPath + "'");
         return input;
     }
 
-    string ReplaceVariables(string input, IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    string ReplaceVariables(string input, IEnumerable<BuildPath> buildPaths)
     {
-        input = input.Replace("{targets}", string.Join(" ", buildPaths.Select(p => "'" + p.Key.ToString() + "'").ToArray()));
-        input = input.Replace("{paths}", string.Join(" ", buildPaths.Select(p => "'" + p.Value + "'").ToArray()));
-        input = input.Replace("{targetspaths}", string.Join(" ", buildPaths.Select(p => "'" + p.Key.ToString() + "' '" + p.Value + "'").ToArray()));
+        input = input.Replace("{targets}", string.Join(" ", buildPaths.Select(p => "'" + p.target.ToString() + "'").ToArray()));
+        input = input.Replace("{paths}", string.Join(" ", buildPaths.Select(p => "'" + p.path + "'").ToArray()));
+        input = input.Replace("{targetspaths}", string.Join(" ", buildPaths.Select(p => "'" + p.target.ToString() + "' '" + p.path + "'").ToArray()));
         input = input.Replace("{project}", Application.dataPath);
         return input;
     }

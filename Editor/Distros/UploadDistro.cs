@@ -35,7 +35,7 @@ public class UploadDistro : ZipDistro
     const string keychainService = "UploadDistro";
     [Keychain(keychainService)] public Login login;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         if (string.IsNullOrEmpty(curlPath)) {
             Debug.LogError("UploadDistro: Path to curl not set.");
@@ -58,7 +58,7 @@ public class UploadDistro : ZipDistro
         }
 
         yield return ZipBuilds(buildPaths);
-        var zipPaths = GetSubroutineResult<IEnumerable<KeyValuePair<BuildTarget, string>>>();
+        var zipPaths = GetSubroutineResult<IEnumerable<BuildPath>>();
         if (zipPaths == null) {
             yield return false; yield break;
         }
@@ -74,9 +74,9 @@ public class UploadDistro : ZipDistro
         yield return true;
     }
 
-    protected IEnumerator Upload(KeyValuePair<BuildTarget, string> zipPath)
+    protected IEnumerator Upload(BuildPath zipPath)
     {
-        var archive = zipPath.Value;
+        var archive = zipPath.path;
         if (!File.Exists(archive)) {
             Debug.LogError("UploadDistro: Archive file does not exist: " + archive);
             yield return false; yield break;

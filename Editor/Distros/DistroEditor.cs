@@ -57,11 +57,9 @@ public class DistroEditor : UnityEditor.Editor
         GUILayout.Label("Build Profiles", EditorStyles.boldLabel);
         list.DoLayoutList();
 
-        EditorGUI.BeginDisabledGroup(!distro.CanRunWithoutBuilds && !distro.HasBuilds());
+        EditorGUI.BeginDisabledGroup(!distro.CanRunWithoutBuildTargets && (distro.builds == null || distro.builds.Count == 0));
         {
             GUILayout.Label("Distribution", EditorStyles.boldLabel);
-            distro.forceBuild = GUILayout.Toggle(distro.forceBuild, "Force rebuild");
-
             EditorGUILayout.BeginHorizontal();
             {
                 if (distro.IsRunning) {
@@ -70,11 +68,18 @@ public class DistroEditor : UnityEditor.Editor
                     }
                     GUILayout.Label(GetSpinner(), GUILayout.ExpandWidth(false));
                 } else {
-                    var label = !distro.forceBuild && distro.HasAllBuilds() ? "Distribute" : "Build & Distribute";
-                    if (GUILayout.Button(label)) {
-                        distro.Distribute();
+                    if (GUILayout.Button("Build & Distribute")) {
+                        distro.Distribute(true);
                         GUIUtility.ExitGUI();
                     }
+                    EditorGUI.BeginDisabledGroup(!distro.HasAllBuilds());
+                    {
+                        if (GUILayout.Button("Distribute")) {
+                            distro.Distribute();
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+                    EditorGUI.EndDisabledGroup();
                 }
             }
             EditorGUILayout.EndHorizontal();

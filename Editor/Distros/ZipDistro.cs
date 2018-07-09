@@ -118,15 +118,15 @@ public class ZipDistro : DistroBase
         return null;
     }
 
-    protected IEnumerator ZipBuilds(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected IEnumerator ZipBuilds(IEnumerable<BuildPath> buildPaths)
     {
-        var queue = new Queue<KeyValuePair<BuildTarget, string>>(buildPaths);
-        var results = new List<KeyValuePair<BuildTarget, string>>();
+        var queue = new Queue<BuildPath>(buildPaths);
+        var results = new List<BuildPath>();
         while (queue.Count > 0) {
             var next = queue.Dequeue();
             yield return Zip(next);
-            var result = GetSubroutineResult<KeyValuePair<BuildTarget, string>>();
-            if (result.Value == null) {
+            var result = GetSubroutineResult<BuildPath>();
+            if (result.path == null) {
                 yield return null; yield break;
             } else {
                 results.Add(result);
@@ -135,10 +135,10 @@ public class ZipDistro : DistroBase
         yield return results;
     }
 
-    protected IEnumerator Zip(KeyValuePair<BuildTarget, string> buildPath)
+    protected IEnumerator Zip(BuildPath buildPath)
     {
-        var target = buildPath.Key;
-        var path = buildPath.Value;
+        var target = buildPath.target;
+        var path = buildPath.path;
 
         if (!File.Exists(path) && !Directory.Exists(path)) {
             Debug.LogError("ZipDistro: Path to compress does not exist: " + path);
@@ -256,7 +256,7 @@ public class ZipDistro : DistroBase
         }
 
         Debug.Log("ZipDistro: Archived to: " + outputPath);
-        yield return new KeyValuePair<BuildTarget, string>(target, outputPath);
+        yield return new BuildPath(target, outputPath);
     }
 
     protected IEnumerator RenameRoot(string archivePath, string oldName, string newName)
@@ -282,10 +282,10 @@ public class ZipDistro : DistroBase
         yield return exitcode == 0;
     }
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         yield return ZipBuilds(buildPaths);
-        if (GetSubroutineResult<IEnumerable<KeyValuePair<BuildTarget, string>>>() != null) {
+        if (GetSubroutineResult<IEnumerable<BuildPath>>() != null) {
             Debug.Log("ZipDistro: Archives created successfully");
             yield return true;
         } else {

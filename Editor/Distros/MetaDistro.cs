@@ -17,16 +17,12 @@ public class MetaDistro : DistroBase
 {
     public DistroBase[] distros;
 
-    public override bool CanRunWithoutBuilds { get { return true; } }
+    public override bool CanRunWithoutBuildTargets { get { return true; } }
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         foreach (var distro in distros) {
-            if (forceBuild && !distro.Build()) {
-                yield return false; yield break;
-            }
-
-            yield return distro.DistributeCoroutine();
+            yield return distro.DistributeCoroutine(forceBuild);
             if (!GetSubroutineResult<bool>()) {
                 yield return false; yield break;
             }

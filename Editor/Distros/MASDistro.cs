@@ -49,14 +49,14 @@ public class MASDistro : DistroBase
     /// </summary>
     public string optoolPath;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<KeyValuePair<BuildTarget, string>> buildPaths)
+    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         foreach (var buildPath in buildPaths) {
-            if (buildPath.Key != BuildTarget.StandaloneOSX) {
-                Debug.Log("MASDistro: Skipping mismatched platform, only macOS is supported: " + buildPath.Key);
+            if (buildPath.target != BuildTarget.StandaloneOSX) {
+                Debug.Log("MASDistro: Skipping mismatched platform, only macOS is supported: " + buildPath.target);
                 continue;
             }
-            yield return Process(buildPath.Value);
+            yield return Process(buildPath.path);
             if (!GetSubroutineResult<bool>()) {
                 yield return false; yield break;
             }
