@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !UNITY_2018_2_OR_NEWER
 
 using System;
 using System.IO;
