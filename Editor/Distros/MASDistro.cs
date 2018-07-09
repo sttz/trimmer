@@ -12,6 +12,28 @@ namespace sttz.Trimmer.Editor
 /// <summary>
 /// Prepare a Mac build for the Mac App Store.
 /// </summary>
+/// <remarks>
+/// This distribution makes the necessary modifications for Mac App Store builds. It does 
+/// not automatically upload the build, you can manually upload the generated pkg using
+/// Application Loader.
+/// 
+/// The distribution will take these steps:
+/// * Add additional languages to the Info.plist (see <see cref="languages"/>)
+/// * Update the copyright in the Info.plist (optional, <see cref="copyright"/>)
+/// * Link additional frameworks (required for Game Center, <see cref="linkFrameworks"/>)
+/// * Copy the provising profile to `Contents/embedded.provisionprofile`
+/// * Sign the plugins and application with the given entitlements (see <see cref="entitlements"/> and <see cref="appSignIdentity"/>)
+/// * Create a pkg installer and sign it (see <see cref="installerSignIdentity"/>)
+/// 
+/// Use XCode the create your developer and distribution identities and the Apple Developer Portal
+/// to create the provisining profiles. One way to create an entitlements file is to create an
+/// empty dummy project in XCode and then to configure its capabilities accordingly.
+/// 
+/// The distribution can be used to create Mac App Store builds for testing:
+/// * Set the <see cref="appSignIdentity"/> to your developer identity (not the 3rd party mac developer one)
+/// * Leave the <see cref="installerSignIdentity"/> blank to skip generating the pkg
+/// * Set the provisining profile to a development profile
+/// </remarks>
 [CreateAssetMenu(fileName = "MAS Distro.asset", menuName = "Trimmer/Distro/Mac App Store")]
 public class MASDistro : DistroBase
 {

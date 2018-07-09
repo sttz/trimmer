@@ -18,7 +18,8 @@ namespace sttz.Trimmer.Editor
 /// 
 /// Note that the binary shipped with macOS does not support scp/sftp and might
 /// have issues with ftpes. Install and use a current curl binary using Homebrew:
-/// > brew install curl --with-libssh2
+/// 
+///     brew install curl --with-libssh2
 /// 
 /// If you want to use public key authentication, specify the username in the
 /// url and leave the user field blank.

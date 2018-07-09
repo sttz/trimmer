@@ -15,14 +15,32 @@ namespace sttz.Trimmer.Editor
 /// Distro that uploads builds to Steam.
 /// </summary>
 /// <remarks>
-/// SteamPipe's scripts unfortunately don't allow any variable substitution, so
-/// this script replace variables in the form of "{{name}}" in the vdf scripts,
-/// copying them to a temporary location:
-/// - {{BuiltTarget}}: Path to the last build of the given target
-/// - {{project}}: Path to the Unity project root
-/// - {{scripts}}: Path to the original scripts folder
+/// Uses Steam's ContentBuilder to upload the builds to Steam.
 /// 
-/// The {{BuildTarget}} variables come from the given Build Profiles. Adding a 
+/// You need the Steam SDK (or only the ContentBuilder folder inside its tools
+/// directory as well as a Steam developer account.
+/// 
+/// The upload is configured using VDF scripts, refer to Valve's documentation
+/// on how they are set up.
+/// 
+/// Trimmer distros are path independent, i.e. the build path can be anything.
+/// The Build Profile decides on the path and then passes it on to the 
+/// distribution for processing. However, Steam's scripts only allow for 
+/// configuring fixed paths and don't support variable substitution.
+/// 
+/// Therefore, SteamDistro peforms its own variable substitution to fill in 
+/// the dynamic build paths into the VDF scripts. It takes a directory of
+/// scripts as input, processes those scripts and then writes them to a 
+/// temporary directory. Your scripts will therefore not run from the scripts
+/// folder but from an essentially random path. Use variables to refer to
+/// the build, assets inside the script folder or files in the Unity project.
+/// 
+/// Supported variables:
+/// - `{{BuiltTarget}}`: Path to the last build of the given target
+/// - `{{project}}`: Path to the Unity project root
+/// - `{{scripts}}`: Path to the original scripts folder
+/// 
+/// The `{{BuildTarget}}` variables come from the given Build Profiles. Adding a 
 /// variable from a build target that doesn't exist in any Build Profile will 
 /// result in an error. Extra build targets that are never inserted into a script
 /// will result in a warning. If multiple Build Profiles share a target, the last

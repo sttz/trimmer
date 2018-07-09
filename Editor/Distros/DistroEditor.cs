@@ -5,6 +5,14 @@ using System.Collections.Generic;
 namespace sttz.Trimmer.Editor
 {
 
+/// <summary>
+/// Editor for distributions.
+/// </summary>
+/// <remarks>
+/// The editor only handles the custom UI at the bottom, the distribution's UI
+/// is the default Unity property UI and be customized as such with attributes
+/// and property drawers.
+/// </remarks>
 [CustomEditor(typeof(DistroBase), true)]
 public class DistroEditor : UnityEditor.Editor
 {

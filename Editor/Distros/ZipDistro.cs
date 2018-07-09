@@ -11,26 +11,41 @@ namespace sttz.Trimmer.Editor
 {
 
 /// <summary>
-/// Zip up the builds.
+/// Distro that creates ZIP files for each build.
 /// </summary>
 /// <remarks>
-/// Compresses the builds using 7zip, which is bundled with Unity.
+/// Zip distro uses 7zip, which is bundled with the Unity editor.
+/// Supported formats are 7z, Bzip2 (Tar), Gzip (Tar), Uncompressed Tar, 
+/// Wim, Xz (Tar) and Zip.
 /// 
-/// Special processing is done to make the archives more friendly:
-/// - If the folder to the archived only contains a single file, 
-///   the file is archived instead.
-/// - If a pretty name speicifed for a platform and the archive
-///   contains a root folder, the name is applied to this root
-///   folder as well.
-/// - Desktop files like .DS_Store, Thumbs.db and dekstop.ini 
-///   are excluded.
+/// If the build directory contains multiple files, the archive will
+/// contain the build folder. However, if the build directory only
+/// contains a single file or directory, that file or directory will
+/// be put at the root of the archive (e.g. macOS app bundles).
+/// 
+/// `.DS_Store`, `Thumbs.db`, `dekstop.ini` and `build.json` files
+/// are ignored.
+/// 
+/// The <see cref="prettyNames"/> field allows to configure different
+/// archive file names per platform. If the archive includes the 
+/// build directory, the name will also be applied to the archive's
+/// root directory.
 /// </remarks>
 [CreateAssetMenu(fileName = "Zip Distro.asset", menuName = "Trimmer/Distro/Zip")]
 public class ZipDistro : DistroBase
 {
+    /// <summary>
+    /// Used to customize archive file names.
+    /// </summary>
     [System.Serializable]
     public struct PrettyName {
+        /// <summary>
+        /// The build target to apply the name to.
+        /// </summary>
         public BuildTarget target;
+        /// <summary>
+        /// The archive file name to use for the build.
+        /// </summary>
         public string name;
     }
 

@@ -8,6 +8,16 @@ using UnityEngine;
 namespace sttz.Trimmer.Editor
 {
 
+/// <summary>
+/// Distribution to upload builds to itch.io.
+/// </summary>
+/// <remarks>
+/// The distribution relies on itch's butler command line tool: https://itch.io/docs/butler/
+/// Download the tool and set <see cref="butlerPath"/> to its location (relative to the project root).
+/// 
+/// Authentication is handled via butler, which stores an API token on the local machine.
+/// Call `butler login` once to authorize it.
+/// </remarks>
 [CreateAssetMenu(fileName = "Itch Distro.asset", menuName = "Trimmer/Distro/Itch.io")]
 public class ItchDistro : DistroBase
 {

@@ -17,15 +17,15 @@ namespace sttz.Trimmer.Editor
 /// option:
 /// - Combined: Call the script only once, independent of how many builds are being
 ///   processed. Variables:
-///   - "{targets}": Space-separated quoted list of build targets
-///   - "{paths}": Space-separated quoted list of build paths
-///   - "{targetspaths}": Space-separated quoted list of target and path pairs
+///   - "{targets}": Space-separated list of quoted build targets
+///   - "{paths}": Space-separated list of quoted build paths
+///   - "{targetspaths}": Space-separated list of quoted target and path pairs
 /// - Individual: Call the script for each build. Variables:
 ///   - "{target}": Quoted build target name
 ///   - "{path}": Quoted path to build
 /// 
 /// Both modes support the "{project}" variable, which is replaced with a quoted string
-/// to the proect's Assets folder.
+/// to the project's Assets folder.
 /// </remarks>
 [CreateAssetMenu(fileName = "Script Distro.asset", menuName = "Trimmer/Distro/Script")]
 public class ScriptDistro : DistroBase
