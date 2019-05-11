@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -559,7 +560,9 @@ public class ProfileEditor : UnityEditor.Editor
             EditorGUI.EndDisabledGroup();
 
             var path = buildProfile.GetLastBuildPath(target);
-            if (!string.IsNullOrEmpty(path) && GUILayout.Button("Show", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+            if (!string.IsNullOrEmpty(path) 
+                    && (File.Exists(path) || Directory.Exists(path))
+                    && GUILayout.Button("Show", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
                 EditorUtility.RevealInFinder(path);
             }
             if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
