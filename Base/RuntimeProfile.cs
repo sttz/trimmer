@@ -63,6 +63,9 @@ public class RuntimeProfile : IEnumerable<Option>
                     #if NET_2_0 || NET_2_0_SUBSET
                         if (assembly is System.Reflection.Emit.AssemblyBuilder)
                             continue;
+                    #elif NET_STANDARD_2_0 || NET_4_6
+                        if (assembly.IsDynamic)
+                            continue;
                     #endif
                     _options.AddRange(assembly.GetExportedTypes()
                         .Where(t => 
