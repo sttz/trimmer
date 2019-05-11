@@ -121,6 +121,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     }
 
     static BuildOptions[] optionFlags;
+    static string[] optionNames;
 
     /// <summary>
     /// Unity's EnumMaskPopup doesn't work with enums where the flags are not
@@ -130,6 +131,12 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// </summary>
     public override bool EditGUI()
     {
+        if (optionFlags == null || optionNames == null) {
+            optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
+            optionNames = Enum.GetNames(typeof(BuildOptions));
+            Array.Sort(optionNames, optionFlags);
+        }
+
         EditorGUI.BeginChangeCheck();
 
         string name = "Multiple...";
@@ -142,24 +149,23 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
 
         // Check if mask is power of two, which means only one flag is set
         } else if ((Value & (Value - 1)) == 0) {
-            name = Value.ToString();
+            var index = Array.IndexOf(optionFlags, Value);
+            if (index >= 0 && index < optionNames.Length) {
+                name = optionNames[index];
+            }
         }
 
         if (GUILayout.Button(name, "MiniPullDown")) {
-            if (optionFlags == null) {
-                optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
-                Array.Sort(optionFlags, (a, b) => a.ToString().CompareTo(b.ToString()));
-            }
-
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Clear Options"), false, () => {
                 Value = 0;
             });
             menu.AddSeparator("");
-            foreach (var flag in optionFlags) {
+            for (int i = 0; i < optionFlags.Length && i < optionNames.Length; i++) {
+                var flag = optionFlags[i];
                 if ((int)flag == 0) continue;
                 var selected = (Value & flag) == flag;
-                menu.AddItem(new GUIContent(flag.ToString()), selected, () => {
+                menu.AddItem(new GUIContent(optionNames[i]), selected, () => {
                     Value ^= flag;
                 });
             }
