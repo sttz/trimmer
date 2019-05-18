@@ -27,7 +27,7 @@ namespace sttz.Trimmer.Editor
 /// Note that curl will not create remote directories. Make sure the upload 
 /// path exists on the server.
 /// </remarks>
-[CreateAssetMenu(fileName = "Upload Distro.asset", menuName = "Trimmer/Distro/Upload")]
+[CreateAssetMenu(fileName = "Upload Distro.asset", menuName = "Trimmer/Upload", order = 100)]
 public class UploadDistro : ZipDistro
 {
     public string curlPath;

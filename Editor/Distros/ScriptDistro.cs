@@ -27,7 +27,7 @@ namespace sttz.Trimmer.Editor
 /// Both modes support the "{project}" variable, which is replaced with a quoted string
 /// to the project's Assets folder.
 /// </remarks>
-[CreateAssetMenu(fileName = "Script Distro.asset", menuName = "Trimmer/Distro/Script")]
+[CreateAssetMenu(fileName = "Script Distro.asset", menuName = "Trimmer/Script", order = 100)]
 public class ScriptDistro : DistroBase
 {
     public string scriptPath;

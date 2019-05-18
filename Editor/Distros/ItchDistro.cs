@@ -18,7 +18,7 @@ namespace sttz.Trimmer.Editor
 /// Authentication is handled via butler, which stores an API token on the local machine.
 /// Call `butler login` once to authorize it.
 /// </remarks>
-[CreateAssetMenu(fileName = "Itch Distro.asset", menuName = "Trimmer/Distro/Itch.io")]
+[CreateAssetMenu(fileName = "Itch Distro.asset", menuName = "Trimmer/Itch.io", order = 100)]
 public class ItchDistro : DistroBase
 {
     /// <summary>

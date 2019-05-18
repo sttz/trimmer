@@ -12,7 +12,7 @@ namespace sttz.Trimmer.Editor
 /// <summary>
 /// Run any number of other distros.
 /// </summary>
-[CreateAssetMenu(fileName = "Meta Distro.asset", menuName = "Trimmer/Distro/Meta")]
+[CreateAssetMenu(fileName = "Meta Distro.asset", menuName = "Trimmer/Meta", order = 100)]
 public class MetaDistro : DistroBase
 {
     public DistroBase[] distros;

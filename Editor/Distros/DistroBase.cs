@@ -34,6 +34,10 @@ namespace sttz.Trimmer.Editor
 /// </remarks>
 public abstract class DistroBase : ScriptableObject
 {
+    [MenuItem("Assets/Create/Trimmer/Distributions:", false, 99)]
+    [MenuItem("Assets/Create/Trimmer/Distributions:", true)]
+    static bool Dummy() { return false; }
+
     /// <summary>
     /// Process the builds of these Build Profiles.
     /// </summary>

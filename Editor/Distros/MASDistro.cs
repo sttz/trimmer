@@ -34,7 +34,7 @@ namespace sttz.Trimmer.Editor
 /// * Leave the <see cref="installerSignIdentity"/> blank to skip generating the pkg
 /// * Set the provisining profile to a development profile
 /// </remarks>
-[CreateAssetMenu(fileName = "MAS Distro.asset", menuName = "Trimmer/Distro/Mac App Store")]
+[CreateAssetMenu(fileName = "MAS Distro.asset", menuName = "Trimmer/Mac App Store", order = 100)]
 public class MASDistro : DistroBase
 {
     /// <summary>

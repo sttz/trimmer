@@ -31,7 +31,7 @@ namespace sttz.Trimmer.Editor
 /// build directory, the name will also be applied to the archive's
 /// root directory.
 /// </remarks>
-[CreateAssetMenu(fileName = "Zip Distro.asset", menuName = "Trimmer/Distro/Zip")]
+[CreateAssetMenu(fileName = "Zip Distro.asset", menuName = "Trimmer/Zip", order = 100)]
 public class ZipDistro : DistroBase
 {
     /// <summary>

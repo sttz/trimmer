@@ -46,7 +46,7 @@ namespace sttz.Trimmer.Editor
 /// will result in a warning. If multiple Build Profiles share a target, the last
 /// one will be used.
 /// </remarks>
-[CreateAssetMenu(fileName = "Steam Distro.asset", menuName = "Trimmer/Distro/Steam")]
+[CreateAssetMenu(fileName = "Steam Distro.asset", menuName = "Trimmer/Steam", order = 100)]
 public class SteamDistro : DistroBase
 {
     /// <summary>
