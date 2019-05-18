@@ -495,6 +495,7 @@ public class BuildManager
         // Show a dialog of no active build profile has been set
         // (Unity < 2017.2 will only get an error in the console)
         if (currentProfile == null 
+            && EditorProfile.Instance.ActiveProfile == null
             && !EditorUtility.DisplayDialog(
                 "Trimmer: No Active Profile Set", 
                 "There's no active Build Profile set, a null profile will be applied "
@@ -515,6 +516,10 @@ public class BuildManager
     public void OnPreprocessBuild(BuildTarget target, string path)
 #endif
     {
+        if (currentProfile == null) {
+            currentProfile = EditorProfile.Instance.ActiveProfile;
+        }
+
         var buildProfile = currentProfile;
 
         #if UNITY_2018_1_OR_NEWER
