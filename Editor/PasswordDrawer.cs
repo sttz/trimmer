@@ -16,18 +16,21 @@ public class KeychainAttribute : Attribute
 {
     public string Service { get; protected set; }
     public string User { get; protected set; }
+    public string UserLabel { get; protected set; }
 
     /// <summary>
     /// Set the service and user (for fields of type Password) for storing the
     /// password in the Keychain.
     /// </summary>
     /// <param name="keychainInfo">Service name and user name separated by a colon.</param>
-    public KeychainAttribute(string keychainInfo)
+    /// <param name="userLabel">Override label before user field (does not apply to Password fields).</param>
+    public KeychainAttribute(string keychainInfo, string userLabel = null)
     {
         string service, user;
         ParseKeychainInfo(keychainInfo, out service, out user);
         Service = service;
         User = user;
+        UserLabel = userLabel;
     }
 
     public static void ParseKeychainInfo(string keychainInfo, out string service, out string user)
@@ -171,6 +174,8 @@ public class LoginDrawer : PropertyDrawer
     // Draw the property inside the given rect
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
+        var attr = (KeychainAttribute)fieldInfo.GetCustomAttributes(typeof(KeychainAttribute), true).FirstOrDefault();
+
         // Using BeginProperty / EndProperty on the parent property means that
         // prefab override logic works on the entire property.
         EditorGUI.BeginProperty(position, label, property);
@@ -189,7 +194,7 @@ public class LoginDrawer : PropertyDrawer
         var userField = property.FindPropertyRelative("user");
         if (userField != null) {
             position.width = typeWidth;
-            GUI.Label(position, "User");
+            GUI.Label(position, attr.UserLabel ?? "User");
 
             EditorGUI.BeginChangeCheck();
             {
@@ -242,7 +247,6 @@ public class LoginDrawer : PropertyDrawer
             // Keychain password
 
             // Check attribute and if user is present
-            var attr = (KeychainAttribute)fieldInfo.GetCustomAttributes(typeof(KeychainAttribute), true).FirstOrDefault();
             var user = userField != null ? userField.stringValue : attr.User;
             string error = null;
             if (attr == null) {
