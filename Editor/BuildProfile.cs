@@ -180,24 +180,17 @@ public class BuildProfile : EditableProfile
     /// <returns>The path or null if no path is recorded.</returns>
     public string GetLastBuildPath(BuildTarget target)
     {
-        return EditorUserBuildSettings.GetPlatformSettings(
-            target.ToString(), 
-            GetLastBuildPathSettingName()
-        );
+        return PlayerPrefs.GetString(GetLastBuildPathSettingName(target));
     }
 
     public void SetLastBuildPath(BuildTarget target, string path)
     {
-        EditorUserBuildSettings.SetPlatformSettings(
-            target.ToString(),
-            GetLastBuildPathSettingName(),
-            path
-        );
+        PlayerPrefs.SetString(GetLastBuildPathSettingName(target), path);
     }
 
-    private string GetLastBuildPathSettingName()
+    private string GetLastBuildPathSettingName(BuildTarget target)
     {
-        return OptionHelper.GetAssetGUID(this) + ":lastBuildPath";
+        return $"{target.ToString()}:{OptionHelper.GetAssetGUID(this)}:lastBuildPath";
     }
 
     // ------ Context Menu ------
