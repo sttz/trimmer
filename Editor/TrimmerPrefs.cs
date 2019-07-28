@@ -63,7 +63,18 @@ public static class TrimmerPrefs
     /// <summary>
     /// GUI shown in Unity's Preferences window.
     /// </summary>
-    [PreferenceItem("Trimmer")]
+    #if UNITY_2018_3_OR_NEWER
+	[SettingsProvider]
+	static SettingsProvider CreateSettingsProvider()
+	{
+		return new SettingsProvider("Preferences/Trimmer", SettingsScope.User) {
+			guiHandler = (searchContext) => OnPreferencesGUI(),
+			keywords = new string[] { "Trimmer", "Utility", "Editor" }
+		};
+	}
+	#else
+	[PreferenceItem("Trimmer")]
+	#endif
     static void OnPreferencesGUI()
     {
         EditorGUILayout.LabelField("Editor Profile", EditorStyles.boldLabel);
