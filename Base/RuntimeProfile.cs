@@ -23,7 +23,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using sttz.Trimmer.Extensions;
-using UnityEngine;
+using UnityEditor;
 
 namespace sttz.Trimmer
 {
@@ -58,29 +58,36 @@ public class RuntimeProfile : IEnumerable<Option>
     public static IEnumerable<Type> AllOptionTypes {
         get {
             if (_options == null) {
-                _options = new List<Type>();
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-                    #if NET_2_0 || NET_2_0_SUBSET
-                        if (assembly is System.Reflection.Emit.AssemblyBuilder)
-                            continue;
-                    #elif NET_STANDARD_2_0 || NET_4_6
-                        if (assembly.IsDynamic)
-                            continue;
-                    #endif
-                    _options.AddRange(assembly.GetExportedTypes()
-                        .Where(t => 
-                            t.IsClass 
-                            && !t.IsAbstract 
-                            && !t.IsNested
-                            && typeof(Option).IsAssignableFrom(t)
-                        )
-                    );
-                }
+                #if UNITY_2019_2_OR_NEWER
+                    _options = TypeCache.GetTypesDerivedFrom<Option>()
+                        .Where(t => !t.IsAbstract && !t.IsNested)
+                        .ToArray();
+                #else
+                    var options = new List<Type>();
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+                        #if NET_2_0 || NET_2_0_SUBSET
+                            if (assembly is System.Reflection.Emit.AssemblyBuilder)
+                                continue;
+                        #elif NET_STANDARD_2_0 || NET_4_6
+                            if (assembly.IsDynamic)
+                                continue;
+                        #endif
+                        options.AddRange(assembly.GetExportedTypes()
+                            .Where(t => 
+                                t.IsClass 
+                                && !t.IsAbstract 
+                                && !t.IsNested
+                                && typeof(Option).IsAssignableFrom(t)
+                            )
+                        );
+                    }
+                    _options = options;
+                #endif
             }
             return _options;
         }
     }
-    private static List<Type> _options;
+    private static IEnumerable<Type> _options;
 
     /// <summary>
     /// Main runtime profile.
