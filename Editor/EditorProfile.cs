@@ -59,13 +59,13 @@ public class EditorProfile : EditableProfile
     /// <summary>
     /// Menu to show the active Build Profile in the inspector.
     /// </summary>
-    [MenuItem("Window/Trimmer/Active Build Profile %&b")]
+    [MenuItem("Window/Trimmer/Active Build Profile %&a")]
     public static void OpenActiveProfile()
     {
         Selection.activeObject = Instance.ActiveProfile;
     }
 
-    [MenuItem("Window/Trimmer/Active Build Profile %&b", true)]
+    [MenuItem("Window/Trimmer/Active Build Profile %&a", true)]
     static bool ValidateOpenActiveProfile()
     {
         return Instance.ActiveProfile != null;
