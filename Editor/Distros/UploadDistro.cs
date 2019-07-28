@@ -1,8 +1,12 @@
-﻿using System.Collections;
+﻿//
+// Trimmer Framework for Unity
+// https://sttz.ch/trimmer
+//
+
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using sttz.Trimmer.Options;
-using UnityEditor;
 using UnityEngine;
 
 namespace sttz.Trimmer.Editor

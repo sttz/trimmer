@@ -1,9 +1,13 @@
+//
+// Trimmer Framework for Unity
+// https://sttz.ch/trimmer
+//
+
 using UnityEngine;
 using UnityEditor;
 using System;
 using sttz.Trimmer.Options;
 using System.Linq;
-using System.Reflection;
 
 namespace sttz.Trimmer.Editor
 {
