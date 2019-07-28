@@ -1,19 +1,25 @@
 {
-    "name": "ch.sttz.trimmer",
-    "displayName": "Trimmer",
-    "version": "0.1.4",
-    "unity": "2017.4",
-    "description": "An editor, build and player configuration framework for the Unity game engine.",
-    "keywords": [ "unity", "build", "configuration", "framework" ],
-    "author": {
-        "name": "Adrian Stutz",
-        "email": "adrian@sttz.ch",
-        "url": "https://sttz.ch"
-    },
-    "license": "GPL-3.0-or-later",
-    "homepage": "https://sttz.ch/trimmer",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/sttz/trimmer.git"
-    }
+  "name": "ch.sttz.trimmer",
+  "displayName": "Trimmer",
+  "version": "1.0.0",
+  "unity": "2017.4",
+  "description": "An editor, build and player configuration framework for the Unity game engine.",
+  "keywords": [
+    "unity",
+    "build",
+    "configuration",
+    "framework"
+  ],
+  "author": {
+    "name": "Adrian Stutz",
+    "email": "adrian@sttz.ch",
+    "url": "https://sttz.ch"
+  },
+  "license": "MIT",
+  "homepage": "https://sttz.ch/trimmer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sttz/trimmer.git"
+  },
+  "type": "tool"
 }
