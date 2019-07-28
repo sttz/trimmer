@@ -38,10 +38,12 @@ public class ItchDistro : DistroBase
         { BuildTarget.StandaloneOSX, "osx" },
         { BuildTarget.StandaloneWindows, "win32" },
         { BuildTarget.StandaloneWindows64, "win64" },
-        { BuildTarget.StandaloneLinux, "linux32" },
         { BuildTarget.StandaloneLinux64, "linux64" },
-        { BuildTarget.StandaloneLinuxUniversal, "linux" },
         { BuildTarget.Android, "android" },
+        #if !UNITY_2019_2_OR_NEWER
+        { BuildTarget.StandaloneLinux, "linux32" },
+        { BuildTarget.StandaloneLinuxUniversal, "linux" },
+        #endif
     };
 
     protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
