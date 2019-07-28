@@ -19,15 +19,11 @@
 #if UNITY_EDITOR
 
 using sttz.Trimmer.BaseOptions;
-using sttz.Trimmer.Extensions;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
-using System.Reflection;
+using UnityEditor.iOS.Xcode;
 
 namespace sttz.Trimmer.Options
 {
@@ -117,63 +113,28 @@ public class OptionXcode : OptionContainer
                 return;
             }
 
-            // We use reflection here to use the PlistDocument class
-            // because it's only available if the iOS plugin is installed.
-            // We could use #if UNITY_IOS but then the user would have to
-            // remember to switch the active platform to iOS before building,
-            // because the editor code will only be recompiled afterwards.
-            // (tested on Unity 5.6)
-            var assembly = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => a.GetName().Name == "UnityEditor.iOS.Extensions.Xcode")
-                .FirstOrDefault();
-            if (assembly == null) {
-                Debug.LogError("Could not find UnityEditor.iOS.Extensions.Xcode assembly.");
-                return;
-            }
+            // Unity made the unfortunate decision to include UnityEditor.iOS.Xcode
+            // as part of the iOS build support. This means users that don't have
+            // it installed would get an error when we use it here.
+            //
+            // Using UNITY_IOS unfortunately doesn't work, as it is only set if iOS
+            // is the active platform. With Trimmer, it's possible to make an iOS
+            // build when iOS is not the active platform. Untiy will switch the
+            // active platform during the build but the editor code won't be recompiled,
+            // meaning the code won't be executed.
+            //
+            // The only remaining options are to use reflection or to include the 
+            // Xcode DLL as part of Trimmer. We used reflection intially but
+            // that is error-prone and unwieldy and switched to including the DLL.
+            // With Asmdef's explicit assembly references, there hopefully won't
+            // be any issues with duplicate DLLs.
 
-            var PlistDocument = assembly.GetType("UnityEditor.iOS.Xcode.PlistDocument");
-            if (PlistDocument == null) {
-                Debug.LogError("Could not find PlistDocument class.");
-                return;
-            }
+            var info = new PlistDocument();
+            info.ReadFromFile(plistPath);
 
-            var PlistElementDict = assembly.GetType("UnityEditor.iOS.Xcode.PlistElementDict");
-            if (PlistElementDict == null) {
-                Debug.LogError("Could not find PlistElementDict class.");
-                return;
-            }
+            info.root.SetBoolean("ITSAppUsesNonExemptEncryption", false);
 
-            var ReadFromFile = PlistDocument.GetMethod("ReadFromFile", BindingFlags.Instance | BindingFlags.Public);
-            if (ReadFromFile == null) {
-                Debug.LogError("Could not find ReadFromFile method on PlistDocument class.");
-                return;
-            }
-
-            var WriteToFile = PlistDocument.GetMethod("WriteToFile", BindingFlags.Instance | BindingFlags.Public);
-            if (WriteToFile == null) {
-                Debug.LogError("Could not find WriteToFile method on PlistDocument class.");
-                return;
-            }
-
-            var root = PlistDocument.GetField("root", BindingFlags.Instance | BindingFlags.Public);
-            if (root == null) {
-                Debug.LogError("Could not find root field on PlistDocument class.");
-                return;
-            }
-
-            var SetBoolean = PlistElementDict.GetMethod("SetBoolean", BindingFlags.Instance | BindingFlags.Public);
-            if (SetBoolean == null) {
-                Debug.LogError("Could not find SetBoolean method on PlistElementDict class.");
-                return;
-            }
-
-            var info = Activator.CreateInstance(PlistDocument);
-            ReadFromFile.Invoke(info, new object[] { plistPath });
-
-            var rootValue = root.GetValue(info);
-            SetBoolean.Invoke(rootValue, new object[] { "ITSAppUsesNonExemptEncryption", false });
-
-            WriteToFile.Invoke(info, new object[] { plistPath });
+            info.WriteToFile(plistPath);
 
             Debug.Log("Added Info.plist entry indicating the app only uses exempt encryption.");
         }
