@@ -26,7 +26,7 @@ namespace sttz.Trimmer.Editor
 /// contains a single file or directory, that file or directory will
 /// be put at the root of the archive (e.g. macOS app bundles).
 /// 
-/// `.DS_Store`, `Thumbs.db`, `dekstop.ini` and `build.json` files
+/// `.DS_Store`, `Thumbs.db`, `desktop.ini` and `build.json` files
 /// are ignored.
 /// 
 /// The <see cref="prettyNames"/> field allows to configure different

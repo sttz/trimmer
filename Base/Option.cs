@@ -142,7 +142,7 @@ public enum OptionCapabilities
     /// <summary>
     /// Preset mask. A simple Option that can be included in the build
     /// and gets loaded in the editor but doesn't process the build and has 
-    /// no assocaited feature.
+    /// no associated feature.
     /// </summary>
     PresetOptionOnly = CanIncludeOption | CanPlayInEditor,
 }
@@ -239,7 +239,7 @@ public abstract class Option
     /// Configure the Option instance during instantiation.
     /// </summary>
     /// <remarks>
-    /// Override this method instead of the contrustor to configure your
+    /// Override this method instead of the constructor to configure your
     /// Option instance. Most Option properties should only bet set once
     /// in this method and then not changed after the Option is created.
     /// </remarks>
@@ -585,7 +585,7 @@ public abstract class Option
     /// define symbol set for the Option matches its class name.
     /// 
     /// In case you set the name to something that doesn't start with the 
-    /// Option prefix, the prefix wil be prepended to the Option's scripting
+    /// Option prefix, the prefix will be prepended to the Option's scripting
     /// define symbol.
     /// 
     /// e.g.
@@ -871,7 +871,7 @@ public abstract class Option
     /// <remarks>
     /// Variant options can have an arbitrary number of instances, each with
     /// a different variant parameter to distinguish them. Variant options are
-    /// created on-demand when a new paramter appears. However, the one
+    /// created on-demand when a new parameter appears. However, the one
     /// instance using the <see cref="VariantDefaultParameter"/> is guaranteed 
     /// to always exist and acts as container for the other variants.
     /// 
@@ -911,7 +911,7 @@ public abstract class Option
     /// > exception when called on other Options.
     /// 
     /// > [!TIP]
-    /// > For array variants, the parameter can be assigned arbirarily and
+    /// > For array variants, the parameter can be assigned arbitrarily and
     /// > will be overwritten on insertion. However it can be used to control
     /// > where the variant will be inserted, as parameters will be first
     /// > sorted before the indices are re-assigned (e.g. inserting "5.5"
@@ -924,7 +924,7 @@ public abstract class Option
 
         Assert.IsNotNull(parameter);
         Assert.IsFalse(string.Equals(parameter, VariantDefaultParameter, StringComparison.OrdinalIgnoreCase), "Cannot add variant with default parameter.");
-        Assert.IsTrue(variants == null || variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter)) == null, "Variant with paramter already exists.");
+        Assert.IsTrue(variants == null || variants.Find(v => v.VariantParameter.EqualsIgnoringCase(parameter)) == null, "Variant with parameter already exists.");
 
         var instance = (Option)Activator.CreateInstance(GetType());
         instance.Parent = this;
@@ -1063,7 +1063,7 @@ public abstract class Option
     /// </summary>
     /// <remarks>
     /// Child Options are nested classes of the current Option class.
-    /// They are detected automatically and instantaited when their
+    /// They are detected automatically and instantiated when their
     /// parent Option is instantiated.
     /// </remarks>
     public IEnumerable<Option> Children {

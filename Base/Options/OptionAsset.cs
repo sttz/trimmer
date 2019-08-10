@@ -51,7 +51,7 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
     {
         base.PostprocessScene(scene, inclusion);
 
-        // Only include reference when Opotion is included,
+        // Only include reference when Option is included,
         // we're building the first scene and a reference is set
         if ((inclusion & OptionInclusion.Option) != 0
                 && scene.buildIndex == 0 

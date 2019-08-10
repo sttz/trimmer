@@ -217,7 +217,7 @@ public class TrimmerClient
 
     public TrimmerClient()
     {
-        // Done here becuase callbacks are called on another thread
+        // Done here because callbacks are called on another thread
         clientHello = string.Format(ClientHelloFormat + "\n",
             Application.productName,
             Application.version,

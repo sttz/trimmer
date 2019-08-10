@@ -48,9 +48,9 @@ public class ProfileEditor : UnityEditor.Editor
     static GUIContent tempContent = new GUIContent();
 
     /// <summary>
-    /// Regex used to add spaces to option names. In constrast
+    /// Regex used to add spaces to option names. In contrast
     /// to Unity's approach, this regex tries to keep series
-    /// of captial letters together.
+    /// of capital letters together.
     /// </summary>
     static Regex SPACIFY_REGEX = new Regex(@"(?<! )(?:([A-Z]+)$|([A-Z]*)([A-Z])(?=[a-z]))");
 
@@ -91,7 +91,7 @@ public class ProfileEditor : UnityEditor.Editor
     static FieldInfo lastControlIdField;
 
     /// <summary>
-    /// Label that only takes the sapce it needs.
+    /// Label that only takes the space it needs.
     /// </summary>
     static void TightLabel(string label, GUIStyle style = null)
     {

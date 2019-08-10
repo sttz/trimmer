@@ -32,7 +32,7 @@ namespace sttz.Trimmer.Editor
 /// distribution for processing. However, Steam's scripts only allow for 
 /// configuring fixed paths and don't support variable substitution.
 /// 
-/// Therefore, SteamDistro peforms its own variable substitution to fill in 
+/// Therefore, SteamDistro performs its own variable substitution to fill in 
 /// the dynamic build paths into the VDF scripts. It takes a directory of
 /// scripts as input, processes those scripts and then writes them to a 
 /// temporary directory. Your scripts will therefore not run from the scripts

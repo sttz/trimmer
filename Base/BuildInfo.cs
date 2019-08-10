@@ -32,7 +32,7 @@ public class BuildInfo
     /// </summary>
     public Version version;
     /// <summary>
-    /// GUID of the proilfe that was used to create the build.
+    /// GUID of the profile that was used to create the build.
     /// </summary>
     public string profileGuid;
     /// <summary>
@@ -55,7 +55,7 @@ public class BuildInfo
     }
 
     /// <summary>
-    /// Conver the info to a JSON string.
+    /// Convert the info to a JSON string.
     /// </summary>
     /// <param name="pretty">Format the output for readability</param>
     public string ToJson(bool pretty = true)

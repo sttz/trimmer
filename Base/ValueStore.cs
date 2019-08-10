@@ -24,10 +24,6 @@ namespace sttz.Trimmer
 /// <remarks>
 /// The ValueStore is used to serialize the nested Option values in
 /// Unity using its `ISerializationCallbackReceiver` callbacks.
-/// 
-/// Editing Build Profiles or the Editor Profile while not playing
-/// edits the value store directly instead of instantiating
-/// Option instances for every profile.
 /// </remarks>
 [Serializable]
 public class ValueStore : ISerializationCallbackReceiver
@@ -676,7 +672,7 @@ public class ValueStore : ISerializationCallbackReceiver
 /// trailing comments. Categories are not supported.
 /// 
 /// Each line assigns a value to an Option. The name part in front of the equal
-/// sign can contain child names separted by a dot and variant parameters
+/// sign can contain child names separated by a dot and variant parameters
 /// enclosed with square brackets. Variant parameters must be quoted with double
 /// quotes if they contain square brackets (and double quotes then escaped).
 /// 
@@ -742,7 +738,7 @@ public static class IniAdapter
     }
 
     /// <summary>
-    /// Quote a value if it contains leading or trailing whitesapce or
+    /// Quote a value if it contains leading or trailing whitespace or
     /// return it as-is otherwise.
     /// </summary>
     public static string QuoteValueIfNeeded(string value)

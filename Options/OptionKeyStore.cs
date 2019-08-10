@@ -30,7 +30,7 @@ namespace sttz.Trimmer.Options
 /// * *With Keychain*: With this setting enabled, passwords are stored using
 ///   the <see cref="Keychain"/> class, which in turn uses the Keychain on
 ///   macOS and DPAPI/EditorPrefs on Windows. Passwords are stored per user
-///   and have to be entered only once accross projects.
+///   and have to be entered only once across projects.
 /// * *Without Keychain*: Passwords are stored as plaintext directly in the
 ///   Build Profile. This allows to check in the keystore together with the
 ///   project and do remote builds but is only recommended for debug builds,

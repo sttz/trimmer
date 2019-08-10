@@ -144,7 +144,7 @@ public static class OptionHelper
     /// override public bool ShouldIncludeOnlyFeature()
     /// {
     ///     // Removes the feature if it's improperly configured.
-    ///     // Otherwise the fature will always be incldued even if misconfigrued/disabled.
+    ///     // Otherwise the feature will always be included even if misconfigured/disabled.
     ///     return Validate();
     /// }
     /// 
@@ -286,7 +286,7 @@ public static class OptionHelper
 
             if (!string.IsNullOrEmpty(input)) {
                 // Unity's old Mono runtime writes a BOM to the input stream,
-                // tripping up the command. Ceate a new writer with an encoding
+                // tripping up the command. Create a new writer with an encoding
                 // that has BOM disabled.
                 var writer = new StreamWriter(script.StandardInput.BaseStream, new System.Text.UTF8Encoding(false));
                 writer.Write(input);
@@ -316,7 +316,7 @@ public static class OptionHelper
     /// <param name="onOutput">Method called with each output line</param>
     /// <param name="onError">Method called with each error line</param>
     /// <param name="onExit">Method called with the exit code</param>
-    /// <returns>A callback that can be used to stop the script (parameter: false = termiante, true = kill)</returns>
+    /// <returns>A callback that can be used to stop the script (parameter: false = terminate, true = kill)</returns>
     public static Action<bool> RunScriptAsnyc(string path, string arguments, string input, Action<string> onOutput, Action<string> onError, Action<int> onExit)
     {
         if (string.IsNullOrEmpty(path)) {
@@ -341,7 +341,7 @@ public static class OptionHelper
     /// <param name="onOutput">Method called with each output line</param>
     /// <param name="onError">Method called with each error line</param>
     /// <param name="onExit">Method called with the exit code</param>
-    /// <returns>A callback that can be used to stop the script (parameter: false = termiante, true = kill)</returns>
+    /// <returns>A callback that can be used to stop the script (parameter: false = terminate, true = kill)</returns>
     public static Action<bool> RunScriptAsnyc(System.Diagnostics.ProcessStartInfo startInfo, string input, Action<string> onOutput, Action<string> onError, Action<int> onExit)
     {
         var scriptName = Path.GetFileName(startInfo.FileName);
@@ -381,7 +381,7 @@ public static class OptionHelper
 
             if (!string.IsNullOrEmpty(input)) {
                 // Unity's old Mono runtime writes a BOM to the input stream,
-                // tripping up the command. Ceate a new writer with an encoding
+                // tripping up the command. Create a new writer with an encoding
                 // that has BOM disabled.
                 var writer = new StreamWriter(script.StandardInput.BaseStream, new System.Text.UTF8Encoding(false));
                 writer.Write(input);

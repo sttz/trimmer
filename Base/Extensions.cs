@@ -104,7 +104,7 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Replace all occurences of a string by a new value, ignoring the case
+    /// Replace all occurrences of a string by a new value, ignoring the case
     /// of the original string and the search value.
     /// </summary>
     /// <remarks>
@@ -114,7 +114,7 @@ public static class Extensions
     {
         int prevPos = 0;
         string retval = str;
-        // find the first occurence of oldValue
+        // find the first occurrence of oldValue
         int pos = retval.IndexOf(oldValue, StringComparison.InvariantCultureIgnoreCase);
 
         while (pos > -1) {

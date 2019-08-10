@@ -42,7 +42,7 @@ public class OptionXcode : OptionContainer
     /// <summary>
     /// Older versions of Unity had the issue that they mis-detected the
     /// usage of remote notifications, which would trigger an error email
-    /// with iTunes Connect if the entitilement wasn't present.
+    /// with iTunes Connect if the entitlement wasn't present.
     /// 
     /// This Option force disables remote notifications, only enable if
     /// you know you don't use them!
@@ -106,12 +106,12 @@ public class OptionXcode : OptionContainer
             //
             // Using UNITY_IOS unfortunately doesn't work, as it is only set if iOS
             // is the active platform. With Trimmer, it's possible to make an iOS
-            // build when iOS is not the active platform. Untiy will switch the
+            // build when iOS is not the active platform. Unity will switch the
             // active platform during the build but the editor code won't be recompiled,
             // meaning the code won't be executed.
             //
             // The only remaining options are to use reflection or to include the 
-            // Xcode DLL as part of Trimmer. We used reflection intially but
+            // Xcode DLL as part of Trimmer. We used reflection initially but
             // that is error-prone and unwieldy and switched to including the DLL.
             // With Asmdef's explicit assembly references, there hopefully won't
             // be any issues with duplicate DLLs.

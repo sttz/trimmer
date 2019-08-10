@@ -18,7 +18,7 @@ namespace sttz.Trimmer.Options
 public static class Common
 {
     /// <summary>
-    /// Decode the data recevied from the network.
+    /// Decode the data received from the network.
     /// </summary>
     public static string Decode(byte[] bytes, int length = -1)
     {
@@ -86,7 +86,7 @@ public static class Common
 /// The server allows you to add custom commands using <see cref="AddCommand"/>.
 /// 
 /// If you use this class directly, make sure you call <see cref="Update"/>
-/// regularily for the server to process commands.
+/// regularly for the server to process commands.
 /// 
 /// > [!WARNING]
 /// > The communication is unencrypted and doesn't use authentication.
@@ -178,7 +178,7 @@ public class TrimmerServer
         if (IsRunning) return;
         IsRunning = true;
 
-        // Done here becuase callbacks are called on another thread
+        // Done here because callbacks are called on another thread
         serverHello = string.Format(ServerHelloFormat + "\n",
             Application.productName,
             Application.version,
@@ -231,7 +231,7 @@ public class TrimmerServer
     /// an error is encountered.
     /// </remarks>
     /// <param name="name">The name of the command</param>
-    /// <param name="handler">Handler to respond to an incomming command</param>
+    /// <param name="handler">Handler to respond to an incoming command</param>
     public void AddCommand(string name, CommandHandler handler)
     {
         if (handler == null) {

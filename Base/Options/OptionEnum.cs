@@ -25,7 +25,7 @@ namespace sttz.Trimmer.BaseOptions
 /// this by setting <see cref="IsMask"/> in <see cref="Option.Configure"/>.
 /// 
 /// Note that prior to Unity 2017.3 (and its EnumFlagsField method), Unity's
-/// handling of flags enum is severily limited and the enum's values must
+/// handling of flags enum is severely limited and the enum's values must
 /// be increasing powers of two without gaps.
 /// </remarks>
 public abstract class OptionEnum<TEnum> : Option<TEnum>

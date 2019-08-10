@@ -23,7 +23,7 @@ namespace sttz.Trimmer.Options
 /// version info at runtime.
 /// </summary>
 /// <remarks>
-/// Unity's project version manegement is fragmented and differs greatly
+/// Unity's project version management is fragmented and differs greatly
 /// between platforms. This option attempts to unify them and provide
 /// additional features.
 /// 
@@ -201,7 +201,7 @@ pe.write(filename=path)
             string output, error;
             var exitcode = OptionHelper.RunScript("python", args, PythonUpdateWindows, out output, out error);
             if (exitcode != 0) {
-                Debug.LogError("OptionVersion: Failed to run pyhthon to update version: " + output);
+                Debug.LogError("OptionVersion: Failed to run python to update version: " + output);
                 return false;
             }
             return true;

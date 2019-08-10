@@ -290,7 +290,7 @@ public class EditorProfile : EditableProfile
     }
 
     /// <summary>
-    /// Create or udpate the main runtime profile with the apropriate value store.
+    /// Create or update the main runtime profile with the appropriate value store.
     /// </summary>
     static void CreateOrUpdateMainRuntimeProfile()
     {

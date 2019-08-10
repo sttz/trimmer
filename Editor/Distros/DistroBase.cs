@@ -243,7 +243,7 @@ public abstract class DistroBase : ScriptableObject
     protected List<System.Action<bool>> runningScripts;
 
     /// <summary>
-    /// Editor coroutine wrapper for OptionHelper.RunScriptAsnyc.
+    /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
     /// </summary>
     protected IEnumerator Execute(string path, string arguments, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null)
     {
@@ -254,7 +254,7 @@ public abstract class DistroBase : ScriptableObject
     }
 
     /// <summary>
-    /// Editor coroutine wrapper for OptionHelper.RunScriptAsnyc.
+    /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
     /// </summary>
     protected IEnumerator Execute(System.Diagnostics.ProcessStartInfo startInfo, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null)
     {
@@ -404,7 +404,7 @@ public abstract class DistroBase : ScriptableObject
     }
 
     /// <summary>
-    /// Stop a completed coroutine, coninuing the parent routine if it exists.
+    /// Stop a completed coroutine, continuing the parent routine if it exists.
     /// </summary>
     static void StopRoutine(IEnumerator routine)
     {

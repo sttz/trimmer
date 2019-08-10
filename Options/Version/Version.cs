@@ -131,7 +131,7 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
     }
 
     /// <summary>
-    /// Check if this struct reprsents a valid version.
+    /// Check if this struct represents a valid version.
     /// </summary>
     /// <remarks>
     /// i.e. <see cref="major"/>, <see cref="minor"/> and <see cref="patch"/> must

@@ -36,7 +36,7 @@ public class Prompt : MonoBehaviour
     }
 
     /// <summary>
-    /// Positio of the prompt on the screen.
+    /// Position of the prompt on the screen.
     /// </summary>
     public Position position = Position.BottomRight;
     /// <summary>
@@ -241,7 +241,7 @@ public class Prompt : MonoBehaviour
                 completionIndex = 1;
             }
         
-        // Move complections index
+        // Move completions index
         } else {
             completionIndex = Mathf.Max(Mathf.Min(completionIndex + moveIndex, completions.Count - 1), 0);
         }

@@ -81,7 +81,7 @@ public class RuntimeProfile : IEnumerable<Option>
     /// </summary>
     /// <remarks>
     /// The main runtime profile is available while playing in the editor,
-    /// during building when postprocessing scenes and in the player if
+    /// during building when post-processing scenes and in the player if
     /// any Options have been included.
     /// </remarks>
     public static RuntimeProfile Main { get; protected set; }
@@ -283,7 +283,7 @@ public class RuntimeProfile : IEnumerable<Option>
     /// Save the Options' current values to the store.
     /// </summary>
     /// <remarks>
-    /// The store will be cleared of all entries with no maching Option instance.
+    /// The store will be cleared of all entries with no matching Option instance.
     /// </remarks>
     public void SaveToStore(bool clear = true)
     {

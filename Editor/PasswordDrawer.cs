@@ -57,7 +57,7 @@ public class KeychainAttribute : Attribute
 /// The password field gives the user two options to store the password:
 /// - Plaintext in the project itself. This leaves the password unprotected
 ///   but allows it to be stored in the project and e.g. checked into version control.
-/// - Securely and on a per-user base in the <see cref="Keychain"/>. The password
+/// - Securely and on a per-user basis in the <see cref="Keychain"/>. The password
 ///   will be saved on the user's computer and can be used across Unity projects.
 /// 
 /// The plaintext password can optionally be revealed in the editor. The Keychain
