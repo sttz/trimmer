@@ -42,7 +42,7 @@ public class OptionIniFile : OptionString
     protected override void Configure()
     {
         Category = "Configuration";
-        DefaultValue = "wb.ini";
+        DefaultValue = "trimmer.ini";
         ApplyOrder = -1000;
     }
 
