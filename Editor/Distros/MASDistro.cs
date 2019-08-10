@@ -255,7 +255,7 @@ public class MASDistro : DistroBase
             "--force --deep --sign '{0}' {1} '{2}'",
             appSignIdentity, entitlements, path
         );
-Debug.Log("codesign " + args);
+
         yield return Execute("codesign", args);
         if (GetSubroutineResult<int>() != 0) {
             yield return false; yield break;
