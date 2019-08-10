@@ -21,7 +21,7 @@ In the editor, Trimmer provides a simple GUI interface to configure your Options
 * Visually edit options in the editor and the player
 * Conditionally compile only the features that you need
 * Automate building and post-process your scenes during build
-* Create and build profiles with different setttings and features
+* Create and build profiles with different settings and features
 
 ### [Full Documentation](https://sttz.ch/trimmer/)
 
@@ -30,4 +30,4 @@ In the editor, Trimmer provides a simple GUI interface to configure your Options
 <img src="https://sttz.ch/trimmer/images/build_profile.png" width="325" /> <img src="https://sttz.ch/trimmer/images/editor_profile.png" width="325" />
 
 ### License
-Trimmer is licensed under the GPLv3. A commercial license will be available later on the Unity Asset Store.
+Trimmer is licensed under the MIT license.
