@@ -20,7 +20,7 @@ namespace sttz.Trimmer
 /// For the player, we need to get the <see cref="ValueStore"/> of the Build
 /// Profile, containing all the Option values, into the build. We use this 
 /// container `MonoBehaviour` to contain the store and inject it into
-/// the build's scene using <see cref="Editor.BuildManager" /> and 
+/// the build's scene using <see cref="T:sttz.Trimmer.Editor.BuildManager" /> and 
 /// [IProcessScene](https://docs.unity3d.com/ScriptReference/Build.IProcessScene.html).
 /// 
 /// The container also provides an API to inject additional Unity objects

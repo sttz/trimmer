@@ -96,7 +96,7 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Equalses the ignoring case.
+    /// Checks if the string equals the current one, ignoring case (using ordinal comparison).
     /// </summary>
     public static bool EqualsIgnoringCase(this string first, string second)
     {

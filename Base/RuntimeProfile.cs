@@ -90,7 +90,7 @@ public class RuntimeProfile : IEnumerable<Option>
     /// Create the main runtime profile with the given value store.
     /// </summary>
     /// <remarks>
-    /// This method is automatically called by <see cref="Editor.BuildManager"/>
+    /// This method is automatically called by <see cref="T:sttz.Trimmer.Editor.BuildManager"/>
     /// and <see cref="ProfileContainer"/> and should not be called manually.
     /// </remarks>
     public static void CreateMain(ValueStore store)

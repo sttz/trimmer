@@ -5,11 +5,6 @@
 
 #if !NO_TRIMMER || UNITY_EDITOR
 
-// Workaround for docfx documentation building
-#if !UNITY_5 && !UNITY_2017 && !UNITY_2018
-#define UNITY_EDITOR
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -425,7 +420,7 @@ public abstract class Option
     /// Callback invoked before a profile build is started.
     /// </summary>
     /// <remarks>
-    /// When a build is started on a <see cref="Editor.BuildProfile"/>, all options
+    /// When a build is started on a <see cref="T:sttz.Trimmer.Editor.BuildProfile"/>, all options
     /// will receive this callback before the build is started.
     /// 
     /// This callback allows Option to influence the build settings, including

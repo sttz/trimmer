@@ -67,9 +67,11 @@ public class KeychainAttribute : Attribute
 /// need to specify them using the <see cref="KeychainAttribute"/> and pass them
 /// to <see cref="GetPassword"/>. It's recommended to store the Keychain info
 /// in a const string so it can be used for the attribute and method:
-/// > const string keychainInfo = "UploadDistro:blah";
-/// > [Keychain(keychainInfo)] public Password password;
-/// > password.GetPassword(keychainInfo);
+/// <code>
+/// const string keychainInfo = "UploadDistro:blah";
+/// [Keychain(keychainInfo)] public Password password;
+/// password.GetPassword(keychainInfo);
+/// </code>
 /// </remarks>
 [Serializable]
 public struct Password
@@ -80,7 +82,7 @@ public struct Password
     public string PlaintextPassword { get { return plaintextPassword; } set { plaintextPassword = value; } }
     [SerializeField] string plaintextPassword;
     /// <summary>
-    /// Wether to use <cref="Keychain"/> or store the password in plaintext.
+    /// Wether to use <see cref="Keychain"/> or store the password in plaintext.
     /// </summary>
     public bool UseKeychain { get { return useKeychain; } set { useKeychain = value; } }
     [SerializeField] bool useKeychain;
@@ -127,7 +129,7 @@ public struct Login
     public string PlaintextPassword { get { return plaintextPassword; } set { plaintextPassword = value; } }
     [SerializeField] string plaintextPassword;
     /// <summary>
-    /// Wether to use <cref="Keychain"/> or store the password in plaintext.
+    /// Wether to use <see cref="Keychain"/> or store the password in plaintext.
     /// </summary>
     public bool UseKeychain { get { return useKeychain; } set { useKeychain = value; } }
     [SerializeField] bool useKeychain;
