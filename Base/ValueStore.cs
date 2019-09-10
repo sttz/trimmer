@@ -172,6 +172,18 @@ public class ValueStore : ISerializationCallbackReceiver
         }
 
         /// <summary>
+        /// Remove a variant node.
+        /// </summary>
+        public void RemoveVariant(int index)
+        {
+            if (variants == null)
+                return;
+
+            variants.RemoveAt(index);
+            isDirty = true;
+        }
+
+        /// <summary>
         /// Remove all variant nodes.
         /// </summary>
         public void ClearVariants()

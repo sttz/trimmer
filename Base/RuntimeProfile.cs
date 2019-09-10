@@ -447,6 +447,12 @@ public class RuntimeProfile : IEnumerable<Option>
             var defaultVariant = node.GetOrCreateVariant(option.VariantDefaultParameter);
             SaveNode(defaultVariant, option, isDefaultNode:true);
 
+            for (int i = node.variants.Count - 1; i >= 0; i--) {
+                if (option.GetVariant(node.variants[i].name, create:false) == null) {
+                    node.RemoveVariant(i);
+                }
+            }
+
             foreach (var variantOption in option.Variants) {
                 var variantNode = node.GetOrCreateVariant(variantOption.VariantParameter);
                 SaveNode(variantNode, variantOption);
