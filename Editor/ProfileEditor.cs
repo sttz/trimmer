@@ -319,6 +319,11 @@ public class ProfileEditor : UnityEditor.Editor
         }
     }
 
+    protected override bool ShouldHideOpenButton()
+    {
+        return true;
+    }
+
     protected void OnEnable()
     {
         profile = (EditableProfile)target;
