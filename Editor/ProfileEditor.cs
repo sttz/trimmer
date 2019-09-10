@@ -297,9 +297,17 @@ public class ProfileEditor : UnityEditor.Editor
 
         OptionsGUI();
 
-        GUILayout.FlexibleSpace();
-
         if (buildProfile != null) {
+            // Unity 2019.2+ uses UIElements in the background, which
+            // don't take up the full vertical space anymore. It's therefore
+            // no longer possible to place something at the bottom of the
+            // inspector.
+            #if UNITY_2019_2_OR_NEWER
+            GUILayout.Space(50);
+            #else
+            GUILayout.FlexibleSpace();
+            #endif
+
             BuildGUI();
         }
 
