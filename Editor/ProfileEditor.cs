@@ -595,8 +595,7 @@ public class ProfileEditor : UnityEditor.Editor
         }
 
         if (Option.changed) {
-            profile.EditProfile.SaveToStore(clear: false);
-            profile.SaveIfNeeded();
+            FlushProfile();
         }
     }
 
@@ -701,6 +700,7 @@ public class ProfileEditor : UnityEditor.Editor
                                 } else {
                                     option.VariantParameter = newParam;
                                 }
+                                Option.changed = true;
                             }
                         }
                         EditorGUI.EndDisabledGroup();
@@ -719,6 +719,7 @@ public class ProfileEditor : UnityEditor.Editor
                     if (GUILayout.Button(GUIContent.none, minusStyle)) {
                         delayedRemovals.Add(() => {
                             option.Parent.RemoveVariant(option);
+                            FlushProfile();
                         });
                     }
                 }
@@ -890,6 +891,7 @@ public class ProfileEditor : UnityEditor.Editor
 
         var parameter = FindUniqueVariantName(option);
         option.AddVariant(parameter);
+        Option.changed = true;
     }
 
     static Regex RemoveTrailingNumbersRegex = new Regex(@"^(.*?)\d*$");
@@ -910,6 +912,12 @@ public class ProfileEditor : UnityEditor.Editor
         } while (option.GetVariant(parameter, false) != null);
 
         return parameter;
+    }
+
+    void FlushProfile()
+    {
+        profile.EditProfile.SaveToStore(clear: false);
+        profile.SaveIfNeeded();
     }
 }
 
