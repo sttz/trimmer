@@ -45,7 +45,7 @@ public class RuntimeProfile : IEnumerable<Option>
     public static IEnumerable<Type> AllOptionTypes {
         get {
             if (_options == null) {
-                #if UNITY_2019_2_OR_NEWER
+                #if UNITY_2019_2_OR_NEWER && UNITY_EDITOR
                     _options = TypeCache.GetTypesDerivedFrom<Option>()
                         .Where(t => !t.IsAbstract && !t.IsNested)
                         .ToArray();
