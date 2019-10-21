@@ -369,6 +369,8 @@ public static class OptionHelper
         };
         script.Exited += (s, a) => {
             if (onExit != null) {
+                // Wait for stdout and stderr to flush
+                script.WaitForExit();
                 onExit(script.ExitCode);
             }
         };
