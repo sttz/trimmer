@@ -601,14 +601,13 @@ public class ProfileEditor : UnityEditor.Editor
         optionAvailable = true;
         buildCategory = showBuild;
 
-        Option.changed = false;
-
         foreach (var option in options) {
             OptionGUIRecursive(option);
         }
 
         if (Option.changed) {
             FlushProfile();
+            Option.changed = false;
         }
     }
 

@@ -124,8 +124,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
             Array.Sort(optionNames, optionFlags);
         }
 
-        EditorGUI.BeginChangeCheck();
-
         string name = "Multiple...";
 
         // Unity defines some deprecated flags as 0 as well (e.g. 
@@ -146,6 +144,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Clear Options"), false, () => {
                 Value = 0;
+                Option.changed = true;
             });
             menu.AddSeparator("");
             for (int i = 0; i < optionFlags.Length && i < optionNames.Length; i++) {
@@ -154,12 +153,15 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
                 var selected = (Value & flag) == flag;
                 menu.AddItem(new GUIContent(optionNames[i]), selected, () => {
                     Value ^= flag;
+                    Option.changed = true;
                 });
             }
             menu.ShowAsContext();
         }
 
-        return EditorGUI.EndChangeCheck();
+        // The value is changed in the GenericMenu callbacks,
+        // which set Option.changed to true manually instead of returning true here.
+        return false;
     }
 }
 
