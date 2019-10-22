@@ -37,6 +37,10 @@ public class ItchDistro : DistroBase
     /// Suffix added to the channel name (preceding dash will be added).
     /// </summary>
     public string channelSuffix;
+    /// <summary>
+    /// Notarize macOS build.
+    /// </summary>
+    public NotarizationDistro macNotarization;
 
     static Dictionary<BuildTarget, string> ChannelNames = new Dictionary<BuildTarget, string>() {
         { BuildTarget.StandaloneOSX, "osx" },
@@ -66,6 +70,14 @@ public class ItchDistro : DistroBase
             if (!ChannelNames.ContainsKey(pair.target)) {
                 Debug.LogWarning("ItchDistro: Build target " + pair.target + " not supported, skipping.");
                 continue;
+            }
+
+            // Notarize mac builds
+            if (macNotarization != null && pair.target == BuildTarget.StandaloneOSX) {
+                yield return macNotarization.Notarize(pair);
+                if (GetSubroutineResult<string>() == null) {
+                    yield return false; yield break;
+                }
             }
 
             yield return Distribute(pair);

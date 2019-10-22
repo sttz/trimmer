@@ -79,6 +79,11 @@ public class GOGDistro : DistroBase
     /// </summary>
     public string overrideVersion;
 
+    /// <summary>
+    /// Notarize macOS build.
+    /// </summary>
+    public NotarizationDistro macNotarization;
+
     protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         // Check Pipeline Builder Executable
@@ -164,6 +169,16 @@ public class GOGDistro : DistroBase
         if (targets.Count > 0) {
             Debug.LogWarning("GOGDistro: Not all build targets filled into variables. Left over: " 
                 + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
+        }
+
+        // Notarize mac builds
+        if (macNotarization != null) {
+            foreach (var path in buildPaths.Where(p => p.target == BuildTarget.StandaloneOSX)) {
+                yield return macNotarization.Notarize(path);
+                if (GetSubroutineResult<string>() == null) {
+                    yield return false; yield break;
+                }
+            }
         }
 
         // Build

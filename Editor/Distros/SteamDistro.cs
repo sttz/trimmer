@@ -71,6 +71,11 @@ public class SteamDistro : DistroBase
     /// </summary>
     public string appScript;
 
+    /// <summary>
+    /// Notarize macOS build.
+    /// </summary>
+    public NotarizationDistro macNotarization;
+
     protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         // Check SDK
@@ -159,6 +164,16 @@ public class SteamDistro : DistroBase
         if (targets.Count > 0) {
             Debug.LogWarning("SteamDistro: Not all build targets filled into variables. Left over: " 
                 + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
+        }
+
+        // Notarize mac builds
+        if (macNotarization != null) {
+            foreach (var path in buildPaths.Where(p => p.target == BuildTarget.StandaloneOSX)) {
+                yield return macNotarization.Notarize(path);
+                if (GetSubroutineResult<string>() == null) {
+                    yield return false; yield break;
+                }
+            }
         }
 
         // Build

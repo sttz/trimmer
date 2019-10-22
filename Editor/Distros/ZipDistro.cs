@@ -96,6 +96,10 @@ public class ZipDistro : DistroBase
     /// Append the version number to the ZIP file name.
     /// </summary>
     public bool appendVersion;
+    /// <summary>
+    /// Notarize macOS build.
+    /// </summary>
+    public NotarizationDistro macNotarization;
 
     static readonly string[] ZipIgnore = new string[] {
         ".DS_Store",
@@ -142,6 +146,15 @@ public class ZipDistro : DistroBase
         var results = new List<BuildPath>();
         while (queue.Count > 0) {
             var next = queue.Dequeue();
+
+            // Notarize mac builds
+            if (macNotarization != null && next.target == BuildTarget.StandaloneOSX) {
+                yield return macNotarization.Notarize(next);
+                if (GetSubroutineResult<string>() == null) {
+                    yield return false; yield break;
+                }
+            }
+
             yield return Zip(next);
             var result = GetSubroutineResult<BuildPath>();
             if (result.path == null) {
