@@ -225,7 +225,8 @@ public class BuildManager
     /// 
     /// When doing a command line build, the path set by the profile is used. If the
     /// profile doesn't set a path or you want to override it, add the `-output "PATH"`
-    /// option to the arguments.
+    /// option to the arguments. By default, all build targets of the profile are built,
+    /// add the `-buildTarget NAME` option to build only a single target.
     /// 
     /// See the Unity documentation for [more information on command line usage](https://docs.unity3d.com/Manual/CommandLineArguments.html).
     /// </remarks>
@@ -234,6 +235,7 @@ public class BuildManager
         IsCommandLineBuild = false;
         CommandLineBuildPath = null;
         string profileName = null;
+        var buildActiveTarget = false;
 
         string[] args = Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) {
@@ -253,6 +255,9 @@ public class BuildManager
                     return err;
                 }
                 CommandLineBuildPath = args[++i];
+            } else if (args[i].EqualsIgnoringCase("-buildTarget")) {
+                // Unity will validate the value of the -buildTarget option
+                buildActiveTarget = true;
             }
         }
 
@@ -278,9 +283,15 @@ public class BuildManager
             Debug.Log("Building active profile.");
         }
 
-        var result = Build(target);
-        if (!string.IsNullOrEmpty(result)) {
-            Debug.LogError(result);
+        string result;
+
+        if (buildActiveTarget) {
+            result = Build(target, EditorUserBuildSettings.activeBuildTarget);
+        } else {
+            result = Build(target);
+            if (!string.IsNullOrEmpty(result)) {
+                Debug.LogError(result);
+            }
         }
 
         IsCommandLineBuild = false;
@@ -302,6 +313,23 @@ public class BuildManager
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// Build a specific target of a profile with the default build options.
+    /// </summary>
+    /// <param name="profile">Profile to build</param>
+    /// <param name="target">Target to build, needs to be part of profile</param>
+    public static string Build(BuildProfile profile, BuildTarget target)
+    {
+        if (profile.BuildTargets != null && profile.BuildTargets.Any() && !profile.BuildTargets.Contains(target)) {
+            var err = $"Build target {target} is not part of the build profile {profile.name}";
+            Debug.LogError(err);
+            return err;
+        }
+
+        var options = GetDefaultOptions(target);
+        return Build(profile, options);
     }
 
     /// <summary>
