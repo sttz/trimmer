@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.1.0 (2019-10-22)
+* Add distro to notarize macOS builds, notarization also integrates with other distros
+* Add support for «-buildTarget NAME» command line option to build only a single target
+* Fix macOS signing fails because Unity copies meta files with plugin bundles to player
+* Fix BuildOptions enum not being saved immediately
+
 ### 1.0.2 (2019-09-27)
 * Fixed usage of TypeCache editor-only API in builds
 
