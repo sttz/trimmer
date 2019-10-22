@@ -245,18 +245,18 @@ public abstract class DistroBase : ScriptableObject
     /// <summary>
     /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
     /// </summary>
-    protected IEnumerator Execute(string path, string arguments, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null)
+    protected IEnumerator Execute(string path, string arguments, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null, bool logError = true)
     {
         var startInfo = new System.Diagnostics.ProcessStartInfo();
         startInfo.FileName = path;
         startInfo.Arguments = arguments;
-        return Execute(startInfo, input, onOutput, onError);
+        return Execute(startInfo, input, onOutput, onError, logError);
     }
 
     /// <summary>
     /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
     /// </summary>
-    protected IEnumerator Execute(System.Diagnostics.ProcessStartInfo startInfo, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null)
+    protected IEnumerator Execute(System.Diagnostics.ProcessStartInfo startInfo, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null, bool logError = true)
     {
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
@@ -284,8 +284,8 @@ public abstract class DistroBase : ScriptableObject
         runningScripts.Remove(terminator);
 
         // 137 happens for Kill() and 143 for CloseMainWindow(),
-        // which means the script has ben canceled
-        if (exitcode != 0 && exitcode != 137 && exitcode != 143) {
+        // which means the script has been canceled
+        if (logError && exitcode != 0 && exitcode != 137 && exitcode != 143) {
             Debug.LogError(string.Format(
                 "{0}: Failed to execute {1}: {2}\nOutput: {3}",
                 name, Path.GetFileName(startInfo.FileName),
