@@ -244,17 +244,28 @@ public class MASDistro : DistroBase
 
     protected IEnumerator Sign(string path, string entitlementsPath = null)
     {
-        var entitlements = "";
-        if (entitlementsPath != null) {
-            entitlements = string.Format(
-                "--entitlements '{0}'", entitlementsPath
-            );
+        // Delete .meta files Unity might have erroneously copied to the build
+        // and which will cause the signing to fail.
+        // See: https://issuetracker.unity3d.com/issues/macos-standalone-build-contains-meta-files-inside-native-plugin-bundles
+        if (Directory.Exists(path)) {
+            var metas = Directory.GetFiles(path, "*.meta", SearchOption.AllDirectories);
+            foreach (var meta in metas) {
+                File.Delete(meta);
+            }
         }
 
-        var args = string.Format(
-            "--force --deep --sign '{0}' {1} '{2}'",
-            appSignIdentity, entitlements, path
-        );
+        var entitlements = "";
+        if (entitlementsPath != null) {
+            entitlements = $" --entitlements '{entitlementsPath}'";
+        }
+
+        var args = $"--force"
+            + $" --deep"
+            + $" --timestamp"
+            + $" --options=runtime"
+            + entitlements
+            + $" --sign '{appSignIdentity}'"
+            + $" '{path}'";
 
         yield return Execute("codesign", args);
         if (GetSubroutineResult<int>() != 0) {
