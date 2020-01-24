@@ -106,7 +106,7 @@ public class BuildManager
     static string PickBuildLocation(BuildTarget target)
     {
         var buildLocation = EditorUserBuildSettings.GetBuildLocation(target);
-        
+
         if (target == BuildTarget.Android && EditorUserBuildSettings.exportAsGoogleAndroidProject) {
             var location = EditorUtility.SaveFolderPanel("Export Google Android Project", buildLocation, "");
             return location;
@@ -136,15 +136,15 @@ public class BuildManager
     /// Entry point for Unity Cloud builds.
     /// </summary>
     /// <remarks>
-    /// If you don't configure anything, Unity Cloud Build will build without a 
+    /// If you don't configure anything, Unity Cloud Build will build without a
     /// profile, all Options will use their default value and will be removed.
-    /// 
+    ///
     /// Add the name of the Build Profile you want to build with to the target name
     /// in Unity Cloud Build, enclosed in double underscores, e.g. `__Profile Name__`.
     /// Note that since the target name can contain only alphanumeric characters,
     /// spaces, dashes and underscores, those characters cannot appear in the profile
     /// name either.
-    /// 
+    ///
     /// Also note that the ability for Options to set build options is limited,
     /// currently only setting a custom  scene list is supported.
     /// </remarks>
@@ -215,25 +215,49 @@ public class BuildManager
     /// </summary>
     /// <remarks>
     /// You can use this method to automate Unity builds using the command line.
-    /// 
+    ///
     /// Use the following command to build a Build Profile:
     /// `unity -quit -batchmode -executeMethod sttz.Trimmer.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
-    /// 
+    ///
     /// You need to replace `unity` with the path to the Unity executable and `PROFILE_NAME`
     /// with the name of the profile you want to build. Run this in the folder of your
     /// Unity project or add `-projectPath "PATH_TO_PROJECT"` to select one.
-    /// 
+    ///
     /// When doing a command line build, the path set by the profile is used. If the
     /// profile doesn't set a path or you want to override it, add the `-output "PATH"`
     /// option to the arguments. By default, all build targets of the profile are built,
     /// add the `-buildTarget NAME` option to build only a single target.
-    /// 
+    ///
     /// See the Unity documentation for [more information on command line usage](https://docs.unity3d.com/Manual/CommandLineArguments.html).
     /// </remarks>
     public static string Build()
     {
         IsCommandLineBuild = false;
         CommandLineBuildPath = null;
+
+        var result = Build_Internal();
+
+        try {
+            if (!string.IsNullOrEmpty(result)) {
+                // If an error was returned..
+                Debug.LogError(result);
+            }
+
+            if (IsCommandLineBuild) {
+                //
+                throw new BuildFailedException(result);
+            }
+        }
+        finally {
+            IsCommandLineBuild = false;
+            CommandLineBuildPath = null;
+        }
+
+        return result;
+    }
+
+    private static string Build_Internal()
+    {
         string profileName = null;
         var buildActiveTarget = false;
 
@@ -243,16 +267,12 @@ public class BuildManager
                 IsCommandLineBuild = true;
             } else if (args[i].EqualsIgnoringCase("-profileName")) {
                 if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    var err = "-profileName needs to be followed by a profile name.";
-                    Debug.LogError(err);
-                    return err;
+                    return "-profileName needs to be followed by a profile name.";
                 }
                 profileName = args[++i];
             } else if (args[i].EqualsIgnoringCase("-output")) {
                 if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    var err = "-output needs to be followed by a path.";
-                    Debug.LogError(err);
-                    return err;
+                    return "-output needs to be followed by a path.";
                 }
                 CommandLineBuildPath = args[++i];
             } else if (args[i].EqualsIgnoringCase("-buildTarget")) {
@@ -265,9 +285,7 @@ public class BuildManager
         if (IsCommandLineBuild && profileName != null) {
             target = BuildProfile.Find(profileName);
             if (target == null) {
-                var err = "Build profile named '" + profileName + "' cloud not be found.";
-                Debug.LogError(err);
-                return err;
+                return "Build profile named '" + profileName + "' cloud not be found.";
             }
 
             Debug.Log("Building " + target.name + ", selected from command line.");
@@ -275,9 +293,7 @@ public class BuildManager
 
         if (target == null) {
             if (EditorProfile.Instance.ActiveProfile == null) {
-                var err = "No profile specified and not active profile set: Nothing to build";
-                Debug.LogError(err);
-                return err;
+                return "No profile specified and not active profile set: Nothing to build";
             }
             target = EditorProfile.Instance.ActiveProfile;
             Debug.Log("Building active profile.");
@@ -286,18 +302,10 @@ public class BuildManager
         string result;
 
         if (buildActiveTarget) {
-            result = Build(target, EditorUserBuildSettings.activeBuildTarget);
+            return Build(target, EditorUserBuildSettings.activeBuildTarget);
         } else {
-            result = Build(target);
-            if (!string.IsNullOrEmpty(result)) {
-                Debug.LogError(result);
-            }
+            return Build(target);
         }
-
-        IsCommandLineBuild = false;
-        CommandLineBuildPath = null;
-        
-        return result;
     }
 
     /// <summary>
@@ -338,7 +346,7 @@ public class BuildManager
     /// <remarks>
     /// The `BuildPlayerOptions` will be passed through the profile's Options'
     /// <see cref="Option.PrepareBuild"/>, which can modify it before the build is started.
-    /// 
+    ///
     /// > [!NOTE]
     /// > If you do not set `options.locationPathName` and no option sets
     /// > it in the `PrepareBuild` callback, then a save dialog will be shown.
@@ -362,7 +370,7 @@ public class BuildManager
             } else if (string.IsNullOrEmpty(options.locationPathName)) {
                 return "No build path specified. The profile needs to set an output path or one has to be set using the -output argument.";
             }
-        
+
         } else if (string.IsNullOrEmpty(options.locationPathName)) {
             // Ask for location if none has been set
             options.locationPathName = PickBuildLocation(options.target);
@@ -390,7 +398,7 @@ public class BuildManager
                     current = current.Substring(1); // Remove leading dot
                 }
 
-                if (!string.IsNullOrEmpty(ext) 
+                if (!string.IsNullOrEmpty(ext)
                         && Path.GetExtension(options.locationPathName).EqualsIgnoringCase(current)) {
                     options.locationPathName += "." + ext;
                 }
@@ -509,13 +517,13 @@ public class BuildManager
     {
         // Show a dialog of no active build profile has been set
         // (Unity < 2017.2 will only get an error in the console)
-        if (currentProfile == null 
+        if (currentProfile == null
             && EditorProfile.Instance.ActiveProfile == null
             && !EditorUtility.DisplayDialog(
-                "Trimmer: No Active Profile Set", 
+                "Trimmer: No Active Profile Set",
                 "There's no active Build Profile set, a null profile will be applied "
                 + " and all Options removed.\n\n"
-                + "The active profile can be set in Unity's Preferences under 'Trimmer'.", 
+                + "The active profile can be set in Unity's Preferences under 'Trimmer'.",
                 "Continue Anyway", "Cancel"
             )) {
             return;
@@ -558,7 +566,7 @@ public class BuildManager
         symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
         symbols.Remove(NO_TRIMMER);
         var current = new HashSet<string>(symbols);
-        
+
         includesAnyOption = false;
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
@@ -584,7 +592,7 @@ public class BuildManager
         var removed = current.Except(symbols);
         Debug.Log(string.Format(
             "Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
-            target, path, 
+            target, path,
             GetCurrentEditProfile()
                 .Where(o => currentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
                 .Select(o => o.Name)
@@ -592,7 +600,7 @@ public class BuildManager
             removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
         ));
     }
-    
+
     // Unfortunately not a proper Unity event
     public static void OnBuildError(BuildTarget target, string error)
     {
@@ -618,7 +626,7 @@ public class BuildManager
         var path = report.summary.outputPath;
         #endif
 
-        // Run options' PostprocessBuild		
+        // Run options' PostprocessBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
@@ -642,7 +650,7 @@ public class BuildManager
 
         // Inject profile and call PostprocessScene, Apply() isn't called during build
         var buildProfile = currentProfile;
-        
+
         if (includesAnyOption && scene.buildIndex == 0) {
             InjectProfileContainer(GetCurrentEditProfile().Store);
         } else {
