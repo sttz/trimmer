@@ -210,7 +210,6 @@ public class NotarizationDistro : DistroBase
         // Delete .meta files Unity might have erroneously copied to the build
         // and which will cause the signing to fail.
         // See: https://issuetracker.unity3d.com/issues/macos-standalone-build-contains-meta-files-inside-native-plugin-bundles
-        Debug.Log($"Directory.Exists({path}) = " + Directory.Exists(path));
         if (Directory.Exists(path)) {
             var metas = Directory.GetFiles(path, "*.meta", SearchOption.AllDirectories);
             foreach (var meta in metas) {
