@@ -588,7 +588,7 @@ public class BuildManager
             "Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
             target, path, 
             GetCurrentEditProfile()
-                .Where(o => currentProfile.GetInclusionOf(o) != OptionInclusion.Remove)
+                .Where(o => buildProfile != null && buildProfile.GetInclusionOf(o) != OptionInclusion.Remove)
                 .Select(o => o.Name)
                 .Join(),
             removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
