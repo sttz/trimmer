@@ -19,7 +19,12 @@ using sttz.Trimmer.Extensions;
 
 #if UNITY_CLOUD_BUILD
 using UnityEngine.CloudBuild;
-#else
+#endif
+
+namespace sttz.Trimmer.Editor
+{
+
+#if !UNITY_CLOUD_BUILD
 /// <summary>
 /// Dummy implementation of Unity Cloud Build manifest object,
 /// used to avoid errors since the Cloud Build dll is not available.
@@ -44,9 +49,6 @@ public abstract class BuildManifestObject : ScriptableObject
     public abstract override string ToString();
 }
 #endif
-
-namespace sttz.Trimmer.Editor
-{
 
 /// <summary>
 /// The Build Manager controls the build process and calls the Option's
