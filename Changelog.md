@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.1.1 (2020-08-12)
+* Fix error during Cloud Build because UnityEngine.CloudBuild cannot be found
+* Fix exception during build when no profile is set
+* Move dummy BuildManifestObject out of global namespace
+* Exclude Il2CPP symbols folder in Zip Distro (BackUpThisFolder_ButDontShipItWithYourGame)
+
 ### 1.1.0 (2019-10-22)
 * Add distro to notarize macOS builds, notarization also integrates with other distros
 * Add support for «-buildTarget NAME» command line option to build only a single target
