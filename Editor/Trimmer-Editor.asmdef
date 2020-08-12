@@ -10,9 +10,11 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "UnityEditor.iOS.Extensions.Xcode.dll"
+        "UnityEditor.iOS.Extensions.Xcode.dll",
+        "UnityEngine.CloudBuild.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }
