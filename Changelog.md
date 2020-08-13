@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.1.2 (2020-08-13)
+* Fix OptionKeyStore trying to show a dialog in batch mode
+* Don't show a notice / error if OptionKeyStore is not configured
+
 ### 1.1.1 (2020-08-12)
 * Fix error during Cloud Build because UnityEngine.CloudBuild cannot be found
 * Fix exception during build when no profile is set
