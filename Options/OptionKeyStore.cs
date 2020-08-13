@@ -136,9 +136,18 @@ public class OptionKeyStore : OptionContainer
             validation = Validate();
         }
 
-        if (validation != Error.None) {
+        if (validation == Error.NoKeystore) {
+            // Option not configured: only print a notice
+            Debug.Log("OptionKeyStore: No keystore configured");
+            return;
+        } else if (validation != Error.None) {
             var error = "Error in the active Build Profile Key Store Option:\n" + ErrorMessages[validation];
-            if (EditorUtility.DisplayDialog("Android Keystore", error, "Cancel", "Ignore")) {
+            if (Application.isBatchMode) {
+                // In batch mode: Log error
+                Debug.LogError(error);
+                return;
+            } else if (EditorUtility.DisplayDialog("Android Keystore", error, "Cancel", "Ignore")) {
+                // In editor: Show a warning dialog
                 throw new Exception(error);
             }
         }
