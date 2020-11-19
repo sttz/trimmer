@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.1.3 (2020-11-19)
+* `OptionCapabilities.ConfiguresBuild` options now get `OptionInclusion.Build` if the build target is supported (instead of always `OptionInclusion.Remove`)
+* Workaround for Unity 2019.4.10+ not creating a fresh build if one to append to doesn't exist
+
 ### 1.1.2 (2020-08-13)
 * Fix OptionKeyStore trying to show a dialog in batch mode
 * Don't show a notice / error if OptionKeyStore is not configured
