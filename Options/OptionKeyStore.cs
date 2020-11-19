@@ -129,7 +129,7 @@ public class OptionKeyStore : OptionContainer
     {
         base.PreprocessBuild(target, path, inclusion);
 
-        if (target != BuildTarget.Android)
+        if (inclusion == OptionInclusion.Remove)
             return;
 
         if (validation == Error.Unknonw) {

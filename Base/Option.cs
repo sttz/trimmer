@@ -62,9 +62,14 @@ public enum OptionInclusion
     Option = 1<<1,
 
     /// <summary>
+    /// Flag indicating the option should apply its build changes.
+    /// </summary>
+    Build = 1<<2,
+
+    /// <summary>
     /// Mask including both feature and option.
     /// </summary>
-    FeatureAndOption = Feature | Option
+    FeatureAndOption = Feature | Option,
 }
 
 #endif

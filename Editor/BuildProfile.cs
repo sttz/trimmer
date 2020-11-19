@@ -208,6 +208,10 @@ public class BuildProfile : EditableProfile
             } else if (inclusion == OptionInclusion.Feature && !option.ShouldIncludeOnlyFeature()) {
                 inclusion &= ~OptionInclusion.Feature;
             }
+
+            if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
+                inclusion |= OptionInclusion.Build;
+            }
             
             return inclusion;
         }

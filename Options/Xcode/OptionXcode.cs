@@ -53,7 +53,7 @@ public class OptionXcode : OptionContainer
         {
             base.PostprocessBuild(target, path, inclusion);
 
-            if (!Value) return;
+            if (inclusion == OptionInclusion.Remove || !Value) return;
 
             var preprocessorPath = System.IO.Path.Combine(path, "Classes/Preprocessor.h");
             if (!File.Exists(preprocessorPath)) {
@@ -92,7 +92,7 @@ public class OptionXcode : OptionContainer
         {
             base.PostprocessBuild(target, path, inclusion);
 
-            if (!Value) return;
+            if (inclusion == OptionInclusion.Remove || !Value) return;
 
             var plistPath = System.IO.Path.Combine(path, "Info.plist");
             if (!File.Exists(plistPath)) {
@@ -139,7 +139,7 @@ public class OptionXcode : OptionContainer
         {
             base.PostprocessBuild(target, path, inclusion);
 
-            if (!Value) return;
+            if (inclusion == OptionInclusion.Remove || !Value) return;
 
             var projectPath = System.IO.Path.Combine(path, "Unity-iPhone.xcodeproj");
             if (!Directory.Exists(projectPath)) {
