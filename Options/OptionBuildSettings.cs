@@ -70,7 +70,15 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     {
         options.options |= Value;
         options.locationPathName = ExpandPath(GetChild<OptionBuildPath>().Value, options);
-        
+
+        if ((options.options & BuildOptions.AcceptExternalModificationsToPlayer) != 0) {
+            // From Unity 2019.4.10, appending fails if the project doesn't exist.
+            // Remove the flag if the path doesn't exist.
+            if (!Directory.Exists(options.locationPathName)) {
+                options.options &= ~BuildOptions.AcceptExternalModificationsToPlayer;
+            }
+        }
+
         var scenes = GetChild<OptionScenes>();
         if (scenes.Value != null || scenes.Variants.Any()) {
             var paths = new List<string>();
