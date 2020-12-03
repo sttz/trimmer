@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.1.4 (2020-12-03)
+* Fix `OptionHelper.InjectFeature` not working for Options with `OptionCapabilities.ConfiguresBuild`
+
 ### 1.1.3 (2020-11-19)
 * `OptionCapabilities.ConfiguresBuild` options now get `OptionInclusion.Build` if the build target is supported (instead of always `OptionInclusion.Remove`)
 * Workaround for Unity 2019.4.10+ not creating a fresh build if one to append to doesn't exist
