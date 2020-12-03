@@ -173,7 +173,7 @@ public static class OptionHelper
     public static T InjectFeature<T>(Scene scene, OptionInclusion inclusion) where T : Component
     {
         // We only inject when the feature is included but the Option is not
-        if (inclusion != OptionInclusion.Feature)
+        if (!inclusion.HasFlag(OptionInclusion.Feature) || inclusion.HasFlag(OptionInclusion.Option))
             return null;
 
         // We only inject to the first scene, because DontDestroyOnLoad is set,
