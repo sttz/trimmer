@@ -1,5 +1,13 @@
 # Changelog
 
+### 1.2.0 (2020-12-05)
+* Bumped minor version because of API changes that can affect Option implementations:
+  * Added `OptionInclusion.Build`, which can break existing inclusion checks
+  * Changed the virtual method signature of `Option.IsAvailable`
+* Mac App Store Distro: Add uploading of builds, fix linking GameKit framework on Big Sur
+* Fix Options that support only some of a profile's platforms being included with all of them
+* Fix inclusion checks that broke with the addition of `OptionInclusion.Build`
+
 ### 1.1.5 (2020-12-05)
 * Fix Mac App Store and Notarization distros not re-signing .bundle packages
 
