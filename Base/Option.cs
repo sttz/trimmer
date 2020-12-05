@@ -307,7 +307,7 @@ public abstract class Option
     public IEnumerable<BuildTarget> SupportedTargets { get; protected set; }
 
     /// <summary>
-    /// Determines if the Option is available on one of the given build targets.
+    /// Determines if the Option is available on the given build target.
     /// </summary>
     /// <remarks>
     /// It's possible to hide an Option in Build Profiles if they don't
@@ -323,17 +323,25 @@ public abstract class Option
     /// > This method only applies to main Options. Child and variant Options
     /// > will inherit the availability from their main parent.
     /// </remarks>
-    public virtual bool IsAvailable(IEnumerable<BuildTarget> targets)
+    public virtual bool IsAvailable(BuildTarget target)
     {
-        if (SupportedTargets == null) {
+        if (SupportedTargets == null)
             return true;
-        } else {
-            foreach (var target in targets) {
-                if (SupportedTargets.Contains(target))
-                    return true;
-            }
-            return false;
+        
+        return SupportedTargets.Contains(target);
+    }
+
+    /// <summary>
+    /// Determines if the Option is available on one of the given build targets.
+    /// </summary>
+    public bool IsAvailable(IEnumerable<BuildTarget> targets)
+    {
+        foreach (var target in targets) {
+            if (IsAvailable(target))
+                return true;
         }
+
+        return false;
     }
 
     /// <summary>

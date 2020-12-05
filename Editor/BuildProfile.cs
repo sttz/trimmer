@@ -190,13 +190,13 @@ public class BuildProfile : EditableProfile
     /// <summary>
     /// Check if an Option should be included in builds of this profile.
     /// </summary>
-    public OptionInclusion GetInclusionOf(Option option)
+    public OptionInclusion GetInclusionOf(Option option, BuildTarget target)
     {
         var node = store.GetRoot(option.Name);
         if (node == null) {
             return OptionInclusion.Remove;
         } else {
-            if (!option.IsAvailable(BuildTargets))
+            if (!option.IsAvailable(target))
                 return OptionInclusion.Remove;
             
             var inclusion = node.Inclusion;

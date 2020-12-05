@@ -191,7 +191,7 @@ public class BuildManager
         // Run options' PrepareBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, options.target);
             options = option.PrepareBuild(options, inclusion);
         }
 
@@ -353,7 +353,7 @@ public class BuildManager
         // Run options' PrepareBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, options.target);
             options = option.PrepareBuild(options, inclusion);
         }
 
@@ -563,7 +563,7 @@ public class BuildManager
         
         includesAnyOption = false;
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
             includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
             option.GetScriptingDefineSymbols(inclusion, symbols);
@@ -588,7 +588,11 @@ public class BuildManager
             "Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
             target, path, 
             GetCurrentEditProfile()
-                .Where(o => buildProfile != null && buildProfile.GetInclusionOf(o) != OptionInclusion.Remove)
+                .Where(o => {
+                    if (buildProfile == null) return false;
+                    var inclusion = buildProfile.GetInclusionOf(o, target);
+                    return inclusion.HasFlag(OptionInclusion.Feature) || inclusion.HasFlag(OptionInclusion.Option);
+                })
                 .Select(o => o.Name)
                 .Join(),
             removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
@@ -623,7 +627,7 @@ public class BuildManager
         // Run options' PostprocessBuild		
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
             option.PostprocessBuild(target, path, inclusion);
         }
 
@@ -652,7 +656,7 @@ public class BuildManager
         }
 
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option);
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, report.summary.platform);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PostprocessScene(scene, inclusion);
