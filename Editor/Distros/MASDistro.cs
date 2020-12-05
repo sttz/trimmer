@@ -180,6 +180,11 @@ public class MASDistro : DistroBase
             if (!GetSubroutineResult<bool>()) {
                 yield return false; yield break;
             }
+
+            yield return SignAll(Directory.GetDirectories(plugins, "*.bundle", SearchOption.TopDirectoryOnly));
+            if (!GetSubroutineResult<bool>()) {
+                yield return false; yield break;
+            }
         }
 
         // Sign application
