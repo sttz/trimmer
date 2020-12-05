@@ -59,7 +59,7 @@ public class OptionTrimmerServer : OptionToggle
     {
         base.GetScriptingDefineSymbols(inclusion, symbols);
 
-        if (inclusion != OptionInclusion.Remove) {
+        if (inclusion.HasFlag(OptionInclusion.Option)) {
             symbols.Add("TRIMMER_SERVER");
         }
     }

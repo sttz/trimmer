@@ -547,13 +547,13 @@ public abstract class Option
     {
         // Only the root option has a toggle in the build profile
         if (Parent == null) {
-            if ((inclusion & OptionInclusion.Feature) != 0 
-                    && (Capabilities & OptionCapabilities.HasAssociatedFeature) != 0) {
+            if (inclusion.HasFlag(OptionInclusion.Feature) 
+                    && Capabilities.HasFlag(OptionCapabilities.HasAssociatedFeature)) {
                 symbols.Add(DEFINE_PREFIX + Name);
             }
 
-            if ((inclusion & OptionInclusion.Option) != 0 
-                    && (Capabilities & OptionCapabilities.CanIncludeOption) != 0) {
+            if (inclusion.HasFlag(OptionInclusion.Option) 
+                    && Capabilities.HasFlag(OptionCapabilities.CanIncludeOption)) {
                 symbols.Add(DEFINE_PREFIX + OPTION_PREFIX + Name);
             }
         }

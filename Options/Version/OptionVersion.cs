@@ -121,7 +121,7 @@ public class OptionVersion : OptionContainer
         {
             base.PostprocessBuild(target, path, inclusion);
 
-            if (inclusion == OptionInclusion.Remove || !Value)
+            if (!inclusion.HasFlag(OptionInclusion.Feature) || !Value)
                 return;
 
             if (target == BuildTarget.StandaloneOSX) {
@@ -220,7 +220,7 @@ pe.write(filename=path)
     {
         base.PreprocessBuild(target, path, inclusion);
 
-        if (inclusion == OptionInclusion.Remove) return;
+        if (!inclusion.HasFlag(OptionInclusion.Feature)) return;
 
         Version.ProjectVersion = DetermineProjectVersion(target);
 
