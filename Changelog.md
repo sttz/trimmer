@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.1.5 (2020-12-05)
+* Fix Mac App Store and Notarization distros not re-signing .bundle packages
+
 ### 1.1.4 (2020-12-03)
 * Fix `OptionHelper.InjectFeature` not working for Options with `OptionCapabilities.ConfiguresBuild`
 
