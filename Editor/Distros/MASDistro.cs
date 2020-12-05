@@ -75,6 +75,16 @@ public class MASDistro : DistroBase
     /// </summary>
     public string optoolPath;
 
+    /// <summary>
+    /// App Store Connect login.
+    /// </summary>
+    [Keychain(keychainService)] public Login ascLogin;
+    const string keychainService = "MASDistro";
+    /// <summary>
+    /// App Store Connect provider ID (only required if account is part of multiple teams).
+    /// </summary>
+    public string ascProvider;
+
     protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
     {
         foreach (var buildPath in buildPaths) {
@@ -196,8 +206,8 @@ public class MASDistro : DistroBase
 
 
         // Create installer
+        var pkgPath = Path.ChangeExtension(path, ".pkg");
         if (!string.IsNullOrEmpty(installerSignIdentity)) {
-            var pkgPath = Path.ChangeExtension(path, ".pkg");
             var args = string.Format(
                 "--component '{0}' /Applications --sign '{1}' '{2}'",
                 path, installerSignIdentity, pkgPath
@@ -206,6 +216,11 @@ public class MASDistro : DistroBase
             if (GetSubroutineResult<int>() != 0) {
                 yield return false; yield break;
             }
+        }
+
+        // Upload to App Store
+        if (!string.IsNullOrEmpty(ascLogin.User)) {
+            yield return Upload(pkgPath);
         }
 
         Debug.Log("MASDistro: Finished");
@@ -228,10 +243,6 @@ public class MASDistro : DistroBase
         var name = Path.GetFileNameWithoutExtension(input);
         input = Path.Combine(input, "Versions/Current");
         input = Path.Combine(input, name);
-
-        if (!File.Exists(input)) {
-            return null;
-        }
 
         return input;
     }
@@ -278,6 +289,28 @@ public class MASDistro : DistroBase
         }
 
         yield return true;
+    }
+
+    protected IEnumerator Upload(string path)
+    {
+        var asc = "";
+        if (!string.IsNullOrEmpty(ascProvider)) {
+            asc = $" --asc-provider '{ascProvider}'";
+        }
+
+        var args = $"altool"
+            + $" --upload-app"
+            + $" --type osx"
+            + $" --username '{ascLogin.User}'"
+            + asc
+            + $" --file '{path}'";
+
+        string requestUUID = null;
+        yield return Execute("xcrun", args, ascLogin.GetPassword(keychainService) + "\n");
+        if (GetSubroutineResult<int>() != 0) {
+            yield return null; yield break;
+        }
+        yield return requestUUID;
     }
 }
 
