@@ -54,7 +54,6 @@ public abstract class OptionAsset<TUnity> : Option<TUnity> where TUnity : UnityE
         // Only include reference when Option is included,
         // we're building the first scene and a reference is set
         if ((inclusion & OptionInclusion.Option) != 0
-                && scene.buildIndex == 0 
                 && ProfileContainer.Instance != null
                 && Value != null && !string.IsNullOrEmpty(GuidValue)) {
             ProfileContainer.Instance.AddReference(GuidValue, Value);

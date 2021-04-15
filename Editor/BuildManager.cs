@@ -209,6 +209,7 @@ public class BuildManager
             EditorBuildSettings.scenes = scenes;
         }
 
+        OptionHelper.currentBuildOptions = options;
         Debug.Log("UnityCloudBuild: Done!");
     }
 
@@ -400,6 +401,7 @@ public class BuildManager
         }
 
         // Run the build
+        OptionHelper.currentBuildOptions = options;
         string error = null;
 
         #if UNITY_2018_1_OR_NEWER
@@ -428,6 +430,7 @@ public class BuildManager
         #endif
 
         currentProfile = null;
+        OptionHelper.currentBuildOptions = default;
         return error;
     }
 
@@ -462,12 +465,20 @@ public class BuildManager
     /// <summary>
     /// Create and configure the <see cref="ProfileContainer"/> during the build.
     /// </summary>
-    static void InjectProfileContainer(ValueStore store)
+    static void InjectProfileContainer(Scene scene)
     {
+        ProfileContainer.Instance = null;
+
+        if (!includesAnyOption)
+            return;
+
+        if (!OptionHelper.IsFirstScene(scene))
+            return;
+
         var go = new GameObject("Trimmer");
         var container = go.AddComponent<ProfileContainer>();
         ProfileContainer.Instance = container;
-        container.store = store;
+        container.store = GetCurrentEditProfile().Store;
     }
 
     /// <summary>
@@ -535,6 +546,7 @@ public class BuildManager
     {
         if (currentProfile == null) {
             currentProfile = EditorProfile.Instance.ActiveProfile;
+            OptionHelper.currentBuildOptions = default;
         }
 
         var buildProfile = currentProfile;
@@ -624,7 +636,7 @@ public class BuildManager
         var path = report.summary.outputPath;
         #endif
 
-        // Run options' PostprocessBuild		
+        // Run options' PostprocessBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
@@ -648,12 +660,9 @@ public class BuildManager
 
         // Inject profile and call PostprocessScene, Apply() isn't called during build
         var buildProfile = currentProfile;
-        
-        if (includesAnyOption && scene.buildIndex == 0) {
-            InjectProfileContainer(GetCurrentEditProfile().Store);
-        } else {
-            ProfileContainer.Instance = null;
-        }
+
+        // Inject profile container into first scene
+        InjectProfileContainer(scene);
 
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, report.summary.platform);

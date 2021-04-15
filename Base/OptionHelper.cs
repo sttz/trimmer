@@ -115,6 +115,31 @@ public static class OptionHelper
     #if UNITY_EDITOR
 
     /// <summary>
+    /// The options used to start the current Trimmer build (if any).
+    /// </summary>
+    public static BuildPlayerOptions currentBuildOptions;
+
+    /// <summary>
+    /// Check if the given scene is the first scene in the current build.
+    /// </summary>
+    /// <remarks>
+    /// When doing a build with custom scenes set in `BuildPlayerOptions`,
+    /// `scene.buildIndex` does not reflect the correct index.
+    /// This method correctly checks the scenes of the current (Trimmer) build.
+    /// </remarks>
+    public static bool IsFirstScene(Scene scene)
+    {
+        var scenes = currentBuildOptions.scenes;
+        if (scenes != null && scenes.Length > 0) {
+            return (scenes[0] == scene.path);
+        } else if (EditorBuildSettings.scenes.Length > 0) {
+            return (EditorBuildSettings.scenes[0].path == scene.path);
+        } else {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Inject a singleton script in a build.
     /// Intended for use in Options' <see cref="Option.PostprocessScene"/> methods.
     /// </summary>
@@ -178,7 +203,7 @@ public static class OptionHelper
 
         // We only inject to the first scene, because DontDestroyOnLoad is set,
         // the script will persist through scene loads
-        if (scene.buildIndex != 0)
+        if (!IsFirstScene(scene))
             return null;
 
         return GetSingleton<T>(true);
