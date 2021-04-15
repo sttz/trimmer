@@ -51,6 +51,31 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         }
     }
 
+#if UNITY_2019_4_OR_NEWER
+    public class OptionAppendIfPossible : OptionToggle
+    {
+        protected override void Configure()
+        {
+            DefaultValue = true;
+        }
+
+        public override BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
+        {
+            if (Value) {
+                var canAppend = BuildPipeline.BuildCanBeAppended(options.target, options.locationPathName);
+                if (canAppend == CanAppendBuild.Yes) {
+                    Debug.Log($"Trimmer: Appending build is possible, adding option AcceptExternalModificationsToPlayer");
+                    options.options |= BuildOptions.AcceptExternalModificationsToPlayer;
+                } else {
+                    Debug.Log($"Trimmer: Appending build is not possible ({canAppend})");
+                }
+            }
+
+            return base.PrepareBuild(options, inclusion);
+        }
+    }
+#endif
+
     /// <summary>
     /// Replace special variables in a ini file path.
     /// </summary>
@@ -71,14 +96,6 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         options.options |= Value;
         options.locationPathName = ExpandPath(GetChild<OptionBuildPath>().Value, options);
 
-        if ((options.options & BuildOptions.AcceptExternalModificationsToPlayer) != 0) {
-            // From Unity 2019.4.10, appending fails if the project doesn't exist.
-            // Remove the flag if the path doesn't exist.
-            if (!Directory.Exists(options.locationPathName)) {
-                options.options &= ~BuildOptions.AcceptExternalModificationsToPlayer;
-            }
-        }
-
         var scenes = GetChild<OptionScenes>();
         if (scenes.Value != null || scenes.Variants.Any()) {
             var paths = new List<string>();
@@ -95,7 +112,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
             }
         }
 
-        return options;
+        return base.PrepareBuild(options, inclusion);
     }
 
     override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
