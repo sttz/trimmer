@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.2.1 (2021-04-15)
+* Fix detection of first scene when building with a custom scene list
+* Add option to append build if possible<br>
+  (Requires Unity 2019.4.21 or later, will error on outdated patch builds)
+* Add error when reference was not registered on `ProfileContainer`
+
 ### 1.2.0 (2020-12-05)
 * Bumped minor version because of API changes that can affect Option implementations:
   * Added `OptionInclusion.Build`, which can break existing inclusion checks
