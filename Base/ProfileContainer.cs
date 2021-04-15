@@ -73,8 +73,10 @@ public class ProfileContainer : MonoBehaviour
     /// </remarks>
     public T GetReference<T>(string guid) where T : Object
     {
-        if (referenceGUIDs == null || referenceGUIDs == null || referenceGUIDs.Count != references.Count)
+        if (referenceGUIDs == null || references == null || referenceGUIDs.Count != references.Count) {
+            Debug.LogError($"ProfileContainer.GetReference referenceGUIDs/references null or mismatched");
             return null;
+        }
         
         for (int i = 0; i < referenceGUIDs.Count; i++) {
             if (referenceGUIDs[i].EqualsIgnoringCase(guid)) {
@@ -82,6 +84,7 @@ public class ProfileContainer : MonoBehaviour
             }
         }
 
+        Debug.LogError($"ProfileContainer.GetReference no reference registered for GUID '{guid}'");
         return null;
     }
 
