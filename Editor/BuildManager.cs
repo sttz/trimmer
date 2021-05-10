@@ -614,7 +614,15 @@ public class BuildManager
     // Unfortunately not a proper Unity event
     public static void OnBuildError(BuildTarget target, string error)
     {
-        // TODO: Add Option callback?
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
+            if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
+            try {
+                option.OnBuildError(target, error);
+            }
+            catch (Exception e) {
+                Debug.LogException(e);
+            }
+        }
 
         // Restore original scripting define symbols
         var targetGroup = BuildPipeline.GetBuildTargetGroup(target);

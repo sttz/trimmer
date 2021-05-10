@@ -528,6 +528,50 @@ public abstract class Option
     }
 
     /// <summary>
+    /// Callback invoked if the build fails with an error.
+    /// </summary>
+    /// <remarks>
+    /// This callback is invoked after the build fails with an error, for
+    /// profile builds only.
+    ///
+    /// Any state that was temporarily modified in <see cref="PrepareBuild"/> or
+    /// <see cref="PreprocessBuild"/> should be cleaned up in either this callback or in
+    /// <see cref="PostprocessBuild"/>.
+    ///
+    /// This callback catches and logs all exceptions so that an error in one
+    /// implementation will not prevent the others from running.
+    /// 
+    /// > [!NOTE]
+    /// > This method is only available in the editor.
+    /// </remarks>
+    /// <param name="target">Build target type</param>
+    /// <param name="error">The text of the error returned by <see cref="UnityEditor.BuildPipeline"/></param>
+    public virtual void OnBuildError(BuildTarget target, string error)
+    {
+        if (variants != null) {
+            foreach (var variant in variants) {
+                try {
+                    variant.OnBuildError(target, error);
+                }
+                catch (Exception e) {
+                    UnityEngine.Debug.LogException(e);
+                }
+            }
+        }
+        
+        if (children != null) {
+            foreach (var child in children) {
+                try {
+                    child.OnBuildError(target, error);
+                }
+                catch (Exception e) {
+                    UnityEngine.Debug.LogException(e);
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// The scripting define symbols set by this Option.
     /// </summary>
     /// <remarks>
