@@ -121,7 +121,7 @@ public class BuildProfile : EditableProfile
     /// </summary>
     public bool UsesActiveBuildTarget()
     {
-        return (_buildTargets == null || _buildTargets.Count == 0);
+        return (_buildTargets == null || _buildTargets.Count == 0);
     }
 
     /// <summary>

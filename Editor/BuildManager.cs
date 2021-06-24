@@ -51,6 +51,34 @@ public abstract class BuildManifestObject : ScriptableObject
 #endif
 
 /// <summary>
+/// Type of the current Trimmer build.
+/// </summary>
+/// <seealso cref="BuildManager.BuildType" />
+public enum TrimmerBuildType
+{
+    /// <summary>
+    /// Not currently building.
+    /// </summary>
+    None,
+    /// <summary>
+    /// A non-Trimmer script triggered the build.
+    /// </summary>
+    NonTrimmer,
+    /// <summary>
+    /// The build was started from Unity's build window.
+    /// </summary>
+    BuildWindow,
+    /// <summary>
+    /// The build was started from a Trimmer profile or using the Trimmer API.
+    /// </summary>
+    Profile,
+    /// <summary>
+    /// The build was started by Unity Cloud Build.
+    /// </summary>
+    CloudBuild,
+}
+
+/// <summary>
 /// The Build Manager controls the build process and calls the Option's
 /// callbacks.
 /// </summary>
@@ -67,6 +95,11 @@ public class BuildManager
     public const string NO_TRIMMER = "NO_TRIMMER";
 
     // -------- Building --------
+
+    /// <summary>
+    /// The type of the current build.
+    /// </summary>
+    public static TrimmerBuildType BuildType { get; private set; }
 
     /// <summary>
     /// Wether the current build was started on the command line using
@@ -152,6 +185,8 @@ public class BuildManager
     /// </remarks>
     public static void UnityCloudBuild(BuildManifestObject manifest)
     {
+        BuildType = TrimmerBuildType.CloudBuild;
+
         Debug.Log("UnityCloudBuild: Parsing profile name...");
 
         // Get profile name from could build target name
@@ -195,6 +230,10 @@ public class BuildManager
             options = option.PrepareBuild(options, inclusion);
         }
 
+        // Cloud Build doesn't allow changing BuildPlayerOptions.extraScriptingDefines,
+        // so we have to apply scripting define symbols to player settings
+        ApplyScriptingDefineSymbolsToPlayerSettings(buildProfile, options.target);
+
         Debug.Log("UnityCloudBuild: Apply scenes...");
 
         // Apply scenes
@@ -211,6 +250,39 @@ public class BuildManager
 
         OptionHelper.currentBuildOptions = options;
         Debug.Log("UnityCloudBuild: Done!");
+    }
+
+    /// <summary>
+    /// Set up a Unity build started using the build player window.
+    /// </summary>
+    static void UnityDefaultBuild(ref BuildPlayerOptions options)
+    {
+        BuildType = TrimmerBuildType.BuildWindow;
+
+        currentProfile = EditorProfile.Instance.ActiveProfile;
+
+        AddScriptingDefineSymbols(currentProfile, ref options);
+
+        OptionHelper.currentBuildOptions = options;
+    }
+
+    /// <summary>
+    /// Set up a non-Trimmer build.
+    /// </summary>
+    static void NonTrimmerBuild(BuildTarget target)
+    {
+        BuildType = TrimmerBuildType.NonTrimmer;
+
+        Debug.LogWarning($"Trimmer: Build started using a unsupported method, some Trimmer features will not work.");
+
+        currentProfile = EditorProfile.Instance.ActiveProfile;
+
+        // We can only react when the build has already started and cannot
+        // edit BuildPlayerOptions.extraScriptingDefines, so we have to
+        // change PlayerSettings.
+        ApplyScriptingDefineSymbolsToPlayerSettings(currentProfile, target);
+
+        OptionHelper.currentBuildOptions = default;
     }
 
     /// <summary>
@@ -349,7 +421,11 @@ public class BuildManager
     public static string Build(BuildProfile buildProfile, BuildPlayerOptions options)
     {
         // Prepare build
+        BuildType = TrimmerBuildType.Profile;
         currentProfile = buildProfile;
+
+        // Add Trimmer scripting define symbols
+        AddScriptingDefineSymbols(buildProfile, ref options);
 
         // Run options' PrepareBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
@@ -498,10 +574,86 @@ public class BuildManager
     /// Convenience method to get the current scripting define symbols as a
     /// hash set (instead of a colon-delimited string).
     /// </summary>
-    protected HashSet<string> GetCurrentScriptingDefineSymbols(BuildTargetGroup targetGroup)
+    static HashSet<string> GetCurrentScriptingDefineSymbols(BuildTargetGroup targetGroup)
     {
         var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
         return new HashSet<string>(defines);
+    }
+
+    /// <summary>
+    /// Determine all the scripting define symbols set by a build profile for the given build target.
+    /// </summary>
+    static void GetScriptingDefineSymbols(BuildProfile buildProfile, BuildTarget target, HashSet<string> symbols)
+    {
+        var includesAnyOption = false;
+
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
+            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
+            includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
+
+            option.GetScriptingDefineSymbols(inclusion, symbols);
+        }
+
+        if (!includesAnyOption) {
+            symbols.Add(NO_TRIMMER);
+        }
+    }
+
+    /// <summary>
+    /// Add Trimmer's scripting define symbols to the build player option's extraScriptingDefines.
+    /// </summary>
+    static void AddScriptingDefineSymbols(BuildProfile buildProfile, ref BuildPlayerOptions options)
+    {
+    #if !UNITY_2020_1_OR_NEWER
+        // Before Unity 2020.1 BuildPlayerOptions.extraScriptingDefines didn't exist,
+        // fall back to changing player settings
+        ApplyScriptingDefineSymbolsToPlayerSettings(buildProfile, options.target);
+    #else
+        var symbols = new HashSet<string>();
+
+        if (options.extraScriptingDefines != null) {
+            symbols.AddRange(options.extraScriptingDefines);
+        }
+
+        GetScriptingDefineSymbols(buildProfile, options.target, symbols);
+
+        options.extraScriptingDefines = symbols.ToArray();
+    #endif
+    }
+
+    /// <summary>
+    /// For builds where BuildPlayerOptions is not available, apply the
+    /// required scripting define symbols to the the player settings.
+    /// </summary>
+    static void ApplyScriptingDefineSymbolsToPlayerSettings(BuildProfile buildProfile, BuildTarget target)
+    {
+        // Run options' PreprocessBuild and collect scripting define symbols
+        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+        previousScriptingDefineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+        var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
+
+        // Remove all symbols previously added by Trimmer
+        symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
+        symbols.Remove(NO_TRIMMER);
+
+        // Add Trimmer's symbols
+        GetScriptingDefineSymbols(buildProfile, target, symbols);
+
+        // Apply scripting define symbols
+        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
+    }
+
+    /// <summary>
+    /// Restore previously changed scripting define symbols in player settings.
+    /// </summary>
+    static void RestoreScriptingDefineSymbolsInPlayerSettings(BuildTarget target)
+    {
+        if (previousScriptingDefineSymbols == null) return;
+
+        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+
+        previousScriptingDefineSymbols = null;
     }
 
     // ------ Unity Callbacks ------
@@ -534,6 +686,7 @@ public class BuildManager
             return;
         }
 
+        UnityDefaultBuild(ref options);
         BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(options);
     }
     #endif
@@ -544,70 +697,56 @@ public class BuildManager
     public void OnPreprocessBuild(BuildTarget target, string path)
 #endif
     {
-        if (currentProfile == null) {
-            currentProfile = EditorProfile.Instance.ActiveProfile;
-            OptionHelper.currentBuildOptions = default;
-        }
-
-        var buildProfile = currentProfile;
-
         #if UNITY_2018_1_OR_NEWER
         var target = report.summary.platform;
         var path = report.summary.outputPath;
         #endif
 
+        if (BuildType == TrimmerBuildType.None) {
+            NonTrimmerBuild(target);
+        }
+
         #if !UNITY_2017_2_OR_NEWER
         // Warning is handled in BuildPlayerHandler for Unity 2017.2+
-        if (buildProfile == null) {
+        if (currentProfile == null) {
             Debug.LogError("Build Configuration: No current or default profile set, all options removed.");
         }
         #endif
 
-        // Run options' PreprocessBuild and collect scripting define symbols
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        previousScriptingDefineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
-        var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
-
-        // Remove all symbols previously added by Trimmer
-        symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
-        symbols.Remove(NO_TRIMMER);
-        var current = new HashSet<string>(symbols);
-        
+        // Run options' PreprocessBuild
         includesAnyOption = false;
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
+            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
             includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
-
-            option.GetScriptingDefineSymbols(inclusion, symbols);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PreprocessBuild(target, path, inclusion);
             }
         }
 
-        if (!includesAnyOption) {
-            symbols.Add(NO_TRIMMER);
-        }
-
         GenerateBuildInfo();
 
-        // Apply scripting define symbols
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
+        string defines;
+        var extraScriptingDefines = OptionHelper.currentBuildOptions.extraScriptingDefines;
+        if (extraScriptingDefines != null && extraScriptingDefines.Length > 0) {
+            defines = extraScriptingDefines.Join();
+        } else {
+            defines = previousScriptingDefineSymbols;
+        }
 
-        var added = symbols.Except(current);
-        var removed = current.Except(symbols);
         Debug.Log(string.Format(
-            "Trimmer: Building '{0}' to '{1}'\nIncluded: {2}\nSymbols: {3}",
+            "Trimmer: Building profile '{0}' for '{1}' to '{2}'\nIncluded: {3}\nSymbols: {4}",
+            currentProfile != null ? currentProfile.name : "null", 
             target, path, 
             GetCurrentEditProfile()
                 .Where(o => {
-                    if (buildProfile == null) return false;
-                    var inclusion = buildProfile.GetInclusionOf(o, target);
+                    if (currentProfile == null) return false;
+                    var inclusion = currentProfile.GetInclusionOf(o, target);
                     return inclusion.HasFlag(OptionInclusion.Feature) || inclusion.HasFlag(OptionInclusion.Option);
                 })
                 .Select(o => o.Name)
                 .Join(),
-            removed.Select(s => "-" + s).Concat(added.Select(s => "+" + s)).Join()
+            defines
         ));
     }
     
@@ -624,9 +763,9 @@ public class BuildManager
             }
         }
 
-        // Restore original scripting define symbols
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+        RestoreScriptingDefineSymbolsInPlayerSettings(target);
+        OptionHelper.currentBuildOptions = default;
+        BuildType = TrimmerBuildType.None;
 
         Debug.LogError(string.Format("Trimmer: Build failed for platform {0}: {1}", target, error));
     }
@@ -637,8 +776,6 @@ public class BuildManager
     public void OnPostprocessBuild(BuildTarget target, string path)
 #endif
     {
-        var buildProfile = currentProfile;
-
         #if UNITY_2018_1_OR_NEWER
         var target = report.summary.platform;
         var path = report.summary.outputPath;
@@ -647,13 +784,13 @@ public class BuildManager
         // Run options' PostprocessBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, target);
+            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
             option.PostprocessBuild(target, path, inclusion);
         }
 
-        // Restore original scripting define symbols
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+        RestoreScriptingDefineSymbolsInPlayerSettings(target);
+        OptionHelper.currentBuildOptions = default;
+        BuildType = TrimmerBuildType.None;
     }
 
 #if UNITY_2018_1_OR_NEWER
@@ -666,14 +803,12 @@ public class BuildManager
         if (!BuildPipeline.isBuildingPlayer)
             return;
 
-        // Inject profile and call PostprocessScene, Apply() isn't called during build
-        var buildProfile = currentProfile;
-
         // Inject profile container into first scene
         InjectProfileContainer(scene);
 
+        // Inject profile and call PostprocessScene, Apply() isn't called during build
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, report.summary.platform);
+            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, report.summary.platform);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PostprocessScene(scene, inclusion);
