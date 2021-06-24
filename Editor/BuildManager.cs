@@ -701,13 +701,16 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         GenerateBuildInfo(report.summary.guid);
 
-        string defines;
+        string defines = null;
+    #if UNITY_2020_1_OR_NEWER
         var extraScriptingDefines = OptionHelper.currentBuildOptions.extraScriptingDefines;
         if (extraScriptingDefines != null && extraScriptingDefines.Length > 0) {
             defines = extraScriptingDefines.Join();
-        } else {
-            defines = previousScriptingDefineSymbols;
         }
+    #else
+        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+        defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+    #endif
 
         Debug.Log(string.Format(
             "Trimmer: Building profile '{0}' for '{1}' to '{2}'\nIncluded: {3}\nSymbols: {4}",
