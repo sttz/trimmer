@@ -227,22 +227,14 @@ public class EditorProfile : EditableProfile
             return;
         }
 
-        #if UNITY_2017_2_OR_NEWER
         EditorApplication.playModeStateChanged += OnPlayModeStateChange;
-        #else
-        EditorApplication.playmodeStateChanged += OnPlayModeStateChange;
-        #endif
     }
 
     void OnDisable()
     {
         SaveIfNeeded();
 
-        #if UNITY_2017_2_OR_NEWER
         EditorApplication.playModeStateChanged -= OnPlayModeStateChange;
-        #else
-        EditorApplication.playmodeStateChanged -= OnPlayModeStateChange;
-        #endif
     }
 
     /// <summary>
@@ -316,21 +308,12 @@ public class EditorProfile : EditableProfile
         RuntimeProfile.Main.CleanStore();
     }
 
-    #if UNITY_2017_2_OR_NEWER
     void OnPlayModeStateChange(PlayModeStateChange change)
     {
         if (change == PlayModeStateChange.ExitingPlayMode) {
             OnExitingPlayMode();
         }
     }
-    #else
-    void OnPlayModeStateChange()
-    {
-        if (EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode) {
-            OnExitingPlayMode();
-        }
-    }
-    #endif
 
     /// <summary>
     /// Save back the changes made during play mode on exit (when enabled in prefs).
