@@ -16,6 +16,7 @@ using UnityEditor.Build;
 using UnityEngine.SceneManagement;
 using System.Reflection;
 using sttz.Trimmer.Extensions;
+using UnityEditor.Build.Reporting;
 
 #if UNITY_CLOUD_BUILD
 using UnityEngine.CloudBuild;
@@ -476,7 +477,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         string error = null;
 
         var report = BuildPipeline.BuildPlayer(options);
-        if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) {
+        if (report.summary.result != BuildResult.Succeeded) {
             var errors = report.steps
                 .SelectMany(s => s.messages)
                 .Where(m => m.type == LogType.Error)
@@ -498,7 +499,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// <summary>
     /// Generate the BuildInfo for the current build.
     /// </summary>
-    static void GenerateBuildInfo()
+    static void GenerateBuildInfo(GUID buildGuid)
     {
         var profileGuid = "";
         if (currentProfile != null) {
@@ -506,11 +507,15 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             profileGuid = AssetDatabase.AssetPathToGUID(path);
         }
 
+        if (buildGuid.Empty()) {
+            buildGuid = GUID.Generate();
+        }
+
         BuildInfo.Current = new BuildInfo() {
             version = Version.ProjectVersion,
             profileGuid = profileGuid,
             buildTime = DateTime.UtcNow.ToString("o"),
-            buildGuid = Guid.NewGuid().ToString()
+            buildGuid = buildGuid.ToString()
         };
     }
 
@@ -671,7 +676,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(options);
     }
 
-    public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
+    public void OnPreprocessBuild(BuildReport report)
     {
         var target = report.summary.platform;
         var path = report.summary.outputPath;
@@ -691,7 +696,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             }
         }
 
-        GenerateBuildInfo();
+        GenerateBuildInfo(report.summary.guid);
 
         string defines;
         var extraScriptingDefines = OptionHelper.currentBuildOptions.extraScriptingDefines;
@@ -737,7 +742,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         Debug.LogError(string.Format("Trimmer: Build failed for platform {0}: {1}", target, error));
     }
 
-    public void OnPostprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
+    public void OnPostprocessBuild(BuildReport report)
     {
         var target = report.summary.platform;
         var path = report.summary.outputPath;
@@ -754,7 +759,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         BuildType = TrimmerBuildType.None;
     }
 
-    public void OnProcessScene(Scene scene, UnityEditor.Build.Reporting.BuildReport report)
+    public void OnProcessScene(Scene scene, BuildReport report)
     {
         // OnProcessScene is also called when playing in the editor
         if (!BuildPipeline.isBuildingPlayer)
