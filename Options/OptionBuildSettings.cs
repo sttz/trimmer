@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections.Generic;
 using sttz.Trimmer.Extensions;
 using sttz.Trimmer.BaseOptions;
+using UnityEditor.Build.Reporting;
 
 namespace sttz.Trimmer.Options
 {
@@ -115,15 +116,15 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
         return base.PrepareBuild(options, inclusion);
     }
 
-    override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
     {
-        base.PostprocessBuild(target, path, inclusion);
+        base.PostprocessBuild(report, inclusion);
 
         if (GetChild<OptionSaveBuildInfo>().Value) {
             if (BuildInfo.Current == null) {
                 Debug.LogWarning("Save build info: BuildInfo.Current not set");
             } else {
-                var infoPath = OptionHelper.GetBuildBasePath(path);
+                var infoPath = OptionHelper.GetBuildBasePath(report.summary.outputPath);
                 infoPath = System.IO.Path.Combine(infoPath, BuildInfo.DEFAULT_NAME);
 
                 var json = BuildInfo.Current.ToJson();
@@ -143,7 +144,7 @@ public class OptionBuildSettings : OptionEnum<BuildOptions>
     /// </summary>
     public override bool EditGUI()
     {
-        if (optionFlags == null || optionNames == null) {
+        if (optionFlags == null || optionNames == null) {
             optionFlags = (BuildOptions[])Enum.GetValues(typeof(BuildOptions));
             optionNames = Enum.GetNames(typeof(BuildOptions));
             Array.Sort(optionNames, optionFlags);

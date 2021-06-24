@@ -17,6 +17,7 @@ using System.Diagnostics;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 #endif
 
 namespace sttz.Trimmer {
@@ -481,20 +482,19 @@ public abstract class Option
     /// > [!NOTE]
     /// > This method is only available in the editor.
     /// </remarks>
-    /// <param name="target">Build target type</param>
-    /// <param name="path">Path to the built project</param>
+    /// <param name="report">Unity's build report</param>
     /// <param name="inclusion">Wether this option is included in the build</param>
-    public virtual void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    public virtual void PreprocessBuild(BuildReport report, OptionInclusion inclusion)
     {
         if (variants != null) {
             foreach (var variant in variants) {
-                variant.PreprocessBuild(target, path, inclusion);
+                variant.PreprocessBuild(report, inclusion);
             }
         }
 
         if (children != null) {
             foreach (var child in children) {
-                child.PreprocessBuild(target, path, inclusion);
+                child.PreprocessBuild(report, inclusion);
             }
         }
     }
@@ -509,20 +509,19 @@ public abstract class Option
     /// > [!NOTE]
     /// > This method is only available in the editor.
     /// </remarks>
-    /// <param name="target">Build target type</param>
-    /// <param name="path">Path to the built project</param>
+    /// <param name="report">Unity's build report</param>
     /// <param name="inclusion">Wether this option is included in the build</param>
-    public virtual void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    public virtual void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
     {
         if (variants != null) {
             foreach (var variant in variants) {
-                variant.PostprocessBuild(target, path, inclusion);
+                variant.PostprocessBuild(report, inclusion);
             }
         }
 
         if (children != null) {
             foreach (var child in children) {
-                child.PostprocessBuild(target, path, inclusion);
+                child.PostprocessBuild(report, inclusion);
             }
         }
     }
@@ -544,14 +543,13 @@ public abstract class Option
     /// > [!NOTE]
     /// > This method is only available in the editor.
     /// </remarks>
-    /// <param name="target">Build target type</param>
-    /// <param name="error">The text of the error returned by <see cref="UnityEditor.BuildPipeline"/></param>
-    public virtual void OnBuildError(BuildTarget target, string error)
+    /// <param name="report">Unity's build report</param>
+    public virtual void OnBuildError(BuildReport report)
     {
         if (variants != null) {
             foreach (var variant in variants) {
                 try {
-                    variant.OnBuildError(target, error);
+                    variant.OnBuildError(report);
                 }
                 catch (Exception e) {
                     UnityEngine.Debug.LogException(e);
@@ -562,7 +560,7 @@ public abstract class Option
         if (children != null) {
             foreach (var child in children) {
                 try {
-                    child.OnBuildError(target, error);
+                    child.OnBuildError(report);
                 }
                 catch (Exception e) {
                     UnityEngine.Debug.LogException(e);

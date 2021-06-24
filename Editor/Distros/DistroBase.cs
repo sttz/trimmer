@@ -182,8 +182,8 @@ public abstract class DistroBase : ScriptableObject
                 var path = profile.GetLastBuildPath(target);
                 if (forceBuild || string.IsNullOrEmpty(path) || (!File.Exists(path) && !Directory.Exists(path))) {
                     var options = BuildManager.GetDefaultOptions(target);
-                    var error = BuildManager.Build(profile, options);
-                    if (!string.IsNullOrEmpty(error)) {
+                    var report = BuildManager.Build(profile, options);
+                    if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Failed) {
                         return null;
                     }
                     path = profile.GetLastBuildPath(target);

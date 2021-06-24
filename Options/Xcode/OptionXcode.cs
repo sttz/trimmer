@@ -11,6 +11,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.iOS.Xcode;
+using UnityEditor.Build.Reporting;
 
 namespace sttz.Trimmer.Options
 {
@@ -49,13 +50,13 @@ public class OptionXcode : OptionContainer
     /// </summary>
     public class OptionForceDisableRemoteNotifications : OptionToggle
     {
-        override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+        override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
         {
-            base.PostprocessBuild(target, path, inclusion);
+            base.PostprocessBuild(report, inclusion);
 
             if (inclusion == OptionInclusion.Remove || !Value) return;
 
-            var preprocessorPath = System.IO.Path.Combine(path, "Classes/Preprocessor.h");
+            var preprocessorPath = System.IO.Path.Combine(report.summary.outputPath, "Classes/Preprocessor.h");
             if (!File.Exists(preprocessorPath)) {
                 Debug.LogError("Could not find Preprocessor.h at path: " + preprocessorPath);
                 return;
@@ -88,13 +89,13 @@ public class OptionXcode : OptionContainer
     /// </summary>
     public class OptionAddEncryptionExemption : OptionToggle
     {
-        override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+        override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
         {
-            base.PostprocessBuild(target, path, inclusion);
+            base.PostprocessBuild(report, inclusion);
 
             if (inclusion == OptionInclusion.Remove || !Value) return;
 
-            var plistPath = System.IO.Path.Combine(path, "Info.plist");
+            var plistPath = System.IO.Path.Combine(report.summary.outputPath, "Info.plist");
             if (!File.Exists(plistPath)) {
                 Debug.LogError("Could not find Info.plist at path: " + plistPath);
                 return;
@@ -135,13 +136,13 @@ public class OptionXcode : OptionContainer
     /// </summary>
     public class OptionRenameScheme : OptionToggle
     {
-        override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+        override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
         {
-            base.PostprocessBuild(target, path, inclusion);
+            base.PostprocessBuild(report, inclusion);
 
             if (inclusion == OptionInclusion.Remove || !Value) return;
 
-            var projectPath = System.IO.Path.Combine(path, "Unity-iPhone.xcodeproj");
+            var projectPath = System.IO.Path.Combine(report.summary.outputPath, "Unity-iPhone.xcodeproj");
             if (!Directory.Exists(projectPath)) {
                 Debug.LogError("Could not find Unity-iPhone.xcodeproj at path: " + projectPath);
                 return;

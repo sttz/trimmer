@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Build.Reporting;
 
 namespace sttz.Trimmer.Options
 {
@@ -125,9 +126,9 @@ public class OptionKeyStore : OptionContainer
         return false;
     }
 
-    override public void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    override public void PreprocessBuild(BuildReport report, OptionInclusion inclusion)
     {
-        base.PreprocessBuild(target, path, inclusion);
+        base.PreprocessBuild(report, inclusion);
 
         if (inclusion == OptionInclusion.Remove)
             return;

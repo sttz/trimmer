@@ -14,6 +14,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.iOS.Xcode;
+using UnityEditor.Build.Reporting;
 
 namespace sttz.Trimmer.Options
 {
@@ -117,17 +118,18 @@ public class OptionVersion : OptionContainer
     /// </remarks>
     public class OptionApplyToProduct : OptionToggle
     {
-        override public void PostprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+        override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
         {
-            base.PostprocessBuild(target, path, inclusion);
+            base.PostprocessBuild(report, inclusion);
 
             if (!inclusion.HasFlag(OptionInclusion.Feature) || !Value)
                 return;
 
-            if (target == BuildTarget.StandaloneOSX) {
-                UpdateVersionMac(path, Version.ProjectVersion);
-            } else if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64) {
-                UpdateVersionWindows(path, Version.ProjectVersion);
+            var platform = report.summary.platform;
+            if (platform == BuildTarget.StandaloneOSX) {
+                UpdateVersionMac(report.summary.outputPath, Version.ProjectVersion);
+            } else if (platform == BuildTarget.StandaloneWindows || platform == BuildTarget.StandaloneWindows64) {
+                UpdateVersionWindows(report.summary.outputPath, Version.ProjectVersion);
             }
         }
 
@@ -216,16 +218,16 @@ pe.write(filename=path)
         Version.ProjectVersion = DetermineProjectVersion(EditorUserBuildSettings.activeBuildTarget);
     }
 
-    override public void PreprocessBuild(BuildTarget target, string path, OptionInclusion inclusion)
+    override public void PreprocessBuild(BuildReport report, OptionInclusion inclusion)
     {
-        base.PreprocessBuild(target, path, inclusion);
+        base.PreprocessBuild(report, inclusion);
 
         if (!inclusion.HasFlag(OptionInclusion.Feature)) return;
 
-        Version.ProjectVersion = DetermineProjectVersion(target);
+        Version.ProjectVersion = DetermineProjectVersion(report.summary.platform);
 
         if (incrementBuildNumber) {
-            Version.ProjectVersion = IncrementBuildNumber(Version.ProjectVersion, target);
+            Version.ProjectVersion = IncrementBuildNumber(Version.ProjectVersion, report.summary.platform);
         }
     }
 

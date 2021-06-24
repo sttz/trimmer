@@ -301,7 +301,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// 
     /// See the Unity documentation for [more information on command line usage](https://docs.unity3d.com/Manual/CommandLineArguments.html).
     /// </remarks>
-    public static string Build()
+    public static IEnumerable<BuildReport> Build()
     {
         IsCommandLineBuild = false;
         CommandLineBuildPath = null;
@@ -314,16 +314,14 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
                 IsCommandLineBuild = true;
             } else if (args[i].EqualsIgnoringCase("-profileName")) {
                 if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    var err = "-profileName needs to be followed by a profile name.";
-                    Debug.LogError(err);
-                    return err;
+                    Debug.LogError("-profileName needs to be followed by a profile name.");
+                    return Enumerable.Empty<BuildReport>();
                 }
                 profileName = args[++i];
             } else if (args[i].EqualsIgnoringCase("-output")) {
                 if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    var err = "-output needs to be followed by a path.";
-                    Debug.LogError(err);
-                    return err;
+                    Debug.LogError("-output needs to be followed by a path.");
+                    return Enumerable.Empty<BuildReport>();
                 }
                 CommandLineBuildPath = args[++i];
             } else if (args[i].EqualsIgnoringCase("-buildTarget")) {
@@ -336,9 +334,8 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         if (IsCommandLineBuild && profileName != null) {
             target = BuildProfile.Find(profileName);
             if (target == null) {
-                var err = "Build profile named '" + profileName + "' cloud not be found.";
-                Debug.LogError(err);
-                return err;
+                Debug.LogError("Build profile named '" + profileName + "' cloud not be found.");
+                return null;
             }
 
             Debug.Log("Building " + target.name + ", selected from command line.");
@@ -346,44 +343,46 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         if (target == null) {
             if (EditorProfile.Instance.ActiveProfile == null) {
-                var err = "No profile specified and not active profile set: Nothing to build";
-                Debug.LogError(err);
-                return err;
+                Debug.LogError("No profile specified and not active profile set: Nothing to build");
+                return null;
             }
             target = EditorProfile.Instance.ActiveProfile;
             Debug.Log("Building active profile.");
         }
 
-        string result;
+        IEnumerable<BuildReport> reports;
 
         if (buildActiveTarget) {
-            result = Build(target, EditorUserBuildSettings.activeBuildTarget);
+            reports = new BuildReport[] {
+                Build(target, EditorUserBuildSettings.activeBuildTarget)
+            };
         } else {
-            result = Build(target);
-            if (!string.IsNullOrEmpty(result)) {
-                Debug.LogError(result);
-            }
+            reports = Build(target);
         }
 
         IsCommandLineBuild = false;
         CommandLineBuildPath = null;
         
-        return result;
+        return reports;
     }
 
     /// <summary>
     /// Build a profile for its default targets and with the default build options.
     /// </summary>
-    public static string Build(BuildProfile profile)
+    public static IEnumerable<BuildReport> Build(BuildProfile profile)
     {
+        var reports = new List<BuildReport>();
         foreach (var target in profile.BuildTargets) {
             var options = GetDefaultOptions(target);
-            var error = Build(profile, options);
-            if (!string.IsNullOrEmpty(error)) {
-                return error;
+
+            var report = Build(profile, options);
+            reports.Add(report);
+
+            if (report.summary.result == BuildResult.Failed) {
+                break;
             }
         }
-        return null;
+        return reports;
     }
 
     /// <summary>
@@ -391,12 +390,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </summary>
     /// <param name="profile">Profile to build</param>
     /// <param name="target">Target to build, needs to be part of profile</param>
-    public static string Build(BuildProfile profile, BuildTarget target)
+    public static BuildReport Build(BuildProfile profile, BuildTarget target)
     {
         if (profile.BuildTargets != null && profile.BuildTargets.Any() && !profile.BuildTargets.Contains(target)) {
             var err = $"Build target {target} is not part of the build profile {profile.name}";
             Debug.LogError(err);
-            return err;
+            return null;
         }
 
         var options = GetDefaultOptions(target);
@@ -414,7 +413,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// > If you do not set `options.locationPathName` and no option sets
     /// > it in the `PrepareBuild` callback, then a save dialog will be shown.
     /// </remarks>
-    public static string Build(BuildProfile buildProfile, BuildPlayerOptions options)
+    public static BuildReport Build(BuildProfile buildProfile, BuildPlayerOptions options)
     {
         // Prepare build
         BuildType = TrimmerBuildType.Profile;
@@ -435,14 +434,16 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             if (!string.IsNullOrEmpty(CommandLineBuildPath)) {
                 options.locationPathName = CommandLineBuildPath;
             } else if (string.IsNullOrEmpty(options.locationPathName)) {
-                return "No build path specified. The profile needs to set an output path or one has to be set using the -output argument.";
+                Debug.LogError("No build path specified. The profile needs to set an output path or one has to be set using the -output argument.");
+                return null;
             }
         
         } else if (string.IsNullOrEmpty(options.locationPathName)) {
             // Ask for location if none has been set
             options.locationPathName = PickBuildLocation(options.target);
             if (string.IsNullOrEmpty(options.locationPathName)) {
-                return "Cancelled build location dialog";
+                Debug.Log("Cancelled build location dialog");
+                return null;
             }
         }
 
@@ -474,16 +475,10 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         // Run the build
         OptionHelper.currentBuildOptions = options;
-        string error = null;
 
         var report = BuildPipeline.BuildPlayer(options);
         if (report.summary.result != BuildResult.Succeeded) {
-            var errors = report.steps
-                .SelectMany(s => s.messages)
-                .Where(m => m.type == LogType.Error)
-                .Select(m => m.content);
-            error = string.Join("\n", errors.ToArray());
-            OnBuildError(options.target, error);
+            OnBuildError(report);
         } else {
             Debug.Log(string.Format("Trimmer: Built {0} to '{1}'", options.target, options.locationPathName));
             buildProfile.SetLastBuildPath(options.target, options.locationPathName);
@@ -491,7 +486,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         currentProfile = null;
         OptionHelper.currentBuildOptions = default;
-        return error;
+        return report;
     }
 
     // -------- BuildInfo --------
@@ -692,7 +687,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
-                option.PreprocessBuild(target, path, inclusion);
+                option.PreprocessBuild(report, inclusion);
             }
         }
 
@@ -723,23 +718,23 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     }
     
     // Unfortunately not a proper Unity event
-    public static void OnBuildError(BuildTarget target, string error)
+    public static void OnBuildError(BuildReport report)
     {
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             try {
-                option.OnBuildError(target, error);
+                option.OnBuildError(report);
             }
             catch (Exception e) {
                 Debug.LogException(e);
             }
         }
 
-        RestoreScriptingDefineSymbolsInPlayerSettings(target);
+        RestoreScriptingDefineSymbolsInPlayerSettings(report.summary.platform);
         OptionHelper.currentBuildOptions = default;
         BuildType = TrimmerBuildType.None;
 
-        Debug.LogError(string.Format("Trimmer: Build failed for platform {0}: {1}", target, error));
+        Debug.LogError(string.Format("Trimmer: Build failed for platform {0}", report.summary.platform));
     }
 
     public void OnPostprocessBuild(BuildReport report)
@@ -751,7 +746,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
-            option.PostprocessBuild(target, path, inclusion);
+            option.PostprocessBuild(report, inclusion);
         }
 
         RestoreScriptingDefineSymbolsInPlayerSettings(target);
