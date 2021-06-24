@@ -360,9 +360,17 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             reports = Build(target);
         }
 
+        // Throw if command line build failed to cause non-zero exit code
+        if (IsCommandLineBuild) {
+            var lastReport = reports.LastOrDefault();
+            if (lastReport == null || lastReport.summary.result == BuildResult.Failed) {
+                throw new BuildFailedException("Trimmer command line build failed");
+            }
+        }
+
         IsCommandLineBuild = false;
         CommandLineBuildPath = null;
-        
+
         return reports;
     }
 
