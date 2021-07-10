@@ -98,21 +98,9 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     public static TrimmerBuildType BuildType { get; private set; }
 
     /// <summary>
-    /// Wether the current build was started on the command line using
-    /// `-executeMethod sttz.Trimmer.Editor.BuildManager.Build`.
-    /// </summary>
-    public static bool IsCommandLineBuild { get; private set; }
-
-    /// <summary>
-    /// The output path set using the command line option `-output "PATH"`.
-    /// (Only set then <see cref="IsCommandLineBuild"/> is true).
-    /// </summary>
-    public static string CommandLineBuildPath { get; private set; }
-
-    /// <summary>
     /// Populate the `BuildPlayerOptions` with default values.
     /// </summary>
-    static public BuildPlayerOptions GetDefaultOptions(BuildTarget target)
+    public static BuildPlayerOptions GetDefaultOptions(BuildTarget target)
     {
         var playerOptions = new BuildPlayerOptions();
         playerOptions.target = target;
@@ -137,7 +125,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static string PickBuildLocation(BuildTarget target)
     {
         var buildLocation = EditorUserBuildSettings.GetBuildLocation(target);
-        
+
         if (target == BuildTarget.Android && EditorUserBuildSettings.exportAsGoogleAndroidProject) {
             var location = EditorUtility.SaveFolderPanel("Export Google Android Project", buildLocation, "");
             return location;
@@ -151,7 +139,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         // Call internal method:
         // string SaveBuildPanel(BuildTarget target, string title, string directory, string defaultName, string extension, out bool updateExistingBuild)
-        var method = typeof(EditorUtility).GetMethod("SaveBuildPanel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+        var method = typeof(EditorUtility).GetMethod("SaveBuildPanel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
         if (method == null) {
             Debug.LogError("Could no find SaveBuildPanel method on EditorUtility class.");
             return null;
@@ -282,115 +270,144 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     }
 
     /// <summary>
+    /// Builds complete listener implementation for command line builds
+    /// that exits on success and throws on failure.
+    /// </summary>
+    public class CommandLineBuildsCompleteListener : ScriptableObject, IBuildsCompleteListener
+    {
+        public void OnComplete(bool success, ProfileBuildResult[] results)
+        {
+            if (success) {
+                EditorApplication.Exit(0);
+            } else {
+                throw new BuildFailedException("Trimmer build failed");
+            }
+        }
+    }
+
+    /// <summary>
     /// Build the profile specified on the command line or the active profile.
     /// </summary>
     /// <remarks>
     /// You can use this method to automate Unity builds using the command line.
     /// 
     /// Use the following command to build a Build Profile:
-    /// `unity -quit -batchmode -executeMethod sttz.Trimmer.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
+    /// `unity -batchmode -executeMethod sttz.Trimmer.Editor.BuildManager.Build -profileName "PROFILE_NAME"`
     /// 
     /// You need to replace `unity` with the path to the Unity executable and `PROFILE_NAME`
     /// with the name of the profile you want to build. Run this in the folder of your
     /// Unity project or add `-projectPath "PATH_TO_PROJECT"` to select one.
     /// 
     /// When doing a command line build, the path set by the profile is used. If the
-    /// profile doesn't set a path or you want to override it, add the `-output "PATH"`
-    /// option to the arguments. By default, all build targets of the profile are built,
-    /// add the `-buildTarget NAME` option to build only a single target.
+    /// profile doesn't set a path, add the `-output "PATH"` option to the arguments. 
+    /// By default, all build targets of the profile are built, add the `-buildTarget NAME` 
+    /// option to build only a single target.
     /// 
     /// See the Unity documentation for [more information on command line usage](https://docs.unity3d.com/Manual/CommandLineArguments.html).
     /// </remarks>
-    public static IEnumerable<BuildReport> Build()
+    public static void Build()
     {
-        IsCommandLineBuild = false;
-        CommandLineBuildPath = null;
+        Build(null);
+    }
+
+    public static void Build(IBuildsCompleteListener onComplete = null)
+    {
+        string commandLineBuildPath = null;
         string profileName = null;
         var buildActiveTarget = false;
 
-        string[] args = Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length; i++) {
-            if (args[i] == "sttz.Trimmer.Editor.BuildManager.Build") {
-                IsCommandLineBuild = true;
-            } else if (args[i].EqualsIgnoringCase("-profileName")) {
-                if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    Debug.LogError("-profileName needs to be followed by a profile name.");
-                    return Enumerable.Empty<BuildReport>();
+        if (Application.isBatchMode) {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++) {
+                if (args[i].EqualsIgnoringCase("-profileName")) {
+                    if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
+                        throw new Exception("-profileName needs to be followed by a profile name.");
+                    }
+                    profileName = args[++i];
+                } else if (args[i].EqualsIgnoringCase("-output")) {
+                    if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
+                        throw new Exception("-output needs to be followed by a path.");
+                    }
+                    commandLineBuildPath = args[++i];
+                } else if (args[i].EqualsIgnoringCase("-buildTarget")) {
+                    // Unity will validate the value of the -buildTarget option
+                    buildActiveTarget = true;
                 }
-                profileName = args[++i];
-            } else if (args[i].EqualsIgnoringCase("-output")) {
-                if (i + 1 == args.Length || args[i + 1].StartsWith("-")) {
-                    Debug.LogError("-output needs to be followed by a path.");
-                    return Enumerable.Empty<BuildReport>();
-                }
-                CommandLineBuildPath = args[++i];
-            } else if (args[i].EqualsIgnoringCase("-buildTarget")) {
-                // Unity will validate the value of the -buildTarget option
-                buildActiveTarget = true;
             }
         }
 
-        BuildProfile target = null;
-        if (IsCommandLineBuild && profileName != null) {
-            target = BuildProfile.Find(profileName);
-            if (target == null) {
-                Debug.LogError("Build profile named '" + profileName + "' cloud not be found.");
-                return null;
+        BuildProfile profile = null;
+        if (Application.isBatchMode && profileName != null) {
+            profile = BuildProfile.Find(profileName);
+            if (profile == null) {
+                var err = "Build profile named '" + profileName + "' cloud not be found.";
+                if (onComplete != null) {
+                    onComplete.OnComplete(false, new[] { ProfileBuildResult.Error(null, err) });
+                } else {
+                    Debug.LogError(err);
+                }
+                return;
             }
 
-            Debug.Log("Building " + target.name + ", selected from command line.");
+            Debug.Log("Building " + profile.name + ", selected from command line.");
         }
 
-        if (target == null) {
+        if (profile == null) {
             if (EditorProfile.Instance.ActiveProfile == null) {
-                Debug.LogError("No profile specified and not active profile set: Nothing to build");
-                return null;
+                var err = "No profile specified and not active profile set: Nothing to build";
+                if (onComplete != null) {
+                    onComplete.OnComplete(false, new[] { ProfileBuildResult.Error(null, err) });
+                } else {
+                    Debug.LogError(err);
+                }
+                return;
             }
-            target = EditorProfile.Instance.ActiveProfile;
+            profile = EditorProfile.Instance.ActiveProfile;
             Debug.Log("Building active profile.");
         }
 
-        IEnumerable<BuildReport> reports;
-
-        if (buildActiveTarget) {
-            reports = new BuildReport[] {
-                Build(target, EditorUserBuildSettings.activeBuildTarget)
-            };
-        } else {
-            reports = Build(target);
+        // Throw if command line build failed to cause non-zero exit code
+        if (Application.isBatchMode && onComplete == null) {
+            onComplete = ScriptableObject.CreateInstance<CommandLineBuildsCompleteListener>();
         }
 
-        // Throw if command line build failed to cause non-zero exit code
-        if (IsCommandLineBuild) {
-            var lastReport = reports.LastOrDefault();
-            if (lastReport == null || lastReport.summary.result == BuildResult.Failed) {
-                throw new BuildFailedException("Trimmer command line build failed");
+        BuildRunner.Job[] jobs;
+        if (buildActiveTarget) {
+            jobs = new[] { 
+                new BuildRunner.Job(profile, EditorUserBuildSettings.activeBuildTarget, commandLineBuildPath)
+            };
+        } else {
+            var targets = profile.BuildTargets.ToArray();
+            jobs = new BuildRunner.Job[targets.Length];
+            for (int i = 0; i < targets.Length; i++) {
+                jobs[i] = new BuildRunner.Job() {
+                    profile = profile,
+                    target = targets[i],
+                    outputPath = commandLineBuildPath,
+                };
             }
         }
 
-        IsCommandLineBuild = false;
-        CommandLineBuildPath = null;
-
-        return reports;
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(jobs, onComplete);
     }
 
     /// <summary>
     /// Build a profile for its default targets and with the default build options.
     /// </summary>
-    public static IEnumerable<BuildReport> Build(BuildProfile profile)
+    public static void Build(BuildProfile profile, IBuildsCompleteListener onComplete = null)
     {
-        var reports = new List<BuildReport>();
-        foreach (var target in profile.BuildTargets) {
-            var options = GetDefaultOptions(target);
-
-            var report = Build(profile, options);
-            reports.Add(report);
-
-            if (report.summary.result == BuildResult.Failed) {
-                break;
-            }
+        var targets = profile.BuildTargets.ToArray();
+        var jobs = new BuildRunner.Job[targets.Length];
+        for (int i = 0; i < targets.Length; i++) {
+            jobs[i] = new BuildRunner.Job() {
+                profile = profile,
+                target = targets[i],
+            };
         }
-        return reports;
+
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(jobs, onComplete);
     }
 
     /// <summary>
@@ -398,20 +415,24 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </summary>
     /// <param name="profile">Profile to build</param>
     /// <param name="target">Target to build, needs to be part of profile</param>
-    public static BuildReport Build(BuildProfile profile, BuildTarget target)
+    public static void Build(BuildProfile profile, BuildTarget target, IBuildsCompleteListener onComplete = null)
     {
         if (profile.BuildTargets != null && profile.BuildTargets.Any() && !profile.BuildTargets.Contains(target)) {
             var err = $"Build target {target} is not part of the build profile {profile.name}";
-            Debug.LogError(err);
-            return null;
+            if (onComplete != null) {
+                onComplete.OnComplete(false, new[] { ProfileBuildResult.Error(profile, err) });
+            } else {
+                Debug.LogError(err);
+            }
+            return;
         }
 
-        var options = GetDefaultOptions(target);
-        return Build(profile, options);
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(new[] { new BuildRunner.Job(profile, target) }, onComplete);
     }
 
     /// <summary>
-    /// Build a profile with the given build options.
+    /// Build a profile with the given build options, synchronously starting the build.
     /// </summary>
     /// <remarks>
     /// The `BuildPlayerOptions` will be passed through the profile's Options'
@@ -420,8 +441,13 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// > [!NOTE]
     /// > If you do not set `options.locationPathName` and no option sets
     /// > it in the `PrepareBuild` callback, then a save dialog will be shown.
+    /// 
+    /// > [!WARNING]
+    /// > With this method it's possible to build for a build target even if this
+    /// > target is not the active build target. This can lead to issues where
+    /// > build code for the given target is not run.
     /// </remarks>
-    public static BuildReport Build(BuildProfile buildProfile, BuildPlayerOptions options)
+    public static BuildReport BuildSync(BuildProfile buildProfile, BuildPlayerOptions options)
     {
         // Prepare build
         BuildType = TrimmerBuildType.Profile;
@@ -437,21 +463,17 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             options = option.PrepareBuild(options, inclusion);
         }
 
-        if (IsCommandLineBuild) {
-            // -output overrides path set by profile
-            if (!string.IsNullOrEmpty(CommandLineBuildPath)) {
-                options.locationPathName = CommandLineBuildPath;
-            } else if (string.IsNullOrEmpty(options.locationPathName)) {
-                Debug.LogError("No build path specified. The profile needs to set an output path or one has to be set using the -output argument.");
-                return null;
-            }
-        
-        } else if (string.IsNullOrEmpty(options.locationPathName)) {
-            // Ask for location if none has been set
-            options.locationPathName = PickBuildLocation(options.target);
-            if (string.IsNullOrEmpty(options.locationPathName)) {
-                Debug.Log("Cancelled build location dialog");
-                return null;
+        // Ask for location if none has been set
+        if (string.IsNullOrEmpty(options.locationPathName)) {
+            if (Application.isBatchMode) {
+                // Cannot pick path in batch mode
+                throw new Exception($"Trimmer: No build path set by profile or in build player options.");
+            } else {
+                options.locationPathName = PickBuildLocation(options.target);
+                if (string.IsNullOrEmpty(options.locationPathName)) {
+                    Debug.Log("Cancelled build location dialog");
+                    return null;
+                }
             }
         }
 

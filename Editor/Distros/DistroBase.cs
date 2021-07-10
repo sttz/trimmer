@@ -3,6 +3,7 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +14,25 @@ using UnityEngine;
 
 namespace sttz.Trimmer.Editor
 {
+
+/// <summary>
+/// How a distribution should handle building its profiles.
+/// </summary>
+public enum DistroBuildMode
+{
+    /// <summary>
+    /// Don't build at all, generate an error if builds are missing.
+    /// </summary>
+    None,
+    /// <summary>
+    /// Only build the profile/targets that are missing.
+    /// </summary>
+    BuildMissing,
+    /// <summary>
+    /// (Re-)build all profile/targets.
+    /// </summary>
+    BuildAll,
+}
 
 /// <summary>
 /// Base class for distributions.
@@ -28,7 +48,6 @@ namespace sttz.Trimmer.Editor
 /// 
 /// There are also more generic distros:
 /// * <see cref="ScriptDistro"/>: Call a script with the build path
-/// * <see cref="MetaDistro"/>: Execute multiple distros
 /// 
 /// To create a distro, select the type you want from Create » Trimmer » Distro in the
 /// Project window's Create menu.
@@ -36,7 +55,7 @@ namespace sttz.Trimmer.Editor
 /// Note that while a distro is running, reloading of scripts is locked, as the
 /// assembly reload would abort the distribution.
 /// </remarks>
-public abstract class DistroBase : ScriptableObject
+public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
 {
     [MenuItem("Assets/Create/Trimmer/Distributions:", false, 99)]
     [MenuItem("Assets/Create/Trimmer/Distributions:", true)]
@@ -48,21 +67,17 @@ public abstract class DistroBase : ScriptableObject
     [HideInInspector] public List<BuildProfile> builds;
 
     /// <summary>
-    /// Wether the distribution will raise an error if it has no
-    /// build targets.
-    /// </summary>
-    public virtual bool CanRunWithoutBuildTargets { get { return false; } }
-
-    /// <summary>
     /// Structure used to represent a set of builds.
     /// </summary>
     public struct BuildPath
     {
+        public BuildProfile profile;
         public BuildTarget target;
         public string path;
 
-        public BuildPath(BuildTarget target, string path)
+        public BuildPath(BuildProfile profile, BuildTarget target, string path)
         {
+            this.profile = profile;
             this.target = target;
             this.path = path;
         }
@@ -114,13 +129,32 @@ public abstract class DistroBase : ScriptableObject
     }
 
     /// <summary>
+    /// Get the paths to all existing builds for all build target in all linked Build Profiles.
+    /// </summary>
+    public virtual IEnumerable<BuildPath> GetBuildPaths()
+    {
+        var paths = new Dictionary<BuildTarget, BuildPath>();
+        foreach (var profile in builds) {
+            if (profile == null) continue;
+            foreach (var target in profile.BuildTargets) {
+                var path = profile.GetLastBuildPath(target);
+                if (string.IsNullOrEmpty(path) || (!File.Exists(path) && !Directory.Exists(path))) {
+                    paths[target] = new BuildPath(profile, target, null);
+                } else {
+                    paths[target] = new BuildPath(profile, target, path);
+                }
+            }
+        }
+        return paths.Values;
+    }
+
+    /// <summary>
     /// Build all linked Build Profiles.
     /// </summary>
-    /// <returns></returns>
     [ContextMenu("Build")]
-    public bool Build()
+    public void Build()
     {
-        return BuildAndGetBuildPaths(true) != null;
+        Build(DistroBuildMode.BuildAll);
     }
 
     /// <summary>
@@ -130,17 +164,22 @@ public abstract class DistroBase : ScriptableObject
     [ContextMenu("Distribute")]
     public void Distribute()
     {
-        RunCoroutine(DistributeCoroutine());
+        Distribute(DistroBuildMode.BuildMissing);
     }
 
     /// <summary>
     /// Process the builds of the linked Build Profiles and build the
     /// targets where no build exists.
     /// </summary>
-    /// <param name="forceBuild">Force rebuilding all targets, even if a build exists</param>
-    public void Distribute(bool forceBuild)
+    /// <param name="buildMode">Build mode to use</param>
+    public void Distribute(DistroBuildMode buildMode)
     {
-        RunCoroutine(DistributeCoroutine(forceBuild));
+        if (buildMode != DistroBuildMode.None) {
+            Build(buildMode, onComplete: this);
+            return;
+        }
+
+        RunCoroutine(DistributeCoroutine(buildMode));
     }
 
     /// <summary>
@@ -167,68 +206,80 @@ public abstract class DistroBase : ScriptableObject
     }
 
     /// <summary>
-    /// Build all missing targets and return the paths for all build of all linked Build Profiles.
+    /// Build the profile's targets with the given build mode.
+    /// Does not run the actual distribution.
     /// </summary>
-    /// <param name="forceBuild">Force rebuilding all targets, even if a build exists</param>
-    public virtual IEnumerable<BuildPath> BuildAndGetBuildPaths(bool forceBuild = false)
+    /// <param name="buildMode">Build mode to use (must not be <see cref="DistroBuildMode.None"/>)</param>
+    /// <param name="onComplete">Listener that will be called when the builds are complete</param>
+    public void Build(DistroBuildMode buildMode = DistroBuildMode.BuildMissing, IBuildsCompleteListener onComplete = null)
     {
-        var paths = new Dictionary<BuildTarget, string>();
+        if (buildMode == DistroBuildMode.None) {
+            throw new ArgumentException("Invalid parameter value DistroBuildMode.None", nameof(buildMode));
+        }
 
-        // Some Unity versions' (seen on 2018.2b11) ReorderableList can change
-        // the list during the build and cause the foreach to raise an exception
-        foreach (var profile in builds.ToArray()) {
+        var jobs = new List<BuildRunner.Job>();
+        foreach (var profile in builds) {
             if (profile == null) continue;
             foreach (var target in profile.BuildTargets) {
                 var path = profile.GetLastBuildPath(target);
-                if (forceBuild || string.IsNullOrEmpty(path) || (!File.Exists(path) && !Directory.Exists(path))) {
-                    var options = BuildManager.GetDefaultOptions(target);
-                    var report = BuildManager.Build(profile, options);
-                    if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Failed) {
-                        return null;
-                    }
-                    path = profile.GetLastBuildPath(target);
+                if (buildMode == DistroBuildMode.BuildAll 
+                        || string.IsNullOrEmpty(path) 
+                        || (!File.Exists(path) && !Directory.Exists(path))) {
+                    jobs.Add(new BuildRunner.Job(profile, target));
                 }
-                paths[target] = path;
             }
         }
 
-        return paths.Select(p => new BuildPath(p.Key, p.Value));
+        if (jobs.Count == 0) {
+            onComplete.OnComplete(true, new ProfileBuildResult[0]);
+            return;
+        }
+
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(jobs.ToArray(), onComplete);
     }
 
-    /// <summary>
-    /// Coroutine to run the distribution.
-    /// </summary>
-    /// <remarks>
-    /// This is not a Unity coroutine but a custom editor coroutine.
-    /// Use <see cref="DistroBase.RunCoroutine"/> to start it and
-    /// <see cref="DistroBase.GetSubroutineResult"/> to get its result.
-    /// </remarks>
-    /// <param name="forceBuild">Force rebuilding all targets, even if a build exists</param>
-    public virtual IEnumerator DistributeCoroutine(bool forceBuild = false)
+    void IBuildsCompleteListener.OnComplete(bool success, ProfileBuildResult[] results)
+    {
+        if (!success) return;
+
+        // The builds have been built, error out in the distribution coroutine if one is missing
+        RunCoroutine(DistributeCoroutine(DistroBuildMode.None));
+    }
+
+    IEnumerator DistributeCoroutine(DistroBuildMode buildMode = DistroBuildMode.BuildMissing)
     {
         if (IsRunning) {
-            yield return false; yield break;
+            throw new InvalidOperationException("Distribution '" + this.name + "' is already running.");
         }
 
         IsRunning = true;
 
-        var paths = BuildAndGetBuildPaths(forceBuild);
-        if (paths == null) {
+        // Check that all builds are present
+        var paths = GetBuildPaths();
+
+        if (!paths.Any()) {
+            Debug.LogError(name + ": Distribution has no targets in any of its profiles");
             IsRunning = false;
-            yield return false; yield break;
+            yield break;
         }
 
-        if (!CanRunWithoutBuildTargets && !paths.Any()) {
-            Debug.LogError(name + ": No build paths for distribution");
+        var missingBuilds = false;
+        foreach (var path in paths) {
+            if (path.path == null) {
+                Debug.LogError(name + ": Missing build for target '" + path.target + "' of profile '" + path.profile + "'");
+                missingBuilds = true;
+            }
+        }
+        if (missingBuilds) {
             IsRunning = false;
-            yield return false; yield break;
+            yield break;
         }
 
-        yield return DistributeCoroutine(paths, forceBuild);
+        // Run distribution
+        yield return DistributeCoroutine(paths, buildMode == DistroBuildMode.BuildAll);
 
         IsRunning = false;
-
-        yield return GetSubroutineResult<bool>();
     }
 
     /// <summary>

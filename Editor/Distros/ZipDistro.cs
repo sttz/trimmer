@@ -288,7 +288,7 @@ public class ZipDistro : DistroBase
         }
 
         Debug.Log("ZipDistro: Archived to: " + outputPath);
-        yield return new BuildPath(target, outputPath);
+        yield return new BuildPath(buildPath.profile, target, outputPath);
     }
 
     protected IEnumerator RenameRoot(string archivePath, string oldName, string newName)

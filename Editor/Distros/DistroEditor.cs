@@ -70,7 +70,7 @@ public class DistroEditor : UnityEditor.Editor
         GUILayout.Label("Build Profiles", EditorStyles.boldLabel);
         list.DoLayoutList();
 
-        EditorGUI.BeginDisabledGroup(!distro.CanRunWithoutBuildTargets && (distro.builds == null || distro.builds.Count == 0));
+        EditorGUI.BeginDisabledGroup(distro.builds == null || distro.builds.Count == 0);
         {
             GUILayout.Label("Distribution", EditorStyles.boldLabel);
             EditorGUILayout.BeginHorizontal();
@@ -82,7 +82,7 @@ public class DistroEditor : UnityEditor.Editor
                     GUILayout.Label(GetSpinner(), GUILayout.ExpandWidth(false));
                 } else {
                     if (GUILayout.Button("Build & Distribute")) {
-                        distro.Distribute(true);
+                        distro.Distribute(DistroBuildMode.BuildAll);
                         GUIUtility.ExitGUI();
                     }
                     EditorGUI.BeginDisabledGroup(!distro.HasAllBuilds());

@@ -566,8 +566,7 @@ public class ProfileEditor : UnityEditor.Editor
                 EditorUtility.RevealInFinder(path);
             }
             if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-                BuildManager.Build(buildProfile, BuildManager.GetDefaultOptions(target));
-                GUIUtility.ExitGUI();
+                BuildManager.Build(buildProfile, target);
             }
 
             EditorGUILayout.EndHorizontal();
@@ -578,7 +577,6 @@ public class ProfileEditor : UnityEditor.Editor
         var count = buildProfile.BuildTargets.Count();
         if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
             BuildManager.Build(buildProfile);
-            GUIUtility.ExitGUI();
         }
     }
 
