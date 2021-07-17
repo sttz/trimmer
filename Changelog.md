@@ -1,5 +1,18 @@
 # Changelog
 
+### 1.3.0 (2021-??-??)
+* Switch active build target before builds
+* Add preference to restore active build target after builds
+* Build APIs are now asynchronous and require `ScriptableObject`-based completion listeners
+* Do not change scripting defines in player settings on Unity 2020.1+
+* Add Option to build Addressables content before a player build
+* Throw an exception when command line build fails to produce a non-zero exit code
+* Use `BuildReport` where possible in Options and in the build APIs
+* Add `OnBuildError` callback for Options (@JesseTG)
+* Use Unity's own build GUID in `BuildInfo`
+* MetaDistro has been removed due to incompatibility with new build runner
+* Require Unity 2019.4+
+
 ### 1.2.1 (2021-04-15)
 * Fix detection of first scene when building with a custom scene list
 * Add option to append build if possible<br>
