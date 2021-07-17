@@ -16,6 +16,7 @@ public static class TrimmerPrefs
     const string TRIMMER_PREFIX = "Trimmer.";
     const string SHOW_UNAVAILABLE = "ShowUnavailable";
     const string PLAYMODE_EXIT_SAVE = "PlaymodeExitSave";
+    const string RESTORE_ACTIVE_TARGET = "RestoreActiveTarget";
 
     /// <summary>
     /// Show unavailable options in Build Profiles.
@@ -47,6 +48,18 @@ public static class TrimmerPrefs
     }
 
     /// <summary>
+    /// Wether to restore the active build target after running builds.
+    /// </summary>
+    public static bool RestoreActiveBuildTarget {
+        get {
+            return EditorPrefs.GetBool(TRIMMER_PREFIX + RESTORE_ACTIVE_TARGET, true);
+        }
+        set {
+            EditorPrefs.SetBool(TRIMMER_PREFIX + RESTORE_ACTIVE_TARGET, value);
+        }
+    }
+
+    /// <summary>
     /// GUI shown in Unity's Preferences window.
     /// </summary>
     [SettingsProvider]
@@ -71,6 +84,7 @@ public static class TrimmerPrefs
         EditorProfile.Instance.ActiveProfile = (BuildProfile)EditorGUILayout.ObjectField(
             "Active Build Profile", EditorProfile.Instance.ActiveProfile, typeof(BuildProfile), false
         );
+        RestoreActiveBuildTarget = EditorGUILayout.Toggle("Restore Active Build Target", RestoreActiveBuildTarget);
     }
 }
 

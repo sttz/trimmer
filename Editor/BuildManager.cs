@@ -389,7 +389,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         }
 
         var runner = ScriptableObject.CreateInstance<BuildRunner>();
-        runner.Run(jobs, onComplete);
+        runner.Run(jobs, onComplete, TrimmerPrefs.RestoreActiveBuildTarget && !Application.isBatchMode);
     }
 
     /// <summary>
@@ -407,7 +407,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         }
 
         var runner = ScriptableObject.CreateInstance<BuildRunner>();
-        runner.Run(jobs, onComplete);
+        runner.Run(jobs, onComplete, TrimmerPrefs.RestoreActiveBuildTarget);
     }
 
     /// <summary>
@@ -428,7 +428,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         }
 
         var runner = ScriptableObject.CreateInstance<BuildRunner>();
-        runner.Run(new[] { new BuildRunner.Job(profile, target) }, onComplete);
+        runner.Run(new[] { new BuildRunner.Job(profile, target) }, onComplete, TrimmerPrefs.RestoreActiveBuildTarget);
     }
 
     /// <summary>

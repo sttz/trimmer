@@ -236,7 +236,7 @@ public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
         }
 
         var runner = ScriptableObject.CreateInstance<BuildRunner>();
-        runner.Run(jobs.ToArray(), onComplete);
+        runner.Run(jobs.ToArray(), onComplete, TrimmerPrefs.RestoreActiveBuildTarget);
     }
 
     void IBuildsCompleteListener.OnComplete(bool success, ProfileBuildResult[] results)
