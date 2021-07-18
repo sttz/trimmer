@@ -98,6 +98,12 @@ public class DistroEditor : UnityEditor.Editor
             EditorGUILayout.EndHorizontal();
         }
         EditorGUI.EndDisabledGroup();
+
+        if (BuildRunner.Current != null) {
+            GUILayout.Space(20);
+            GUILayout.Label("Current Build", EditorStyles.boldLabel);
+            BuildRunner.Current.StatusGUI();
+        }
     }
 
     override public bool RequiresConstantRepaint()

@@ -565,18 +565,32 @@ public class ProfileEditor : UnityEditor.Editor
                     && GUILayout.Button("Show", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
                 EditorUtility.RevealInFinder(path);
             }
-            if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-                BuildManager.Build(buildProfile, target);
+            EditorGUI.BeginDisabledGroup(BuildRunner.Current != null);
+            {
+                if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+                    BuildManager.Build(buildProfile, target);
+                }
             }
+            EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.EndHorizontal();
         }
 
         EditorGUILayout.Space();
 
-        var count = buildProfile.BuildTargets.Count();
-        if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
-            BuildManager.Build(buildProfile);
+        EditorGUI.BeginDisabledGroup(BuildRunner.Current != null);
+        {
+            var count = buildProfile.BuildTargets.Count();
+            if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
+                BuildManager.Build(buildProfile);
+            }
+        }
+        EditorGUI.EndDisabledGroup();
+
+        if (BuildRunner.Current != null) {
+            GUILayout.Space(20);
+            GUILayout.Label("Current Build", boldLabel);
+            BuildRunner.Current.StatusGUI();
         }
     }
 

@@ -130,6 +130,49 @@ public class BuildRunner : ScriptableObject
     }
 
     /// <summary>
+    /// The currently running build runner.
+    /// </summary>
+    public static BuildRunner Current { get; private set; }
+
+    /// <summary>
+    /// The currently running job.
+    /// </summary>
+    public Job CurrentJob => jobs != null && jobIndex >= 0 && jobIndex < jobs.Length ? jobs[jobIndex] : default;
+
+    /// <summary>
+    /// The index of the current job.
+    /// </summary>
+    public int JobIndex => jobIndex;
+
+    /// <summary>
+    /// Total count of jobs in the current run.
+    /// </summary>
+    public int JobCount => jobs != null ? jobs.Length : 0;
+
+    /// <summary>
+    /// Get a description of what the runner is currently doing.
+    /// </summary>
+    public string GetCurrentTaskDescription()
+    {
+        if (jobs == null || jobIndex < 0) return null;
+
+        var job = default(Job);
+        if (jobIndex < jobs.Length)
+            job = jobs[jobIndex];
+
+        switch (currentTask) {
+            case Task.Build:
+                return $"[{jobIndex + 1} / {jobs.Length}] Building {job.target} of '{job.profile.name}'";
+            case Task.SwitchingBuildTarget:
+                return $"[{jobIndex + 1} / {jobs.Length}] Switching to {job.target}";
+            case Task.RestoreBuildTarget:
+                return $"Restoring active build target";
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
     /// Run the given builds.
     /// </summary>
     public void Run(Job[] jobs, IBuildsCompleteListener listener, bool restoreActiveBuildTarget = true)
@@ -156,16 +199,41 @@ public class BuildRunner : ScriptableObject
             results[i].profile = job.profile;
         }
 
+        Current = this;
         this.jobs = jobs;
         this.results = results;
         this.restoreActiveTargetTo = EditorUserBuildSettings.activeBuildTarget;
         jobIndex = 0;
         currentTask = Task.Build;
         completeResult = false;
+        restoreSelection = null;
+
+        if (Selection.activeObject is BuildProfile || Selection.activeObject is DistroBase) {
+            restoreSelection = Selection.activeObject;
+        }
 
         //Debug.Log($"Trimmer BuildRunner: Got jobs:\n{string.Join("\n", jobs.Select(j => $"- {j.profile?.name ?? "<none>"} {j.target}"))}");
 
         ContinueDebounced();
+    }
+
+    /// <summary>
+    /// Show a GUI layout progress bar.
+    /// </summary>
+    public void StatusGUI()
+    {
+        var description = GetCurrentTaskDescription();
+        if (description == null) return;
+
+        var totalSteps = JobCount * 2;
+        if (TrimmerPrefs.RestoreActiveBuildTarget) totalSteps += 1;
+
+        var currentStep = JobIndex * 2;
+        if (currentTask == Task.Build) currentStep += 1;
+        else if (currentTask == Task.RestoreBuildTarget) currentStep += 2;
+
+        var rect = EditorGUILayout.GetControlRect(false, 20f);
+        EditorGUI.ProgressBar(rect, (float)currentStep / totalSteps, description);
     }
 
     ScriptableObject Listener {
@@ -203,11 +271,13 @@ public class BuildRunner : ScriptableObject
     ProfileBuildResult[] results;
     int jobIndex;
     Task currentTask;
+    UnityEngine.Object restoreSelection;
+    int debounceCount;
     bool completeResult;
 
     void EnsureNotRunning()
     {
-        if (jobs != null) {
+        if (jobs != null || Current != null) {
             throw new Exception($"Trimmer BuildRunner: Cannot run new jobs, already running.");
         }
     }
@@ -217,7 +287,29 @@ public class BuildRunner : ScriptableObject
         hideFlags = HideFlags.HideAndDontSave;
 
         if (jobs != null) {
+            if (Current != null && Current != this) {
+                Debug.LogError($"Trimmer BuildRunner: Multiple build runners, aborting...");
+                Complete(false, skipRestore: true);
+                return;
+            } else {
+                Current = this;
+            }
+
             ContinueDebounced();
+        }
+
+        EditorApplication.update += RestoreSelectionUpdate;
+    }
+
+    void OnDisable()
+    {
+        EditorApplication.update -= RestoreSelectionUpdate;
+    }
+
+    void RestoreSelectionUpdate()
+    {
+        if (restoreSelection != null && Selection.activeObject == null) {
+            Selection.activeObject = restoreSelection;
         }
     }
 
@@ -226,13 +318,19 @@ public class BuildRunner : ScriptableObject
         //Debug.Log($"Trimmer BuildRunner: Debounce Continue...");
 
         // Using update because delayedCall doesn't get called in background
+        debounceCount = 10;
         EditorApplication.update += ContinueDebouncedHandler;
     }
 
     void ContinueDebouncedHandler()
     {
-        EditorApplication.update -= ContinueDebouncedHandler;
-        Continue();
+        RestoreSelectionUpdate();
+
+        debounceCount--;
+        if (debounceCount <= 0) {
+            EditorApplication.update -= ContinueDebouncedHandler;
+            Continue();
+        }
     }
 
     void Continue()
@@ -314,6 +412,8 @@ public class BuildRunner : ScriptableObject
         this.jobIndex = -1;
         this.restoreActiveTargetTo = 0;
         this.completeResult = false;
+        this.restoreSelection = null;
+        Current = null;
 
         if (Listener != null && Listener is IBuildsCompleteListener l) {
             Listener = null;
