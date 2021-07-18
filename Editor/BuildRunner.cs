@@ -161,7 +161,7 @@ public class BuildRunner : ScriptableObject
         this.restoreActiveTargetTo = EditorUserBuildSettings.activeBuildTarget;
         jobIndex = 0;
         currentTask = Task.Build;
-        result = null;
+        completeResult = false;
 
         //Debug.Log($"Trimmer BuildRunner: Got jobs:\n{string.Join("\n", jobs.Select(j => $"- {j.profile?.name ?? "<none>"} {j.target}"))}");
 
@@ -203,7 +203,7 @@ public class BuildRunner : ScriptableObject
     ProfileBuildResult[] results;
     int jobIndex;
     Task currentTask;
-    bool? result;
+    bool completeResult;
 
     void EnsureNotRunning()
     {
@@ -242,7 +242,7 @@ public class BuildRunner : ScriptableObject
         }
 
         if (currentTask == Task.RestoreBuildTarget) {
-            Complete(result ?? false);
+            Complete(completeResult);
             return;
         }
 
@@ -292,7 +292,7 @@ public class BuildRunner : ScriptableObject
     {
         //Debug.Log($"Trimmer BuildRunner: Complete!");
 
-        result = success;
+        completeResult = success;
 
         if (!skipRestore && restoreActiveTargetTo != 0 && EditorUserBuildSettings.activeBuildTarget != restoreActiveTargetTo) {
             if (currentTask == Task.RestoreBuildTarget) {
@@ -313,7 +313,7 @@ public class BuildRunner : ScriptableObject
         this.results = null;
         this.jobIndex = -1;
         this.restoreActiveTargetTo = 0;
-        this.result = null;
+        this.completeResult = false;
 
         if (Listener != null && Listener is IBuildsCompleteListener l) {
             Listener = null;
