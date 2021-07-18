@@ -13,6 +13,7 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets;
 using UnityEditor.Build;
+using UnityEditor;
 
 namespace sttz.Trimmer.Options
 {
@@ -78,12 +79,17 @@ public class OptionBuildAddressables : OptionToggle
         }
     }
 
-    override public void PreprocessBuild(BuildReport report, OptionInclusion inclusion)
+    override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
     {
-        base.PreprocessBuild(report, inclusion);
+        options = base.PrepareBuild(options, inclusion);
 
-        if (!Value) return;
+        if (Value) BuildAddressables();
 
+        return options;
+    }
+
+    void BuildAddressables()
+    {
         // Original values to restore overrides
         var originalSettings = AddressableAssetSettingsDefaultObject.Settings;
         string originalProfileId = null;
