@@ -658,7 +658,7 @@ public class ProfileEditor : UnityEditor.Editor
         var expansionPath = option.Path;
         var isExpanded = true;
         var wasExpanded = true;
-        var expandable = option.HasChildren || (option.IsDefaultVariant && !showDefaultVariant);
+        var expandable = option.HasChildren || (option.IsDefaultVariant && !showDefaultVariant);
         if (expandable) {
             isExpanded = wasExpanded = EditorProfile.Instance.IsExpanded(expansionPath);
         }

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using sttz.Trimmer.Extensions;
+using System.Linq;
 
 namespace sttz.Trimmer.Editor
 {
@@ -33,7 +34,7 @@ namespace sttz.Trimmer.Editor
 /// state (<see cref="IsExpanded"/> and <see cref="SetExpanded"/>).
 /// </remarks>
 [HelpURL("https://sttz.ch/trimmer/manual/using_trimmer.html")]
-public class EditorProfile : EditableProfile
+public class EditorProfile : EditableProfile, IEditorProfile
 {
     // -------- Configuration --------
 
@@ -335,6 +336,8 @@ public class EditorProfile : EditableProfile
 
     // ------ EditableProfile ------
 
+    IEnumerable<BuildTarget> IEditorProfile.BuildTargets => Enumerable.Empty<BuildTarget>();
+
     [SerializeField] ValueStore store = new ValueStore();
 
     public override ValueStore Store {
@@ -345,7 +348,7 @@ public class EditorProfile : EditableProfile
 
     public override void SaveIfNeeded()
     {
-        if (store.IsDirty(true) || profileDirty) {
+        if (store.IsDirty(true) || profileDirty) {
             Save();
         }
     }
@@ -384,7 +387,12 @@ public class EditorProfile : EditableProfile
     /// </summary>
     private class EditEditorProfile : RuntimeProfile
     {
-        public EditEditorProfile(ValueStore store) : base(store) { }
+        public EditEditorProfile(IEditorProfile profile, ValueStore store) : base(store)
+        {
+            foreach (var option in this) {
+                option.SetEditorProfile(profile);
+            }
+        }
 
         protected override bool ShouldCreateOption(Type optionType)
         {
@@ -405,7 +413,7 @@ public class EditorProfile : EditableProfile
                     if (EditorSourceProfile != null) {
                         currentStore = EditorSourceProfile.Store;
                     }
-                    editProfile = new EditEditorProfile(currentStore);
+                    editProfile = new EditEditorProfile(this, currentStore);
                 }
                 return editProfile;
             }

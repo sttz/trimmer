@@ -36,7 +36,7 @@ namespace sttz.Trimmer.Editor
 /// </remarks>
 [CreateAssetMenu(fileName = "Build Profile.asset", menuName = "Trimmer/Build Profile")]
 [HelpURL("https://sttz.ch/trimmer/manual/using_trimmer.html")]
-public class BuildProfile : EditableProfile
+public class BuildProfile : EditableProfile, IEditorProfile
 {
     // -------- Static --------
 
@@ -224,7 +224,12 @@ public class BuildProfile : EditableProfile
     /// </summary>
     private class EditBuildProfile : RuntimeProfile
     {
-        public EditBuildProfile(ValueStore store) : base(store) { }
+        public EditBuildProfile(IEditorProfile profile, ValueStore store) : base(store)
+        {
+            foreach (var option in this) {
+                option.SetEditorProfile(profile);
+            }
+        }
 
         protected override bool ShouldCreateOption(Type optionType)
         {
@@ -239,7 +244,7 @@ public class BuildProfile : EditableProfile
     public static RuntimeProfile EmptyEditProfile {
         get {
             if (_emptyProfile == null) {
-                _emptyProfile = new EditBuildProfile(new ValueStore());
+                _emptyProfile = new EditBuildProfile(null, new ValueStore());
             }
             return _emptyProfile;
         }
@@ -259,7 +264,7 @@ public class BuildProfile : EditableProfile
     public override RuntimeProfile EditProfile {
         get {
             if (editProfile == null) {
-                editProfile = new EditBuildProfile(store);
+                editProfile = new EditBuildProfile(this, store);
             }
             return editProfile;
         }

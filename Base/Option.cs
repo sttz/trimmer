@@ -73,6 +73,21 @@ public enum OptionInclusion
     FeatureAndOption = Feature | Option,
 }
 
+/// <summary>
+/// Interface for options to interact with its profile.
+/// </summary>
+public interface IEditorProfile
+{
+    /// <summary>
+    /// The build targets of this profile.
+    /// </summary>
+    IEnumerable<BuildTarget> BuildTargets { get; }
+    /// <summary>
+    /// The profile used to manage options in the editor.
+    /// </summary>
+    RuntimeProfile EditProfile { get; }
+}
+
 #endif
 
 /// <summary>
@@ -293,6 +308,36 @@ public abstract class Option
     /// > will inherit the capabilities from their main parent.
     /// </remarks>
     public OptionCapabilities Capabilities { get; private set; }
+
+    /// <summary>
+    /// The editor profile this option belongs to.
+    /// </summary>
+    /// <remarks>
+    /// > [!NOTE]
+    /// > This property is only available in the editor.
+    /// </remarks>
+    public IEditorProfile EditorProfile { get; private set; }
+
+    /// <summary>
+    /// Set the editor profile for the option and all of its variants and children.
+    /// </summary>
+    /// <param name="profile"></param>
+    public void SetEditorProfile(IEditorProfile profile)
+    {
+        EditorProfile = profile;
+
+        if (variants != null) {
+            foreach (var variant in variants) {
+                variant.SetEditorProfile(profile);
+            }
+        }
+
+        if (children != null) {
+            foreach (var child in children) {
+                child.SetEditorProfile(profile);
+            }
+        }
+    }
 
     /// <summary>
     /// The `BuildTarget`s this Option supports. (null = all)
