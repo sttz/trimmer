@@ -57,7 +57,7 @@ public enum DistroBuildMode
 /// Note that while a distro is running, reloading of scripts is locked, as the
 /// assembly reload would abort the distribution.
 /// </remarks>
-public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
+public abstract class DistroBase : BatchItem
 {
     [MenuItem("Assets/Create/Trimmer/Distributions:", false, 99)]
     [MenuItem("Assets/Create/Trimmer/Distributions:", true)]

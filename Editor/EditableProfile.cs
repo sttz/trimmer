@@ -13,7 +13,7 @@ namespace sttz.Trimmer.Editor
 /// Base class for <see cref="EditorProfile"/> and <see cref="BuildProfile"/> to
 /// make sharing common editor code easier.
 /// </summary>
-public abstract class EditableProfile : ScriptableObject
+public abstract class EditableProfile : BatchItem
 {
     /// <summary>
     /// The store backing the profile.
