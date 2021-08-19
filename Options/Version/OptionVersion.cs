@@ -6,14 +6,12 @@
 #if UNITY_EDITOR
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using sttz.Trimmer.BaseOptions;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.iOS.Xcode;
 using UnityEditor.Build.Reporting;
 
 namespace sttz.Trimmer.Options
@@ -67,20 +65,6 @@ namespace sttz.Trimmer.Options
 [Capabilities(OptionCapabilities.ConfiguresBuild | OptionCapabilities.CanPlayInEditor | OptionCapabilities.HasAssociatedFeature)]
 public class OptionVersion : OptionContainer
 {
-    // ------ Configuration ------
-
-    /// <summary>
-    /// When enabled, the build numbers between iOS/Android/MacAppStore are synchronized
-    /// and used for other platforms as well. When not enabled, those platforms will have
-    /// independent build numbers and all other platforms will have 0.
-    /// </summary>
-    public bool shareBuildNumber = true;
-
-    /// <summary>
-    /// Automatically increment build number for each build.
-    /// </summary>
-    public bool incrementBuildNumber = true;
-
     // ------ Option ------
 
     override protected void Configure()
@@ -96,7 +80,13 @@ public class OptionVersion : OptionContainer
     /// <summary>
     /// If non-empty, this build number will be used instead of the shared build number.
     /// </summary>
-    public class OptionOverrideBuild : OptionString { }
+    public class OptionOverrideBuild : OptionInt
+    {
+        override protected void Configure()
+        {
+            DefaultValue = -1;
+        }
+    }
 
     /// <summary>
     /// When enabled, version control information will be included.
@@ -110,103 +100,84 @@ public class OptionVersion : OptionContainer
     }
 
     /// <summary>
-    /// Apply the version to the product (app bundle or exe)
+    /// How to share the build number across platforms.
+    /// </summary>
+    public enum BuildNumberSharing
+    {
+        /// <summary>
+        /// Do not share build number, only update the current platform.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Share the build number across all platforms in the profile.
+        /// </summary>
+        InProfile,
+        /// <summary>
+        /// Share the build number across all platforms in the project.
+        /// </summary>
+        InProject,
+    }
+
+    /// <summary>
+    /// Use the highest build number across multiple platforms when incrementing.
+    /// </summary>
+    public class OptionShareBuildNumber : OptionEnum<BuildNumberSharing>
+    {
+        override protected void Configure()
+        {
+            DefaultValue = BuildNumberSharing.None;
+        }
+    }
+
+    /// <summary>
+    /// Increment the build number on every build.
     /// </summary>
     /// <remarks>
-    /// Updating the app bundle version requires the Unity iOS support to be installed,
-    /// the exe updating requires python with the pefile installed.
+    /// Automatic build number incrementing will increment the build
+    /// number per target, even if those targets are built in a 
+    /// single profile.
     /// </remarks>
-    public class OptionApplyToProduct : OptionToggle
+    public class OptionIncrementBuildNumber : OptionToggle
     {
-        override public void PostprocessBuild(BuildReport report, OptionInclusion inclusion)
+        override protected void Configure()
         {
-            base.PostprocessBuild(report, inclusion);
-
-            if (!inclusion.HasFlag(OptionInclusion.Feature) || !Value)
-                return;
-
-            var platform = report.summary.platform;
-            if (platform == BuildTarget.StandaloneOSX) {
-                UpdateVersionMac(report.summary.outputPath, Version.ProjectVersion);
-            } else if (platform == BuildTarget.StandaloneWindows || platform == BuildTarget.StandaloneWindows64) {
-                UpdateVersionWindows(report.summary.outputPath, Version.ProjectVersion);
-            }
+            DefaultValue = true;
         }
 
-        public static bool UpdateVersionMac(string path, Version version)
+        public override bool EditGUI()
         {
-            var infoPlistPath = System.IO.Path.Combine(path, "Contents/Info.plist");
-            if (!File.Exists(infoPlistPath)) {
-                Debug.LogError("OptionVersion: Info plist not found at path: " + infoPlistPath);
-                return false;
+            var changed = false;
+            EditorGUILayout.BeginHorizontal();
+            {
+                changed = base.EditGUI();
+
+                if (EditorProfile.BuildTargets.Any() 
+                        && GUILayout.Button("Increment Now", EditorStyles.miniButton)) {
+                    var parent = (OptionVersion)Parent;
+                    var messages = new List<string>();
+                    if (parent.GetChild<OptionShareBuildNumber>().Value == BuildNumberSharing.None) {
+                        // Build numbers aren't shared, increment for each platform in the profile
+                        foreach (var target in EditorProfile.BuildTargets) {
+                            var version = parent.DetermineProjectVersion(target);
+                            version = parent.IncrementBuildNumber(version, target);
+                            messages.Add($"Incremented {target} build number to {version.build}");
+                        }
+                    } else {
+                        // Build numbers are shared, only increment once
+                        var firstTarget = EditorProfile.BuildTargets.First();
+                        var version = parent.DetermineProjectVersion(firstTarget);
+                        version = parent.IncrementBuildNumber(version, firstTarget);
+                        messages.Add($"Incremented shared build number to {version.build}");
+                    }
+                    EditorUtility.DisplayDialog(
+                        "Increment Build Number", 
+                        string.Join("\n", messages),
+                        "OK"
+                    );
+                }
             }
-
-            var doc = new PlistDocument();
-            doc.ReadFromFile(infoPlistPath);
-
-            doc.root.SetString("CFBundleGetInfoString", string.Format(
-                "{0} {1} ({2})",
-                Application.productName, version.MajorMinorPatch, version.build
-            ));
-
-            doc.WriteToFile(infoPlistPath);
-            return true;
-        }
-
-        const string PythonUpdateWindows = @"
-import sys
-
-try:
-    import pefile
-except ImportError, e:
-    print 'ERROR: Required Python package pefile not installed: ' + str(e)
-    sys.exit(20)
-
-path = sys.argv[1]
-major = sys.argv[2]
-minor = sys.argv[3]
-patch = sys.argv[4]
-build = sys.argv[5]
-
-version = '{0}.{1}.{2}'.format(major, minor, patch)
-major_int = int(major)
-minor_int = int(minor)
-patch_int = int(patch)
-build_int = int(build)
-
-pe = pefile.PE(path)
-
-oldFileVersion = pe.FileInfo[0].StringTable[0].entries['FileVersion']
-pe.FileInfo[0].StringTable[0].entries['FileVersion'] = build.ljust(len(oldFileVersion))
-
-oldProductVersion = pe.FileInfo[0].StringTable[0].entries['ProductVersion']
-pe.FileInfo[0].StringTable[0].entries['ProductVersion'] = version.ljust(len(oldFileVersion))
-
-ms = (major_int << 16) | (minor_int & 0x0000ffff)
-ls = (patch_int << 16) | (build_int & 0x0000ffff)
-
-pe.VS_FIXEDFILEINFO.FileVersionMS = ms
-pe.VS_FIXEDFILEINFO.FileVersionLS = ls
-
-pe.VS_FIXEDFILEINFO.ProductVersionMS = ms
-pe.VS_FIXEDFILEINFO.ProductVersionLS = ls
-
-pe.write(filename=path)
-";
-
-        public static bool UpdateVersionWindows(string path, Version version)
-        {
-            var args = string.Format(
-                "- '{0}' {1} {2} {3} {4}",
-                path, version.major, version.minor, version.patch, version.build
-            );
-            string output, error;
-            var exitcode = OptionHelper.RunScript("python", args, PythonUpdateWindows, out output, out error);
-            if (exitcode != 0) {
-                Debug.LogError("OptionVersion: Failed to run python to update version: " + output);
-                return false;
-            }
-            return true;
+            EditorGUILayout.EndHorizontal();
+            return changed;
         }
     }
 
@@ -226,7 +197,7 @@ pe.write(filename=path)
 
         Version.ProjectVersion = DetermineProjectVersion(report.summary.platform);
 
-        if (incrementBuildNumber) {
+        if (GetChild<OptionIncrementBuildNumber>().Value) {
             Version.ProjectVersion = IncrementBuildNumber(Version.ProjectVersion, report.summary.platform);
         }
     }
@@ -270,15 +241,13 @@ pe.write(filename=path)
         }
 
         // -- Parse build
-        string numberString;
+        var sharing = GetChild<OptionShareBuildNumber>().Value;
         var overrideBuild = GetChild<OptionOverrideBuild>().Value;
-        if (!string.IsNullOrEmpty(overrideBuild)) {
+        if (overrideBuild >= 0) {
             // Build number has been overridden
-            if (!int.TryParse(overrideBuild, out version.build) || version.build < 0) {
-                Debug.LogError("OptionVersion: Override build not a positive number: " + overrideBuild);
-            }
+            version.build = overrideBuild;
         
-        } else if (shareBuildNumber) {
+        } else if (sharing != BuildNumberSharing.None) {
             // Look for highest build number across build target groups, increment it
             // and then apply it back to all groups
             if (GetBuildNumber == null || SetBuildNumber == null) {
@@ -287,8 +256,8 @@ pe.write(filename=path)
             }
 
             var buildNumbers = new List<int>();
-            foreach (BuildTargetGroup targetGroup in System.Enum.GetValues(typeof(BuildTargetGroup))) {
-                numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
+            foreach (var targetGroup in GetSharedTargets(sharing)) {
+                var numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
                 int number;
                 if (!int.TryParse(numberString, out number) || number < 0) {
                     Debug.LogError("OptionVersion: " + targetGroup + " build number should be a positive integer (" + numberString  + ")");
@@ -318,7 +287,7 @@ pe.write(filename=path)
                     return default(Version);
                 }
 
-                numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
+                var numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
                 var number = 0;
                 if (!int.TryParse(numberString, out number) || number < 0) {
                     Debug.LogError("OptionVersion: " + targetGroup + " build number should be a positive integer (" + numberString  + ")");
@@ -359,14 +328,15 @@ pe.write(filename=path)
 
         string numberString;
         var optionOverrideBuild = GetChild<OptionOverrideBuild>();
-        if (!string.IsNullOrEmpty(optionOverrideBuild.Value)) {
+        var sharing = GetChild<OptionShareBuildNumber>().Value;
+        if (optionOverrideBuild.Value >= 0) {
             // Build number has been overridden, increment override
-            optionOverrideBuild.Value = version.build.ToString();
+            optionOverrideBuild.Value = version.build;
         
-        } else if (shareBuildNumber) {
+        } else if (sharing != BuildNumberSharing.None) {
             // Increment all build numbers together
             numberString = version.build.ToString();
-            foreach (BuildTargetGroup targetGroup in System.Enum.GetValues(typeof(BuildTargetGroup))) {
+            foreach (var targetGroup in GetSharedTargets(sharing)) {
                 var value = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
                 if (!string.IsNullOrEmpty(value) && value != "0") {
                     SetBuildNumber.Invoke(null, new object[] { targetGroup, numberString });
@@ -386,6 +356,23 @@ pe.write(filename=path)
         }
 
         return version;
+    }
+
+    IEnumerable<BuildTargetGroup> GetSharedTargets(BuildNumberSharing sharing)
+    {
+        var targets = new HashSet<BuildTargetGroup>();
+        if (sharing == BuildNumberSharing.InProject) {
+            foreach (BuildTargetGroup targetGroup in System.Enum.GetValues(typeof(BuildTargetGroup))) {
+                targets.Add(targetGroup);
+            }
+        } else if (sharing == BuildNumberSharing.InProfile) {
+            foreach (var profileTarget in EditorProfile.BuildTargets) {
+                targets.Add(BuildPipeline.GetBuildTargetGroup(profileTarget));
+            }
+        } else {
+            throw new System.Exception($"GetSharedTargets: Unexpected sharing value: {sharing}");
+        }
+        return targets;
     }
 
     static MethodInfo GetBuildNumber {
