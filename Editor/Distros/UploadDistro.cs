@@ -3,9 +3,12 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using sttz.Trimmer.Options;
 using UnityEngine;
 
@@ -23,7 +26,7 @@ namespace sttz.Trimmer.Editor
 /// Note that the binary shipped with macOS does not support scp/sftp and might
 /// have issues with ftpes. Install and use a current curl binary using Homebrew:
 /// 
-///     brew install curl --with-libssh2
+///     brew install curl
 /// 
 /// If you want to use public key authentication, specify the username in the
 /// url and leave the user field blank.
@@ -40,52 +43,47 @@ public class UploadDistro : ZipDistro
     const string keychainService = "UploadDistro";
     [Keychain(keychainService)] public Login login;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
-        if (string.IsNullOrEmpty(curlPath)) {
-            Debug.LogError("UploadDistro: Path to curl not set.");
-            yield return false; yield break;
+        if (string.IsNullOrEmpty(curlPath))
+            throw new Exception("UploadDistro: Path to curl not set.");
+
+        if (!File.Exists(curlPath))
+            throw new Exception("UploadDistro: curl not found at path: " + curlPath);
+
+        if (string.IsNullOrEmpty(uploadUrl))
+            throw new Exception("UploadDistro: No upload URL set.");
+
+        if (!string.IsNullOrEmpty(login.User) && login.GetPassword(keychainService) == null)
+            throw new Exception("UploadDistro: No password set for user: " + login.User);
+
+        task.Report(0, 2, description: "Archiving builds");
+
+        IEnumerable<BuildPath> zipPaths;
+        var child = task.StartChild("Zip Builds");
+        try {
+            zipPaths = await ZipBuilds(buildPaths, child);
+        } finally {
+            child.Remove();
         }
 
-        if (!File.Exists(curlPath)) {
-            Debug.LogError("UploadDistro: curl not found at path: " + curlPath);
-            yield return false; yield break;
-        }
+        task.Report(1, description: "Uploading builds");
 
-        if (string.IsNullOrEmpty(uploadUrl)) {
-            Debug.LogError("UploadDistro: No upload URL set.");
-            yield return false; yield break;
-        }
-
-        if (!string.IsNullOrEmpty(login.User) && login.GetPassword(keychainService) == null) {
-            Debug.LogError("UploadDistro: No password set for user: " + login.User);
-            yield return false; yield break;
-        }
-
-        yield return ZipBuilds(buildPaths);
-        var zipPaths = GetSubroutineResult<IEnumerable<BuildPath>>();
-        if (zipPaths == null) {
-            yield return false; yield break;
-        }
-
-        foreach (var path in zipPaths) {
-            yield return Upload(path);
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
+        child = task.StartChild("Upload Builds");
+        try {
+            foreach (var path in zipPaths) {
+                await Upload(path, child);
             }
+        } finally {
+            child.Remove();
         }
-
-        Debug.Log("UploadDistro: Files uploaded successfully");
-        yield return true;
     }
 
-    protected IEnumerator Upload(BuildPath zipPath)
+    protected async Task Upload(BuildPath zipPath, TaskToken task)
     {
         var archive = zipPath.path;
-        if (!File.Exists(archive)) {
-            Debug.LogError("UploadDistro: Archive file does not exist: " + archive);
-            yield return false; yield break;
-        }
+        if (!File.Exists(archive))
+            throw new System.Exception("UploadDistro: Archive file does not exist: " + archive);
 
         // Append a / to the url if necessary, otherwise curl treats the last part as a file name
         var url = uploadUrl;
@@ -102,12 +100,8 @@ public class UploadDistro : ZipDistro
             "-T '{0}' {1} --ssl -v '{2}'",
             archive, input != null ? "-K -" : "", url
         );
-
-        Debug.Log("UploadDistro: Uploading " + Path.GetFileName(archive) + " to " + uploadUrl);
-        yield return Execute(curlPath, arguments, input);
-        var exitcode = GetSubroutineResult<int>();
-
-        yield return exitcode == 0;
+        task.Report(0, $"Uploading {Path.GetFileName(archive)} to {uploadUrl}");
+        await Execute(new ExecutionArgs(curlPath, arguments) { input = input }, task);
     }
 }
 

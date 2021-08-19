@@ -24,22 +24,6 @@ public class DistroEditor : UnityEditor.Editor
     DistroBase distro;
     UnityEditorInternal.ReorderableList list;
 
-    static GUIContent[] spinner;
-    const int spinnerFrames = 12;
-    const float spinnerSpeed = 10f;
-
-    static GUIContent GetSpinner()
-    {
-        if (spinner == null) {
-            spinner = new GUIContent[spinnerFrames];
-            for (int i = 0; i < spinnerFrames; i++) {
-                spinner[i] = EditorGUIUtility.IconContent("WaitSpin" + i.ToString("00"));
-            }
-        }
-        var frame = Mathf.RoundToInt(Time.realtimeSinceStartup * spinnerSpeed) % spinnerFrames;
-        return spinner[frame];
-    }
-
     protected void OnEnable()
     {
         distro = (DistroBase)target;
@@ -65,22 +49,20 @@ public class DistroEditor : UnityEditor.Editor
     {
         base.OnInspectorGUI();
 
-        GUILayout.FlexibleSpace();
+        GUILayout.Space(25);
 
         GUILayout.Label("Build Profiles", EditorStyles.boldLabel);
         list.DoLayoutList();
+
+        GUILayout.Space(25);
 
         EditorGUI.BeginDisabledGroup(distro.builds == null || distro.builds.Count == 0);
         {
             GUILayout.Label("Distribution", EditorStyles.boldLabel);
             EditorGUILayout.BeginHorizontal();
             {
-                if (distro.IsRunning) {
-                    if (GUILayout.Button("Cancel")) {
-                        distro.Cancel();
-                    }
-                    GUILayout.Label(GetSpinner(), GUILayout.ExpandWidth(false));
-                } else {
+                EditorGUI.BeginDisabledGroup(BuildRunner.Current != null);
+                {
                     if (GUILayout.Button("Build & Distribute")) {
                         distro.Distribute(DistroBuildMode.BuildAll);
                         GUIUtility.ExitGUI();
@@ -94,21 +76,11 @@ public class DistroEditor : UnityEditor.Editor
                     }
                     EditorGUI.EndDisabledGroup();
                 }
+                EditorGUI.EndDisabledGroup();
             }
             EditorGUILayout.EndHorizontal();
         }
         EditorGUI.EndDisabledGroup();
-
-        if (BuildRunner.Current != null) {
-            GUILayout.Space(20);
-            GUILayout.Label("Current Build", EditorStyles.boldLabel);
-            BuildRunner.Current.StatusGUI();
-        }
-    }
-
-    override public bool RequiresConstantRepaint()
-    {
-        return distro.IsRunning;
     }
 }
 

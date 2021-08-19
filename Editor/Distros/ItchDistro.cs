@@ -3,9 +3,12 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -54,17 +57,15 @@ public class ItchDistro : DistroBase
         #endif
     };
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
-        if (!File.Exists(butlerPath)) {
-            Debug.LogError("ItchDistro: Butler path not set or file does not exist.");
-            yield return false; yield break;
-        }
+        if (!File.Exists(butlerPath))
+            throw new Exception("ItchDistro: Butler path not set or file does not exist.");
 
-        if (string.IsNullOrEmpty(project)) {
-            Debug.LogError("ItchDistro: project not set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(project))
+            throw new Exception("ItchDistro: project not set.");
+
+        task.Report(0, buildPaths.Count());
 
         foreach (var pair in buildPaths) {
             if (!ChannelNames.ContainsKey(pair.target)) {
@@ -72,27 +73,19 @@ public class ItchDistro : DistroBase
                 continue;
             }
 
-            // Notarize mac builds
-            if (macNotarization != null && pair.target == BuildTarget.StandaloneOSX) {
-                yield return macNotarization.Notarize(pair);
-                if (GetSubroutineResult<string>() == null) {
-                    yield return false; yield break;
-                }
+            if (macNotarization != null) {
+                await macNotarization.NotarizeIfMac(pair, task);
             }
 
-            yield return Distribute(pair);
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
+            await Distribute(pair, task);
+
+            task.baseStep++;
         }
-
-        Debug.Log("ItchDistro: Builds uploaded to itch.io.");
-        yield return true;
     }
 
-    IEnumerator Distribute(BuildPath buildPath)
+    async Task Distribute(BuildPath buildPath, TaskToken task)
     {
-        Debug.Log("ItchDistro: Pushing " + buildPath.target);
+        task.Report(0, description: $"Pushing {buildPath.target}");
 
         var path = OptionHelper.GetBuildBasePath(buildPath.path);
 
@@ -117,10 +110,7 @@ public class ItchDistro : DistroBase
             path, project, channel, Application.version
         );
 
-        yield return Execute(butlerPath, args);
-
-        var exitcode = GetSubroutineResult<int>();
-        yield return exitcode == 0;
+        await Execute(new ExecutionArgs(butlerPath, args), task);
     }
 }
 

@@ -3,9 +3,11 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.iOS.Xcode;
 using UnityEngine;
@@ -17,9 +19,8 @@ namespace sttz.Trimmer.Editor
 /// Prepare a Mac build for the Mac App Store.
 /// </summary>
 /// <remarks>
-/// This distribution makes the necessary modifications for Mac App Store builds. It does 
-/// not automatically upload the build, you can manually upload the generated pkg using
-/// Application Loader.
+/// This distribution makes the necessary modifications for Mac App Store builds
+/// and uploads it using altool.
 /// 
 /// The distribution will take these steps:
 /// * Add additional languages to the Info.plist (see <see cref="languages"/>)
@@ -85,49 +86,41 @@ public class MASDistro : DistroBase
     /// </summary>
     public string ascProvider;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
+        var hasMacBuild = false;
         foreach (var buildPath in buildPaths) {
-            if (buildPath.target != BuildTarget.StandaloneOSX) {
-                Debug.Log("MASDistro: Skipping mismatched platform, only macOS is supported: " + buildPath.target);
+            if (buildPath.target != BuildTarget.StandaloneOSX)
                 continue;
-            }
-            yield return Process(buildPath.path);
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
+
+            hasMacBuild = true;
+            await Process(buildPath.path, task);
         }
-        yield return true;
+
+        if (!hasMacBuild)
+            throw new Exception("MASDistro: No macOS build in profiles");
     }
 
-    protected IEnumerator Process(string path)
+    protected async Task Process(string path, TaskToken task)
     {
         // Check settings
-        if (string.IsNullOrEmpty(appSignIdentity)) {
-            Debug.LogError("MASDistro: App sign identity not set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(appSignIdentity))
+            throw new Exception("MASDistro: App sign identity not set.");
 
-        if (entitlements == null) {
-            Debug.LogError("MASDistro: Entitlements file not set.");
-            yield return false; yield break;
-        }
+        if (entitlements == null)
+            throw new Exception("MASDistro: Entitlements file not set.");
 
-        if (provisioningProfile == null) {
-            Debug.LogError("MASDistro: Provisioning profile not set.");
-            yield return false; yield break;
-        }
+        if (provisioningProfile == null)
+            throw new Exception("MASDistro: Provisioning profile not set.");
 
-        if (linkFrameworks != null && linkFrameworks.Length > 0 && !File.Exists(optoolPath)) {
-            Debug.LogError("MASDistro: optool path not set for linking frameworks.");
-            yield return false; yield break;
-        }
+        if (linkFrameworks != null && linkFrameworks.Length > 0 && !File.Exists(optoolPath))
+            throw new Exception("MASDistro: optool path not set for linking frameworks.");
 
         var plistPath = Path.Combine(path, "Contents/Info.plist");
-        if (!File.Exists(plistPath)) {
-            Debug.LogError("MASDistro: Info.plist file not found at path: " + plistPath);
-            yield return false; yield break;
-        }
+        if (!File.Exists(plistPath))
+            throw new Exception("MASDistro: Info.plist file not found at path: " + plistPath);
+
+        task.Report(0, 3);
 
         var doc = new PlistDocument();
         doc.ReadFromFile(plistPath);
@@ -152,24 +145,21 @@ public class MASDistro : DistroBase
 
         // Link frameworks
         if (linkFrameworks != null && linkFrameworks.Length > 0) {
+            task.Report(0, description: "Linking frameworks");
+
             var binaryPath = Path.Combine(path, "Contents/MacOS");
             binaryPath = Path.Combine(binaryPath, doc.root["CFBundleExecutable"].AsString());
 
             foreach (var framework in linkFrameworks) {
                 var frameworkBinaryPath = FindFramework(framework);
-                if (frameworkBinaryPath == null) {
-                    Debug.LogError("MASDistro: Could not locate framework: " + framework);
-                    yield return false; yield break;
-                }
+                if (frameworkBinaryPath == null)
+                    throw new Exception("MASDistro: Could not locate framework: " + framework);
 
                 var otoolargs = string.Format(
                     "install -c weak -p '{0}' -t '{1}'",
                     frameworkBinaryPath, binaryPath
                 );
-                yield return Execute(optoolPath, otoolargs);
-                if (GetSubroutineResult<int>() != 0) {
-                    yield return false; yield break;
-                }
+                await Execute(new ExecutionArgs(optoolPath, otoolargs), task);
             }
         }
 
@@ -181,50 +171,33 @@ public class MASDistro : DistroBase
         // Sign plugins
         var plugins = Path.Combine(path, "Contents/Plugins");
         if (Directory.Exists(plugins)) {
-            yield return SignAll(Directory.GetFiles(plugins, "*.dylib", SearchOption.AllDirectories));
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
-
-            yield return SignAll(Directory.GetFiles(plugins, "*.bundle", SearchOption.AllDirectories));
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
-
-            yield return SignAll(Directory.GetDirectories(plugins, "*.bundle", SearchOption.TopDirectoryOnly));
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
+            task.Report(0, description: "Signing plugins");
+            await Sign(Directory.GetFiles(plugins, "*.dylib", SearchOption.AllDirectories), task);
+            await Sign(Directory.GetFiles(plugins, "*.bundle", SearchOption.AllDirectories), task);
+            await Sign(Directory.GetDirectories(plugins, "*.bundle", SearchOption.TopDirectoryOnly), task);
         }
 
         // Sign application
+        task.Report(1, description: "Singing app");
         var entitlementsPath = AssetDatabase.GetAssetPath(entitlements);
-        yield return Sign(path, entitlementsPath);
-        if (!GetSubroutineResult<bool>()) {
-            yield return false; yield break;
-        }
-
+        await Sign(path, task, entitlementsPath);
 
         // Create installer
         var pkgPath = Path.ChangeExtension(path, ".pkg");
         if (!string.IsNullOrEmpty(installerSignIdentity)) {
+            task.Report(1, description: "Creating installer");
             var args = string.Format(
                 "--component '{0}' /Applications --sign '{1}' '{2}'",
                 path, installerSignIdentity, pkgPath
             );
-            yield return Execute("productbuild", args);
-            if (GetSubroutineResult<int>() != 0) {
-                yield return false; yield break;
-            }
+            await Execute(new ExecutionArgs("productbuild", args), task);
         }
 
         // Upload to App Store
         if (!string.IsNullOrEmpty(ascLogin.User)) {
-            yield return Upload(pkgPath);
+            task.Report(2, description: "Uploading to App Store Connect");
+            await Upload(pkgPath, task);
         }
-
-        Debug.Log("MASDistro: Finished");
-        yield return true;
     }
 
     protected string FindFramework(string input)
@@ -247,18 +220,14 @@ public class MASDistro : DistroBase
         return input;
     }
 
-    protected IEnumerator SignAll(IEnumerable<string> paths)
+    protected async Task Sign(IEnumerable<string> paths, TaskToken task)
     {
         foreach (var path in paths) {
-            yield return Sign(path);
-            if (!GetSubroutineResult<bool>()) {
-                yield return false; yield break;
-            }
+            await Sign(path, task);
         }
-        yield return true;
     }
 
-    protected IEnumerator Sign(string path, string entitlementsPath = null)
+    protected async Task Sign(string path, TaskToken task, string entitlementsPath = null)
     {
         // Delete .meta files Unity might have erroneously copied to the build
         // and which will cause the signing to fail.
@@ -282,16 +251,10 @@ public class MASDistro : DistroBase
             + entitlements
             + $" --sign '{appSignIdentity}'"
             + $" '{path}'";
-
-        yield return Execute("codesign", args);
-        if (GetSubroutineResult<int>() != 0) {
-            yield return false; yield break;
-        }
-
-        yield return true;
+        await Execute(new ExecutionArgs("codesign", args), task);
     }
 
-    protected IEnumerator Upload(string path)
+    protected async Task Upload(string path, TaskToken task)
     {
         var asc = "";
         if (!string.IsNullOrEmpty(ascProvider)) {
@@ -305,12 +268,9 @@ public class MASDistro : DistroBase
             + asc
             + $" --file '{path}'";
 
-        string requestUUID = null;
-        yield return Execute("xcrun", args, ascLogin.GetPassword(keychainService) + "\n");
-        if (GetSubroutineResult<int>() != 0) {
-            yield return null; yield break;
-        }
-        yield return requestUUID;
+        await Execute(new ExecutionArgs("xcrun", args) { 
+            input = ascLogin.GetPassword(keychainService) + "\n"
+        }, task);
     }
 }
 

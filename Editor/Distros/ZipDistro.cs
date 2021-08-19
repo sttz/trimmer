@@ -3,10 +3,12 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -125,8 +127,7 @@ public class ZipDistro : DistroBase
     {
         var path = Path.Combine(EditorApplication.applicationContentsPath, "Tools/7za");
         if (!File.Exists(path)) {
-            Debug.LogError("ZipDistro: Could not find 7za bundled with Unity at path: " + path);
-            return null;
+            throw new Exception("ZipDistro: Could not find 7za bundled with Unity at path: " + path);
         }
         return path;
     }
@@ -141,40 +142,35 @@ public class ZipDistro : DistroBase
         return null;
     }
 
-    protected IEnumerator ZipBuilds(IEnumerable<BuildPath> buildPaths)
+    protected async Task<IEnumerable<BuildPath>> ZipBuilds(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
         var queue = new Queue<BuildPath>(buildPaths);
         var results = new List<BuildPath>();
+
+        task.Report(0, queue.Count);
+
         while (queue.Count > 0) {
             var next = queue.Dequeue();
 
-            // Notarize mac builds
-            if (macNotarization != null && next.target == BuildTarget.StandaloneOSX) {
-                yield return macNotarization.Notarize(next);
-                if (GetSubroutineResult<string>() == null) {
-                    yield return false; yield break;
-                }
+            if (macNotarization != null) {
+                await macNotarization.NotarizeIfMac(next, task);
             }
 
-            yield return Zip(next);
-            var result = GetSubroutineResult<BuildPath>();
-            if (result.path == null) {
-                yield return null; yield break;
-            } else {
-                results.Add(result);
-            }
+            results.Add(await Zip(next, task));
+
+            task.baseStep++;
         }
-        yield return results;
+
+        return results;
     }
 
-    protected IEnumerator Zip(BuildPath buildPath)
+    protected async Task<BuildPath> Zip(BuildPath buildPath, TaskToken task)
     {
         var target = buildPath.target;
         var path = buildPath.path;
 
         if (!File.Exists(path) && !Directory.Exists(path)) {
-            Debug.LogError("ZipDistro: Path to compress does not exist: " + path);
-            yield return null; yield break;
+            throw new Exception("ZipDistro: Path to compress does not exist: " + path);
         }
 
         if (ZipIgnorePatterns == null) {
@@ -186,9 +182,6 @@ public class ZipDistro : DistroBase
         }
 
         var sevenZPath = Get7ZipPath();
-        if (sevenZPath == null) {
-            yield return null; yield break;
-        }
 
         // Path can point to executable file but there might be files
         // in the containing directory we need as well
@@ -208,8 +201,7 @@ public class ZipDistro : DistroBase
         }
 
         if (files.Count == 0) {
-            Debug.LogError("ZipDistro: Nothing to ZIP in directory: " + basePath);
-            yield return null; yield break;
+            throw new Exception("ZipDistro: Nothing to ZIP in directory: " + basePath);
         }
 
         // Determine output path first to make it consistent and use absolute path
@@ -271,58 +263,33 @@ public class ZipDistro : DistroBase
         startInfo.Arguments = args;
         startInfo.WorkingDirectory = Path.GetDirectoryName(basePath);
 
-        Debug.Log("ZipDistro: Archiving " + inputName);
-        yield return Execute(startInfo);
+        task.Report(0, description: $"Archiving {inputName}");
 
-        var exitcode = GetSubroutineResult<int>();
-        if (exitcode != 0) {
-            yield return null; yield break;
-        }
-        
+        await Execute(new ExecutionArgs() { startInfo = startInfo }, task);
+
         if (!singleFile && prettyName != inputName) {
-            yield return RenameRoot(outputPath, inputName, prettyName);
-            var success = GetSubroutineResult<bool>();
-            if (!success) {
-                yield return null; yield break;
-            }
+            await RenameRoot(outputPath, inputName, prettyName, task);
         }
 
-        Debug.Log("ZipDistro: Archived to: " + outputPath);
-        yield return new BuildPath(buildPath.profile, target, outputPath);
+        return new BuildPath(buildPath.profile, target, outputPath);
     }
 
-    protected IEnumerator RenameRoot(string archivePath, string oldName, string newName)
+    protected async Task RenameRoot(string archivePath, string oldName, string newName, TaskToken task)
     {
         if (!File.Exists(archivePath)) {
-            Debug.LogError("ZipDistro: Path to archive does not exist: " + archivePath);
-            yield return false; yield break;
-        }
-
-        var sevenZPath = Get7ZipPath();
-        if (sevenZPath == null) {
-            yield return false; yield break;
+            throw new Exception("ZipDistro: Path to archive does not exist: " + archivePath);
         }
 
         var args = string.Format(
             "rn '{0}' '{1}' '{2}'",
             archivePath, oldName, newName
         );
-
-        yield return Execute(sevenZPath, args);
-
-        var exitcode = GetSubroutineResult<int>();
-        yield return exitcode == 0;
+        await Execute(new ExecutionArgs(Get7ZipPath(), args), task);
     }
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
-        yield return ZipBuilds(buildPaths);
-        if (GetSubroutineResult<IEnumerable<BuildPath>>() != null) {
-            Debug.Log("ZipDistro: Archives created successfully");
-            yield return true;
-        } else {
-            yield return false;
-        }
+        await ZipBuilds(buildPaths, task);
     }
 }
 

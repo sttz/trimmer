@@ -586,12 +586,6 @@ public class ProfileEditor : UnityEditor.Editor
             }
         }
         EditorGUI.EndDisabledGroup();
-
-        if (BuildRunner.Current != null) {
-            GUILayout.Space(20);
-            GUILayout.Label("Current Build", boldLabel);
-            BuildRunner.Current.StatusGUI();
-        }
     }
 
     protected void AddBuildTarget(object userData)

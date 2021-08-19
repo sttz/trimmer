@@ -3,11 +3,13 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using sttz.Trimmer.Options;
 using UnityEditor;
 using UnityEngine;
@@ -76,132 +78,118 @@ public class SteamDistro : DistroBase
     /// </summary>
     public NotarizationDistro macNotarization;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
         // Check SDK
         var cmd = FindSteamCmd();
-        if (cmd == null) {
-            yield return false; yield break;
-        }
 
         // Check User
-        if (string.IsNullOrEmpty(steamLogin.User)) {
-            Debug.LogError("SteamDistro: No Steam user set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(steamLogin.User))
+           throw new Exception("SteamDistro: No Steam user set.");
 
-        if (steamLogin.GetPassword(keychainService) == null) {
-            Debug.LogError("SteamDistro: No Steam password found in Keychain.");
-            yield return false; yield break;
-        }
+        if (steamLogin.GetPassword(keychainService) == null)
+            throw new Exception("SteamDistro: No Steam password found in Keychain.");
 
         // Check scripts
-        if (string.IsNullOrEmpty(scriptsFolder) || !Directory.Exists(scriptsFolder)) {
-            Debug.LogError("SteamDistro: Path to scripts folder not set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(scriptsFolder) || !Directory.Exists(scriptsFolder))
+            throw new Exception("SteamDistro: Path to scripts folder not set.");
 
-        if (string.IsNullOrEmpty(appScript)) {
-            Debug.LogError("SteamDistro: Name of app script not set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(appScript))
+            throw new Exception("SteamDistro: Name of app script not set.");
 
         var appScriptPath = Path.Combine(scriptsFolder, appScript);
-        if (!File.Exists(appScriptPath)) {
-            Debug.LogError("SteamDistro: App script not found in scripts folder.");
-            yield return false; yield break;
-        }
+        if (!File.Exists(appScriptPath))
+            throw new Exception("SteamDistro: App script not found in scripts folder.");
 
         // Process scripts
         var tempDir = FileUtil.GetUniqueTempPathInProject();
-        Directory.CreateDirectory(tempDir);
+        try {
+            Directory.CreateDirectory(tempDir);
 
-        var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.target));
-        var convertError = false;
-        foreach (var file in Directory.GetFiles(scriptsFolder)) {
-            if (Path.GetExtension(file).ToLower() != ".vdf") continue;
+            var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.target));
+            string convertError = null;
+            foreach (var file in Directory.GetFiles(scriptsFolder)) {
+                if (Path.GetExtension(file).ToLower() != ".vdf") continue;
 
-            var contents = PathVarRegex.Replace(File.ReadAllText(file), (match) => {
-                var platformName = match.Groups[1].Value.ToLower();
+                var contents = PathVarRegex.Replace(File.ReadAllText(file), (match) => {
+                    var platformName = match.Groups[1].Value.ToLower();
 
-                if (platformName == "project") {
-                    return Path.GetDirectoryName(Application.dataPath);
-                } else if (platformName == "scripts") {
-                    return Path.GetFullPath(scriptsFolder);
-                }
+                    if (platformName == "project") {
+                        return Path.GetDirectoryName(Application.dataPath);
+                    } else if (platformName == "scripts") {
+                        return Path.GetFullPath(scriptsFolder);
+                    }
 
-                BuildTarget target;
-                try {
-                    target = (BuildTarget)System.Enum.Parse(typeof(BuildTarget), platformName, true);
-                } catch {
-                    Debug.LogError("SteamDistro: Invalid build target path variable '" + platformName + "' in VDF script:" + file);
-                    convertError = true;
-                    return "";
-                }
+                    BuildTarget target;
+                    try {
+                        target = (BuildTarget)System.Enum.Parse(typeof(BuildTarget), platformName, true);
+                    } catch {
+                        convertError = $"SteamDistro: Invalid build target path variable '{platformName}' in VDF script: {file}";
+                        return "";
+                    }
 
-                if (!buildPaths.Any(p => p.target == target)) {
-                    Debug.LogError("SteamDistro: Build target '" + platformName + "' not part of given build profile(s) in VDF script:" + file);
-                    convertError = true;
-                    return "";
-                }
-                targets.Remove(target);
+                    if (!buildPaths.Any(p => p.target == target)) {
+                        convertError = $"SteamDistro: Build target '{platformName}' not part of given build profile(s) in VDF script: {file}";
+                        return "";
+                    }
+                    targets.Remove(target);
 
-                var path = buildPaths.Where(p => p.target == target).Select(p => p.path).First();
-                path = OptionHelper.GetBuildBasePath(path);
+                    var path = buildPaths.Where(p => p.target == target).Select(p => p.path).First();
+                    path = OptionHelper.GetBuildBasePath(path);
 
-                return Path.GetFullPath(path);
-            });
-            if (convertError) break;
+                    return Path.GetFullPath(path);
+                });
+                if (convertError != null) break;
 
-            var targetPath = Path.Combine(tempDir, Path.GetFileName(file));
-            File.WriteAllText(targetPath, contents);
-        }
+                var targetPath = Path.Combine(tempDir, Path.GetFileName(file));
+                File.WriteAllText(targetPath, contents);
+            }
 
-        if (convertError) {
-            yield return false; yield break;
-        }
+            if (convertError != null) {
+                throw new Exception($"SteamDistro: {convertError}");
+            }
 
-        if (targets.Count > 0) {
-            Debug.LogWarning("SteamDistro: Not all build targets filled into variables. Left over: " 
-                + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
-        }
+            if (targets.Count > 0) {
+                Debug.LogWarning("SteamDistro: Not all build targets filled into variables. Left over: " 
+                    + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
+            }
 
-        // Notarize mac builds
-        if (macNotarization != null) {
-            foreach (var path in buildPaths.Where(p => p.target == BuildTarget.StandaloneOSX)) {
-                yield return macNotarization.Notarize(path);
-                if (GetSubroutineResult<string>() == null) {
-                    yield return false; yield break;
+            // Notarize mac builds
+            if (macNotarization != null) {
+                task.Report(0, description: "Notarizing macOS builds");
+                foreach (var path in buildPaths.Where(p => p.target == BuildTarget.StandaloneOSX)) {
+                    await macNotarization.Notarize(path, task);
                 }
             }
+
+            // Build
+            var scriptPath = Path.GetFullPath(Path.Combine(tempDir, appScript));
+            var args = string.Format(
+                "+login '{0}' '{1}' +run_app_build_http '{2}' +quit", 
+                steamLogin.User, steamLogin.GetPassword(keychainService), scriptPath
+            );
+
+            await Execute(new ExecutionArgs(cmd, args) { 
+                onOutput = (output) => {
+                    if (output.Contains("Logged in OK")) {
+                        task.Report(0, description: "Logged in");
+                    } else if (output.Contains("Building depot")) {
+                        var match = BuildingDepotRegex.Match(output);
+                        if (match.Success) {
+                            task.Report(0, description: $"Building depo {match.Groups[1].Value}");
+                        }
+                    } else if (output.Contains("")) {
+                        var match = SuccessBuildIdRegex.Match(output);
+                        if (match.Success) {
+                            Debug.Log("SteamDistro: Build uploaded, ID = " + match.Groups[1].Value);
+                        }
+                    }
+                }
+            }, task);
+        } finally {
+            // Always clean up temp files
+            Directory.Delete(tempDir, true);
         }
-
-        // Build
-        var scriptPath = Path.GetFullPath(Path.Combine(tempDir, appScript));
-        var args = string.Format(
-            "+login '{0}' '{1}' +run_app_build_http '{2}' +quit", 
-            steamLogin.User, steamLogin.GetPassword(keychainService), scriptPath
-        );
-
-        yield return Execute(cmd, args, null, (output) => {
-            if (output.Contains("Logged in OK")) {
-                Debug.Log("SteamDistro: Logged in");
-            } else if (output.Contains("Building depot")) {
-                var match = BuildingDepotRegex.Match(output);
-                if (match.Success) {
-                    Debug.Log("SteamDistro: Building depo " + match.Groups[1].Value);
-                }
-            } else if (output.Contains("")) {
-                var match = SuccessBuildIdRegex.Match(output);
-                if (match.Success) {
-                    Debug.Log("SteamDistro: Build uploaded, ID = " + match.Groups[1].Value);
-                }
-            }
-        });
-
-        Directory.Delete(tempDir, true);
-
-        yield return true;
     }
 
     /// <summary>
@@ -240,18 +228,13 @@ public class SteamDistro : DistroBase
     /// <summary>
     /// Find the SteamCmd tool in the Steam SDK.
     /// </summary>
-    /// <returns></returns>
     public string FindSteamCmd()
     {
-        if (string.IsNullOrEmpty(steamdSDKPath)) {
-            Debug.LogError("SteamDistro: Steam SDK path not set.");
-            return null;
-        }
+        if (string.IsNullOrEmpty(steamdSDKPath))
+            throw new Exception("SteamDistro: Steam SDK path not set.");
 
-        if (!File.Exists(steamdSDKPath) && !Directory.Exists(steamdSDKPath)) {
-            Debug.LogError("SteamDistro: Steam SDK path does not exist.");
-            return null;
-        }
+        if (!File.Exists(steamdSDKPath) && !Directory.Exists(steamdSDKPath))
+            throw new Exception("SteamDistro: Steam SDK path does not exist.");
 
         // Assume file is steamcmd
         if (File.Exists(steamdSDKPath)) {
@@ -278,8 +261,7 @@ public class SteamDistro : DistroBase
             if (!match) break;
         }
 
-        Debug.LogError("SteamDistro: Could not find " + SteamCMDPath.Last() + " at the SDK path: " + steamdSDKPath);
-        return null;
+        throw new Exception($"SteamDistro: Could not find {SteamCMDPath.Last()} at the SDK path: {steamdSDKPath}");
     }
 }
 

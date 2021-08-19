@@ -3,9 +3,12 @@
 // https://sttz.ch/trimmer
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace sttz.Trimmer.Editor
@@ -15,7 +18,7 @@ namespace sttz.Trimmer.Editor
 /// Run a script with the result of a Build Profile build.
 /// </summary>
 /// <remarks>
-/// The distribution supports two main modes, controlled with the <see cref="individual"/>
+/// The distribution supports two main modes, combined with the <see cref="individual"/>
 /// option:
 /// - Combined: Call the script only once, independent of how many builds are being
 ///   processed. Variables:
@@ -36,33 +39,24 @@ public class ScriptDistro : DistroBase
     public string arguments;
     public bool individual;
 
-    protected override IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild)
+    protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
-        if (string.IsNullOrEmpty(scriptPath)) {
-            Debug.LogError("ScriptDistro: Script path not set.");
-            yield return false; yield break;
-        }
+        if (string.IsNullOrEmpty(scriptPath))
+            throw new Exception("ScriptDistro: Script path not set.");
 
         if (individual) {
+            task.Report(0, buildPaths.Count());
             foreach (var buildPath in buildPaths) {
+                task.Report(0, description: $"Running script {Path.GetFileName(scriptPath)} for {buildPath.target}");
                 var args = ReplaceVariablesIndividual(arguments, buildPath);
-                yield return Execute(scriptPath, args);
-                var exitcode = GetSubroutineResult<int>();
-                if (exitcode != 0) {
-                    yield return false; yield break;
-                }
+                await Execute(new ExecutionArgs(scriptPath, args), task);
+                task.baseStep++;
             }
         } else {
+            task.Report(0, 1, $"Running script {Path.GetFileName(scriptPath)}");
             var args = ReplaceVariables(arguments, buildPaths);
-            yield return Execute(scriptPath, args);
-            var exitcode = GetSubroutineResult<int>();
-            if (exitcode != 0) {
-                yield return false; yield break;
-            }
+            await Execute(new ExecutionArgs(scriptPath, args), task);
         }
-
-        Debug.Log("ScriptDistro: Script finished.");
-        yield return true;
     }
 
     string ReplaceVariablesIndividual(string input, BuildPath buildPath)

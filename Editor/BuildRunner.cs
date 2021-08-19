@@ -4,11 +4,9 @@
 //
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
-using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -103,7 +101,7 @@ public interface IBuildsCompleteListener
 public class BuildRunner : ScriptableObject
 {
     /// <summary>
-    /// Single build executed by the runner.
+    /// Single job executed by the runner.
     /// </summary>
     [Serializable]
     public struct Job
@@ -121,11 +119,25 @@ public class BuildRunner : ScriptableObject
         /// </summary>
         public string outputPath;
 
+        /// <summary>
+        /// Distribution to run.
+        /// </summary>
+        public DistroBase distro;
+
         public Job(BuildProfile profile, BuildTarget target, string outputPath = null)
         {
             this.profile = profile;
             this.target = target;
             this.outputPath = outputPath;
+            this.distro = null;
+        }
+
+        public Job(DistroBase distro)
+        {
+            this.distro = distro;
+            this.profile = null;
+            this.target = BuildTarget.NoTarget;
+            this.outputPath = null;
         }
     }
 
@@ -150,41 +162,19 @@ public class BuildRunner : ScriptableObject
     public int JobCount => jobs != null ? jobs.Length : 0;
 
     /// <summary>
-    /// Get a description of what the runner is currently doing.
-    /// </summary>
-    public string GetCurrentTaskDescription()
-    {
-        if (jobs == null || jobIndex < 0) return null;
-
-        var job = default(Job);
-        if (jobIndex < jobs.Length)
-            job = jobs[jobIndex];
-
-        switch (currentTask) {
-            case Task.Build:
-                return $"[{jobIndex + 1} / {jobs.Length}] Building {job.target} of '{job.profile.name}'";
-            case Task.SwitchingBuildTarget:
-                return $"[{jobIndex + 1} / {jobs.Length}] Switching to {job.target}";
-            case Task.RestoreBuildTarget:
-                return $"Restoring active build target";
-            default:
-                return null;
-        }
-    }
-
-    /// <summary>
     /// Run the given builds.
     /// </summary>
-    public void Run(Job[] jobs, IBuildsCompleteListener listener, bool restoreActiveBuildTarget = true)
+    public void Run(Job[] jobs, IBuildsCompleteListener listener, bool restoreActiveBuildTarget = true, UnityEngine.Object context = null)
     {
         EnsureNotRunning();
         Listener = (ScriptableObject)listener;
-        Run(jobs);
+        Run(jobs, restoreActiveBuildTarget, context);
     }
 
-    public void Run(Job[] jobs, bool restoreActiveBuildTarget = true)
+    public void Run(Job[] jobs, bool restoreActiveBuildTarget = true, UnityEngine.Object context = null)
     {
         if (jobs == null || jobs.Length == 0) {
+            DestroyImmediate(this);
             throw new Exception($"Trimmer BuildRunner: No jobs given.");
         }
 
@@ -193,8 +183,9 @@ public class BuildRunner : ScriptableObject
         var results = new ProfileBuildResult[jobs.Length];
         for (int i = 0; i < jobs.Length; i++) {
             var job = jobs[i];
-            if (job.profile == null || job.target == 0 || job.target == BuildTarget.NoTarget) {
-                throw new Exception($"Trimmer BuildRunner: Invalid job at index {i}: Profile or target not set ({job.profile} / {job.target})");
+            if ((job.profile == null || job.target == 0 || job.target == BuildTarget.NoTarget) && job.distro == null) {
+                DestroyImmediate(this);
+                throw new Exception($"Trimmer BuildRunner: Invalid job at index {i}: Profile or target or distro not set ({job.profile} / {job.target} / {job.distro})");
             }
             results[i].profile = job.profile;
         }
@@ -202,38 +193,17 @@ public class BuildRunner : ScriptableObject
         Current = this;
         this.jobs = jobs;
         this.results = results;
-        this.restoreActiveTargetTo = EditorUserBuildSettings.activeBuildTarget;
-        jobIndex = 0;
-        currentTask = Task.Build;
-        completeResult = false;
-        restoreSelection = null;
+        restoreActiveTargetTo = EditorUserBuildSettings.activeBuildTarget;
+        jobIndex = -1;
 
-        if (Selection.activeObject is BuildProfile || Selection.activeObject is DistroBase) {
-            restoreSelection = Selection.activeObject;
-        }
+        token = TaskToken.Start(context?.name ?? "Trimmer", options: Progress.Options.Synchronous);
+        token.context = context;
+        Progress.SetPriority(token.taskId, Progress.Priority.High);
+        token.Report(0, jobs.Length);
 
         //Debug.Log($"Trimmer BuildRunner: Got jobs:\n{string.Join("\n", jobs.Select(j => $"- {j.profile?.name ?? "<none>"} {j.target}"))}");
 
-        ContinueDebounced();
-    }
-
-    /// <summary>
-    /// Show a GUI layout progress bar.
-    /// </summary>
-    public void StatusGUI()
-    {
-        var description = GetCurrentTaskDescription();
-        if (description == null) return;
-
-        var totalSteps = JobCount * 2;
-        if (TrimmerPrefs.RestoreActiveBuildTarget) totalSteps += 1;
-
-        var currentStep = JobIndex * 2;
-        if (currentTask == Task.Build) currentStep += 1;
-        else if (currentTask == Task.RestoreBuildTarget) currentStep += 2;
-
-        var rect = EditorGUILayout.GetControlRect(false, 20f);
-        EditorGUI.ProgressBar(rect, (float)currentStep / totalSteps, description);
+        ContinueWith(ContinueTask.NextJob);
     }
 
     ScriptableObject Listener {
@@ -258,22 +228,24 @@ public class BuildRunner : ScriptableObject
     ScriptableObject _listener;
     HideFlags _previousListenerHideFlags;
 
-    enum Task
+    const float progressRefreshInterval = 4f;
+
+    enum ContinueTask
     {
         None,
-        SwitchingBuildTarget,
-        Build,
-        RestoreBuildTarget
+        NextJob,
+        BuildAfterSwitchingTarget,
+        CompleteAfterSwichingTarget
     }
 
     BuildTarget restoreActiveTargetTo;
     Job[] jobs;
     ProfileBuildResult[] results;
     int jobIndex;
-    Task currentTask;
-    UnityEngine.Object restoreSelection;
+    ContinueTask continueTask;
     int debounceCount;
-    bool completeResult;
+    TaskToken token;
+    float lastProgressRefresh;
 
     void EnsureNotRunning()
     {
@@ -289,43 +261,64 @@ public class BuildRunner : ScriptableObject
         if (jobs != null) {
             if (Current != null && Current != this) {
                 Debug.LogError($"Trimmer BuildRunner: Multiple build runners, aborting...");
-                Complete(false, skipRestore: true);
+                Complete(false);
                 return;
             } else {
                 Current = this;
             }
 
-            ContinueDebounced();
+            // Continue with the current task from before the domain reload
+            ContinueWith(continueTask);
         }
 
-        EditorApplication.update += RestoreSelectionUpdate;
+        EditorApplication.update += EditorUpdate;
     }
 
     void OnDisable()
     {
-        EditorApplication.update -= RestoreSelectionUpdate;
+        EditorApplication.update -= EditorUpdate;
     }
 
-    void RestoreSelectionUpdate()
+    void EditorUpdate()
     {
-        if (restoreSelection != null && Selection.activeObject == null) {
-            Selection.activeObject = restoreSelection;
+        RefreshProgress();
+    }
+
+    void RefreshProgress()
+    {
+        // After 5 seconds, Unity will show a task as "Not Responding"
+        // Periodically refresh our tasks to prevent this from happening,
+        // as we can't usually report that often.
+        if (token.taskId > 0 && Time.realtimeSinceStartup - lastProgressRefresh > progressRefreshInterval) {
+            lastProgressRefresh = Time.realtimeSinceStartup;
+            var total = Progress.GetCount();
+            for (int i = 0; i < total; i++) {
+                var id = Progress.GetId(i);
+                if (id == token.taskId || Progress.GetParentId(id) == token.taskId) {
+                    var step = Progress.GetCurrentStep(id);
+                    if (step < 0) {
+                        Progress.Report(id, Progress.GetProgress(id));
+                    } else {
+                        Progress.Report(id, Progress.GetCurrentStep(id), Progress.GetTotalSteps(id));
+                    }
+                }
+            }
         }
     }
 
-    void ContinueDebounced()
+    void ContinueWith(ContinueTask task, bool afterDomainRelaod = false)
     {
-        //Debug.Log($"Trimmer BuildRunner: Debounce Continue...");
+        continueTask = task;
 
-        // Using update because delayedCall doesn't get called in background
-        debounceCount = 10;
-        EditorApplication.update += ContinueDebouncedHandler;
+        if (!afterDomainRelaod) {
+            // Using update because delayedCall doesn't get called in background
+            debounceCount = 10;
+            EditorApplication.update += ContinueDebouncedHandler;
+        }
     }
 
     void ContinueDebouncedHandler()
     {
-        RestoreSelectionUpdate();
-
         debounceCount--;
         if (debounceCount <= 0) {
             EditorApplication.update -= ContinueDebouncedHandler;
@@ -335,75 +328,153 @@ public class BuildRunner : ScriptableObject
 
     void Continue()
     {
-        if (jobs == null) {
-            throw new Exception($"Trimmer BuildRunner: Cannot continue, not running (jobs == null).");
-        }
+        try {
+            if (jobs == null)
+                throw new Exception($"Trimmer BuildRunner: Cannot continue, not running (jobs == null).");
 
-        if (currentTask == Task.RestoreBuildTarget) {
-            Complete(completeResult);
-            return;
-        }
-
-        var job = jobs[jobIndex];
-
-        if (EditorUserBuildSettings.activeBuildTarget != job.target) {
-            if (currentTask == Task.SwitchingBuildTarget) {
-                Debug.LogError($"Trimmer BuildRunner: Failed to switch active build target to {job.target}.");
-                Complete(false, skipRestore: true);
-                return;
+            // -- Tasks that do not require a current job
+            switch (continueTask) {
+                case ContinueTask.NextJob:
+                    if (TaskNextJob()) return;
+                    break;
+                case ContinueTask.CompleteAfterSwichingTarget:
+                    if (TaskCompleteAfterSwichingTarget()) return;
+                    return;
             }
 
-            Debug.Log($"Trimmer: Switching active build target to {job.target}");
-            currentTask = Task.SwitchingBuildTarget;
+            if (jobIndex >= jobs.Length)
+                throw new Exception($"Trimmer BuildRunner: Cannot continue, job index out of range ({jobIndex} >= {jobs.Length}).");
+
+            // -- Tasks that do require a current job
+            var job = jobs[jobIndex];
+            if (job.profile != null) {
+                TaskBuild(job);
+            } else if (job.distro != null) {
+                TaskDistribute(job);
+            } else {
+                throw new Exception($"Trimmer BuildRunner: Invalid job, no profile or distro set.");
+            }
+
+        } catch (Exception e) {
+            Debug.LogException(e);
+            Complete(false);
+        }
+    }
+
+    bool TaskNextJob()
+    {
+        jobIndex++;
+
+        if (jobIndex < jobs.Length) {
+            return false;
+        }
+
+        if (StartRestoreBuildTarget())
+            return true;
+
+        Complete(true);
+
+        return true;
+    }
+
+    bool TaskCompleteAfterSwichingTarget()
+    {
+        if (EditorUserBuildSettings.activeBuildTarget != restoreActiveTargetTo)
+            throw new Exception($"Trimmer BuildRunner: Failed to restore active build target to {restoreActiveTargetTo}.");
+
+        Complete(true);
+
+        return true;
+    }
+
+    void TaskBuild(Job job)
+    {
+        // Handle switching build target when necessary
+        var activeTargetMatches = (EditorUserBuildSettings.activeBuildTarget == job.target);
+        if (continueTask == ContinueTask.BuildAfterSwitchingTarget && !activeTargetMatches) {
+            throw new Exception($"Trimmer BuildRunner: Failed to switch active build target to {job.target}.");
+        } else if (!activeTargetMatches) {
+            token.Report(jobIndex, description: $"Switching active build target to {job.target}");
 
             var group = BuildPipeline.GetBuildTargetGroup(job.target);
             EditorUserBuildSettings.SwitchActiveBuildTarget(group, job.target);
+            
+            ContinueWith(ContinueTask.BuildAfterSwitchingTarget, afterDomainRelaod: true);
             return;
         }
 
-        //Debug.Log($"Trimmer BuildRunner: Building job #{jobIndex} {job.profile?.name ?? "<none>"} {job.target}...");
+        // Build
+        token.Report(jobIndex, description: $"Building {job.target}");
+        BuildReport report;
+        try {
+            var options = BuildManager.GetDefaultOptions(job.target);
+            if (!string.IsNullOrEmpty(job.outputPath))
+                options.locationPathName = job.outputPath;
 
-        currentTask = Task.Build;
-
-        var options = BuildManager.GetDefaultOptions(job.target);
-        if (!string.IsNullOrEmpty(job.outputPath))
-            options.locationPathName = job.outputPath;
-
-        var report = BuildManager.BuildSync(job.profile, options);
-        results[jobIndex].report = report;
+            report = BuildManager.BuildSync(job.profile, options);
+            results[jobIndex].report = report;
+        } catch (Exception e) {
+            results[jobIndex] = ProfileBuildResult.Error(job.profile, e.Message);
+            throw;
+        }
 
         if (report.summary.result != BuildResult.Succeeded) {
-            Complete(false);
-            return;
-        } else {
-            jobIndex++;
-            if (jobIndex >= jobs.Length) {
-                Complete(true);
-                return;
-            }
+            throw new Exception($"Trimmer BuildRunner: Build failed");
         }
 
-        ContinueDebounced();
+        ContinueWith(ContinueTask.NextJob);
     }
 
-    void Complete(bool success, bool skipRestore = false)
+    void TaskDistribute(Job job)
     {
-        //Debug.Log($"Trimmer BuildRunner: Complete!");
+        token.Report(jobIndex, description: $"Running {job.distro.name}");
 
-        completeResult = success;
-
-        if (!skipRestore && restoreActiveTargetTo != 0 && EditorUserBuildSettings.activeBuildTarget != restoreActiveTargetTo) {
-            if (currentTask == Task.RestoreBuildTarget) {
-                Debug.LogError($"Trimmer BuildRunner: Failed to restore active build target to {restoreActiveTargetTo}.");
-            } else {
-                Debug.Log($"Trimmer: Restoring active build target to {restoreActiveTargetTo}");
-                currentTask = Task.RestoreBuildTarget;
-
-                var group = BuildPipeline.GetBuildTargetGroup(restoreActiveTargetTo);
-                EditorUserBuildSettings.SwitchActiveBuildTarget(group, restoreActiveTargetTo);
-                return;
-            }
+        var distroToken = token;
+        if (jobs.Length > 1) {
+            distroToken = token.StartChild(job.distro.name);
         }
+
+        var source = new CancellationTokenSource();
+        distroToken.cancellation = source.Token;
+        Progress.RegisterCancelCallback(distroToken.taskId, () => {
+            source.Cancel();
+            return true;
+        });
+
+        job.distro.DistributeWithoutBuilding(distroToken)
+            .ContinueWith(t => {
+                try {
+                    if (jobs.Length > 1)
+                        distroToken.Remove();
+
+                    if (t.IsFaulted) {
+                        Debug.LogException(t.Exception);
+                        Complete(false);
+                    } else {
+                        ContinueWith(ContinueTask.NextJob);
+                    }
+                } catch (Exception e) {
+                    Debug.LogException(e);
+                }
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    bool StartRestoreBuildTarget()
+    {
+        if (restoreActiveTargetTo == 0 || EditorUserBuildSettings.activeBuildTarget == restoreActiveTargetTo)
+            return false;
+
+        var group = BuildPipeline.GetBuildTargetGroup(restoreActiveTargetTo);
+        EditorUserBuildSettings.SwitchActiveBuildTarget(group, restoreActiveTargetTo);
+
+        token.Report(jobIndex, description: $"Restoring active build target to {restoreActiveTargetTo}");
+        ContinueWith(ContinueTask.CompleteAfterSwichingTarget, afterDomainRelaod: true);
+        return true;
+    }
+
+    void Complete(bool success)
+    {
+        //Debug.Log($"Trimmer BuildRunner: Complete! success = {success}");
 
         var results = this.results;
 
@@ -411,9 +482,9 @@ public class BuildRunner : ScriptableObject
         this.results = null;
         this.jobIndex = -1;
         this.restoreActiveTargetTo = 0;
-        this.completeResult = false;
-        this.restoreSelection = null;
         Current = null;
+
+        token.Remove();
 
         if (Listener != null && Listener is IBuildsCompleteListener l) {
             Listener = null;

@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -84,33 +86,6 @@ public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
     }
 
     /// <summary>
-    /// Wether the distribution is currently running.
-    /// </summary>
-    /// <remarks>
-    /// While the distribution is running, script reloading is locked.
-    /// Call <see cref="ForceCancel"/> or select it from the distribution's
-    /// gear menu in case the distribution gets stuck.
-    /// </remarks>
-    public bool IsRunning {
-        get {
-            return _isRunning;
-        }
-        protected set {
-            if (_isRunning == value)
-                return;
-            
-            _isRunning = value;
-
-            if (_isRunning) {
-                EditorApplication.LockReloadAssemblies();
-            } else {
-                EditorApplication.UnlockReloadAssemblies();
-            }
-        }
-    }
-    bool _isRunning;
-
-    /// <summary>
     /// Check wether there are existing builds for all build target in all linked Build Profiles.
     /// </summary>
     public virtual bool HasAllBuilds()
@@ -149,58 +124,69 @@ public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
     }
 
     /// <summary>
-    /// Build all linked Build Profiles.
-    /// </summary>
-    [ContextMenu("Build")]
-    public void Build()
-    {
-        Build(DistroBuildMode.BuildAll);
-    }
-
-    /// <summary>
-    /// Process the builds of the linked Build Profiles and build the
-    /// targets where no build exists.
-    /// </summary>
-    [ContextMenu("Distribute")]
-    public void Distribute()
-    {
-        Distribute(DistroBuildMode.BuildMissing);
-    }
-
-    /// <summary>
     /// Process the builds of the linked Build Profiles and build the
     /// targets where no build exists.
     /// </summary>
     /// <param name="buildMode">Build mode to use</param>
-    public void Distribute(DistroBuildMode buildMode)
+    public void Distribute(DistroBuildMode buildMode = DistroBuildMode.BuildMissing, IBuildsCompleteListener onComplete = null)
     {
-        if (buildMode != DistroBuildMode.None) {
-            Build(buildMode, onComplete: this);
-            return;
+        var jobs = new List<BuildRunner.Job>();
+        var willBuild = AddBuildJobs(buildMode, jobs);
+        jobs.Add(new BuildRunner.Job(this));
+
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(jobs.ToArray(), onComplete, willBuild && TrimmerPrefs.RestoreActiveBuildTarget, context: this);
+    }
+
+    /// <summary>
+    /// Run the distribution as an async task,
+    /// since async tasks can't survive domain reloads,
+    /// this method cannot build and will error if any builds are missing.
+    /// </summary>
+    public async Task DistributeWithoutBuilding(TaskToken task = default)
+    {
+        var removeProgressTask = false;
+        if (task.taskId == 0) {
+            // Set up default cancelable progress task if none is given
+            removeProgressTask = true;
+
+            task.taskId = Progress.Start(name);
+
+            var source = new CancellationTokenSource();
+            task.cancellation = source.Token;
+
+            Progress.RegisterCancelCallback(task.taskId, () => {
+                source.Cancel();
+                return true;
+            });
         }
 
-        RunCoroutine(DistributeCoroutine(buildMode));
-    }
+        try {
+            // Prevent domain reloads from stopping the distribution
+            EditorApplication.LockReloadAssemblies();
 
-    /// <summary>
-    /// Force cancel the distribution. Only call in case the distribution
-    /// gets stuck, e.g. because of an exception.
-    /// </summary>
-    [ContextMenu("Force Cancel")]
-    public void ForceCancel()
-    {
-        Cancel();
-        IsRunning = false;
-    }
+            // Check that all builds are present
+            var paths = GetBuildPaths();
+            if (!paths.Any())
+                throw new Exception(name + ": Distribution has no targets in any of its profiles");
 
-    /// <summary>
-    /// Cancel the distribution.
-    /// </summary>
-    public virtual void Cancel()
-    {
-        if (runningScripts != null) {
-            foreach (var terminator in runningScripts.ToList()) {
-                terminator(true);
+            var missingBuilds = false;
+            foreach (var path in paths) {
+                if (path.path == null) {
+                    Debug.LogError(name + ": Missing build for target '" + path.target + "' of profile '" + path.profile + "'");
+                    missingBuilds = true;
+                }
+            }
+            if (missingBuilds)
+                throw new Exception($"{name}: Missing builds");
+
+            // Run distribution
+            await RunDistribute(paths, task);
+        } finally {
+            EditorApplication.UnlockReloadAssemblies();
+
+            if (removeProgressTask) {
+                task.Remove();
             }
         }
     }
@@ -211,13 +197,24 @@ public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
     /// </summary>
     /// <param name="buildMode">Build mode to use (must not be <see cref="DistroBuildMode.None"/>)</param>
     /// <param name="onComplete">Listener that will be called when the builds are complete</param>
-    public void Build(DistroBuildMode buildMode = DistroBuildMode.BuildMissing, IBuildsCompleteListener onComplete = null)
+    public void Build(DistroBuildMode buildMode = DistroBuildMode.BuildAll, IBuildsCompleteListener onComplete = null)
     {
-        if (buildMode == DistroBuildMode.None) {
-            throw new ArgumentException("Invalid parameter value DistroBuildMode.None", nameof(buildMode));
-        }
-
         var jobs = new List<BuildRunner.Job>();
+        AddBuildJobs(buildMode, jobs);
+
+        var runner = ScriptableObject.CreateInstance<BuildRunner>();
+        runner.Run(jobs.ToArray(), onComplete, TrimmerPrefs.RestoreActiveBuildTarget, context: this);
+    }
+
+    /// <summary>
+    /// Compile the necessary build jobs.
+    /// </summary>
+    public bool AddBuildJobs(DistroBuildMode buildMode, List<BuildRunner.Job> jobs)
+    {
+        if (buildMode == DistroBuildMode.None)
+            return false;
+
+        var willBuild = false;
         foreach (var profile in builds) {
             if (profile == null) continue;
             foreach (var target in profile.BuildTargets) {
@@ -226,253 +223,105 @@ public abstract class DistroBase : ScriptableObject, IBuildsCompleteListener
                         || string.IsNullOrEmpty(path) 
                         || (!File.Exists(path) && !Directory.Exists(path))) {
                     jobs.Add(new BuildRunner.Job(profile, target));
+                    willBuild = true;
                 }
             }
         }
 
-        if (jobs.Count == 0) {
-            onComplete.OnComplete(true, new ProfileBuildResult[0]);
-            return;
-        }
-
-        var runner = ScriptableObject.CreateInstance<BuildRunner>();
-        runner.Run(jobs.ToArray(), onComplete, TrimmerPrefs.RestoreActiveBuildTarget);
-    }
-
-    void IBuildsCompleteListener.OnComplete(bool success, ProfileBuildResult[] results)
-    {
-        if (!success) return;
-
-        // The builds have been built, error out in the distribution coroutine if one is missing
-        RunCoroutine(DistributeCoroutine(DistroBuildMode.None));
-    }
-
-    IEnumerator DistributeCoroutine(DistroBuildMode buildMode = DistroBuildMode.BuildMissing)
-    {
-        if (IsRunning) {
-            throw new InvalidOperationException("Distribution '" + this.name + "' is already running.");
-        }
-
-        IsRunning = true;
-
-        // Check that all builds are present
-        var paths = GetBuildPaths();
-
-        if (!paths.Any()) {
-            Debug.LogError(name + ": Distribution has no targets in any of its profiles");
-            IsRunning = false;
-            yield break;
-        }
-
-        var missingBuilds = false;
-        foreach (var path in paths) {
-            if (path.path == null) {
-                Debug.LogError(name + ": Missing build for target '" + path.target + "' of profile '" + path.profile + "'");
-                missingBuilds = true;
-            }
-        }
-        if (missingBuilds) {
-            IsRunning = false;
-            yield break;
-        }
-
-        // Run distribution
-        yield return DistributeCoroutine(paths, buildMode == DistroBuildMode.BuildAll);
-
-        IsRunning = false;
+        return willBuild;
     }
 
     /// <summary>
     /// Subroutine to override in subclasses to do the actual processing.
     /// </summary>
     /// <param name="buildPaths">Build paths of the linked Build Profiles</param>
-    /// <param name="forceBuild">Force rebuilding all targets, even if a build exists</param>
-    protected abstract IEnumerator DistributeCoroutine(IEnumerable<BuildPath> buildPaths, bool forceBuild);
+    /// <param name="task">Task token for reporting progress and cancellation</param>
+    protected virtual Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
+    {
+        return Task.CompletedTask;
+    }
 
     // -------- Execute Script --------
 
-    protected List<System.Action<bool>> runningScripts;
-
     /// <summary>
-    /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
+    /// Arguments for <see cref="Execute"/>.
     /// </summary>
-    protected IEnumerator Execute(string path, string arguments, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null, bool logError = true)
+    protected struct ExecutionArgs
     {
-        var startInfo = new System.Diagnostics.ProcessStartInfo();
-        startInfo.FileName = path;
-        startInfo.Arguments = arguments;
-        return Execute(startInfo, input, onOutput, onError, logError);
+        /// <summary>
+        /// The process start info, including path and arguments.
+        /// </summary>
+        public System.Diagnostics.ProcessStartInfo startInfo;
+        /// <summary>
+        /// Input to be sent to the script's stdio at the beginning.
+        /// Whenever possible, use this for passwords.
+        /// </summary>
+        public string input;
+        /// <summary>
+        /// Callback for script's stdout.
+        /// </summary>
+        public Action<string> onOutput;
+        /// <summary>
+        /// Callback for script's stderr.
+        /// </summary>
+        public Action<string> onError;
+        /// <summary>
+        /// Do not throw exception on non-zero script exit codes.
+        /// </summary>
+        public bool silentError;
+
+        public ExecutionArgs(string path, string args)
+        {
+            this.startInfo = new System.Diagnostics.ProcessStartInfo(path, args);
+            this.input = null;
+            this.onOutput = null;
+            this.onError = null;
+            this.silentError = false;
+        }
     }
 
     /// <summary>
-    /// Editor coroutine wrapper for OptionHelper.RunScriptAsync.
+    /// Async wrapper for OptionHelper.RunScriptAsync.
     /// </summary>
-    protected IEnumerator Execute(System.Diagnostics.ProcessStartInfo startInfo, string input = null, System.Action<string> onOutput = null, System.Action<string> onError = null, bool logError = true)
+    protected async Task<int> Execute(ExecutionArgs args, TaskToken task)
     {
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         int? exitcode = null;
         var terminator = OptionHelper.RunScriptAsnyc(
-            startInfo, input,
+            args.startInfo, args.input,
             (output) => {
                 outputBuilder.AppendLine(output);
-                if (onOutput != null) onOutput(output);
+                args.onOutput?.Invoke(output);
             },
             (error) => {
                 errorBuilder.AppendLine(error);
-                if (onError != null) onError(error);
+                args.onError?.Invoke(error);
             },
             (code) => {
                 exitcode = code;
             }
         );
 
-        if (runningScripts == null) runningScripts = new List<System.Action<bool>>();
-        runningScripts.Add(terminator);
-
-        while (exitcode == null) { yield return null; }
-
-        runningScripts.Remove(terminator);
+        while (exitcode == null) {
+            if (task.cancellation.IsCancellationRequested) {
+                terminator(true);
+                task.ThrowIfCancellationRequested();
+            }
+            await Task.Yield();
+        }
 
         // 137 happens for Kill() and 143 for CloseMainWindow(),
         // which means the script has been canceled
-        if (logError && exitcode != 0 && exitcode != 137 && exitcode != 143) {
-            Debug.LogError(string.Format(
-                "{0}: Failed to execute {1}: {2}\nOutput: {3}",
-                name, Path.GetFileName(startInfo.FileName),
+        if (!args.silentError && exitcode != 0 && exitcode != 137 && exitcode != 143) {
+            throw new Exception(string.Format(
+                "{0}: Failed to execute {1} (code {2}): {3}\nOutput: {4}",
+                name, Path.GetFileName(args.startInfo.FileName), exitcode,
                 errorBuilder.ToString(), outputBuilder.ToString()
             ));
         }
-        yield return exitcode;
-    }
 
-    // -------- Editor Coroutine --------
-
-    /// <summary>
-    /// Editor coroutine runner. It's quite different from Unity's coroutines:
-    /// - You can only return null to pause a frame, no WaitForXXX
-    /// - You can however return another coroutine IEnumerator and it'll finish that first
-    /// - And you can use SubroutineResult to get that coroutine's last yielded value
-    /// </summary>
-    static public void RunCoroutine(IEnumerator routine)
-    {
-        Run(routine, true);
-    }
-
-    /// <summary>
-    /// Get the last yielded value of a subroutine.
-    /// This can only be called in the coroutine that yielded the subroutine and
-    /// only between after the subroutine finished and before the parent coroutine
-    /// yields again.
-    /// </summary>
-    static public T GetSubroutineResult<T>()
-    {
-        if (!hasLastRoutineValue) {
-            throw new System.Exception("SubroutineResult can only be called in the parent routine right after the subroutine finished.");
-        }
-
-        if (lastRoutineValue != null && lastRoutineValue is T) {
-            return (T)lastRoutineValue;
-        }
-
-        return default(T);
-    }
-
-    static List<IEnumerator> routines;
-    static Dictionary<IEnumerator, IEnumerator> parentRoutines;
-    static Dictionary<IEnumerator, object> lastRoutineValues;
-    static bool hasLastRoutineValue;
-    static object lastRoutineValue;
-
-    /// <summary>
-    /// Internal run method that can take already advanced routines.
-    /// </summary>
-    static bool Run(IEnumerator routine, bool advance)
-    {
-        // Check if the coroutine breaks immediately and don't bother scheduling it
-        if (!advance || routine.MoveNext()) {
-            if (routines == null) {
-                routines = new List<IEnumerator>();
-                lastRoutineValues = new Dictionary<IEnumerator, object>();
-            }
-
-            if (routines.Count == 0) {
-                EditorApplication.update += Runner;
-            }
-
-            routines.Add(routine);
-            ProcessRoutine(routines.Count - 1);
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// The runner update method.
-    /// </summary>
-    static void Runner()
-    {
-        // Stop the runner when there are no more active routines
-        if (routines == null || routines.Count == 0) {
-            EditorApplication.update -= Runner;
-            return;
-        }
-
-        // Process routines from the back so we can add during the loop
-        for (int i = routines.Count - 1; i >= 0; i--) {
-            var routine = routines[i];
-
-            if (routine.MoveNext()) {
-                // Routine is running
-                ProcessRoutine(i);
-
-            } else {
-                // Routine has finished
-                routines.RemoveAt(i);
-                StopRoutine(routine);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Process the yielded value of a coroutine.
-    /// </summary>
-    static void ProcessRoutine(int i)
-    {
-        var routine = routines[i];
-        var value = lastRoutineValues[routine] = routine.Current;
-
-        var subroutine = value as IEnumerator;
-        if (subroutine != null && subroutine.MoveNext()) {
-            // We got a subroutine, pause the routine and run the subroutine
-            if (parentRoutines == null) {
-                parentRoutines = new Dictionary<IEnumerator, IEnumerator>();
-            }
-            parentRoutines[subroutine] = routine;
-            routines.RemoveAt(i);
-            if (!Run(subroutine, false)) StopRoutine(subroutine);
-        }
-    }
-
-    /// <summary>
-    /// Stop a completed coroutine, continuing the parent routine if it exists.
-    /// </summary>
-    static void StopRoutine(IEnumerator routine)
-    {
-        if (parentRoutines != null && parentRoutines.ContainsKey(routine)) {
-            // Continue parent routine of subroutine
-            var parent = parentRoutines[routine];
-            parentRoutines.Remove(routine);
-
-            // Setting the subroutine's last value so it can be
-            // accessed by the parent routine using SubroutineResult()
-            hasLastRoutineValue = true;
-            lastRoutineValue = lastRoutineValues[routine];
-            if (!Run(parent, true)) StopRoutine(parent);
-            lastRoutineValue = null;
-            hasLastRoutineValue = false;
-        }
-        lastRoutineValues.Remove(routine);
+        return exitcode.Value;
     }
 }
 
