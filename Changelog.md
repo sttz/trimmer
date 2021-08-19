@@ -1,16 +1,20 @@
 # Changelog
 
-### 1.3.0 (2021-??-??)
+### 2.0.0-pre.1 (2021-08-19)
 * Switch active build target before builds
 * Add preference to restore active build target after builds
-* Build APIs are now asynchronous and require `ScriptableObject`-based completion listeners
+* Use Unity's progress API to report build and distro progress
 * Do not change scripting defines in player settings on Unity 2020.1+
 * Add Option to build Addressables content before a player build
+* Batch Build replaces Meta Distro and can be used for profiles and distros
+* Add iOS Distro to build and upload iOS apps
+* Update Version Option to accommodate more project setups
+* Build APIs are now asynchronous and require `ScriptableObject`-based completion listeners
+* Distros use async/await instead of custom editor coroutines
 * Throw an exception when command line build fails to produce a non-zero exit code
 * Use `BuildReport` where possible in Options and in the build APIs
 * Add `OnBuildError` callback for Options (@JesseTG)
 * Use Unity's own build GUID in `BuildInfo`
-* MetaDistro has been removed due to incompatibility with new build runner
 * Require Unity 2019.4+
 
 ### 1.2.1 (2021-04-15)
