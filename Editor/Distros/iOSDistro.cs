@@ -43,6 +43,10 @@ public class iOSDistro : DistroBase
     /// Export options plist. If not set, a basic one will be used.
     /// </summary>
     public DefaultAsset exportOptions;
+    /// <summary>
+    /// Allow Xcode to update provisioning.
+    /// </summary>
+    public bool allowProvisioningUpdates;
 
     const string DefaultExportOptions = @"
 <?xml version=""1.0"" encoding=""UTF-8""?>
@@ -86,7 +90,7 @@ public class iOSDistro : DistroBase
         var archiveName = $"{scheme}-{PlayerSettings.iOS.buildNumber}-{DateTime.Now.ToString("O")}.xcarchive";
         var archivePath = Path.Combine(archivesPath, archiveName);
 
-        task.Report(0, description: $"Building scheme '{scheme}' from '{path}' to '{archivePath}'");
+        task.Report(0, description: $"Building scheme '{scheme}'");
         await Archive(projectPath, scheme, archivePath, task);
 
         // Upload archive
@@ -103,7 +107,7 @@ public class iOSDistro : DistroBase
                 File.WriteAllText(exportOptionsPath, DefaultExportOptions);
             }
 
-            task.Report(1, description: $"Uploading '{archivePath}' with options '{exportOptionsPath}'");
+            task.Report(1, description: $"Uploading archive");
             await Upload(archivePath, exportOptionsPath, task);
         } finally {
             if (cleanUpOptions) {
@@ -118,6 +122,10 @@ public class iOSDistro : DistroBase
             + $" -project '{projectPath}'"
             + $" -archivePath '{archivePath}'"
             + $" -scheme '{schemeName}'";
+
+        if (allowProvisioningUpdates)
+            args += " -allowProvisioningUpdates";
+
         await Execute(new ExecutionArgs("xcodebuild", args), task);
     }
 
@@ -126,6 +134,10 @@ public class iOSDistro : DistroBase
         var args = $"-exportArchive"
             + $" -archivePath '{archivePath}'"
             + $" -exportOptionsPlist '{exportOptionsPlist}'";
+
+        if (allowProvisioningUpdates)
+            args += " -allowProvisioningUpdates";
+
         await Execute(new ExecutionArgs("xcodebuild", args), task);
     }
 }
