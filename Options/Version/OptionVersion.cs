@@ -13,6 +13,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Build;
 
 namespace sttz.Trimmer.Options
 {
@@ -250,14 +251,14 @@ public class OptionVersion : OptionContainer
         } else if (sharing != BuildNumberSharing.None) {
             // Look for highest build number across build target groups, increment it
             // and then apply it back to all groups
-            if (GetBuildNumber == null || SetBuildNumber == null) {
+            if (!LoadBuildNumberMethods()) {
                 Debug.LogError("OptionVersion: Could not find internal GetBuildNumber method on PlayerSettings.");
                 return default(Version);
             }
 
             var buildNumbers = new List<int>();
             foreach (var targetGroup in GetSharedTargets(sharing)) {
-                var numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
+                var numberString = GetBuildNumber(targetGroup);
                 int number;
                 if (!int.TryParse(numberString, out number) || number < 0) {
                     Debug.LogError("OptionVersion: " + targetGroup + " build number should be a positive integer (" + numberString  + ")");
@@ -282,12 +283,12 @@ public class OptionVersion : OptionContainer
             if (targetGroup == BuildTargetGroup.Android) {
                 version.build = PlayerSettings.Android.bundleVersionCode;
             } else {
-                if (GetBuildNumber == null || SetBuildNumber == null) {
+                if (!LoadBuildNumberMethods()) {
                     Debug.LogError("OptionVersion: Could not find internal GetBuildNumber method on PlayerSettings.");
                     return default(Version);
                 }
 
-                var numberString = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
+                var numberString = GetBuildNumber(targetGroup);
                 var number = 0;
                 if (!int.TryParse(numberString, out number) || number < 0) {
                     Debug.LogError("OptionVersion: " + targetGroup + " build number should be a positive integer (" + numberString  + ")");
@@ -337,9 +338,9 @@ public class OptionVersion : OptionContainer
             // Increment all build numbers together
             numberString = version.build.ToString();
             foreach (var targetGroup in GetSharedTargets(sharing)) {
-                var value = (string)GetBuildNumber.Invoke(null, new object[] { targetGroup });
+                var value = GetBuildNumber(targetGroup);
                 if (!string.IsNullOrEmpty(value) && value != "0") {
-                    SetBuildNumber.Invoke(null, new object[] { targetGroup, numberString });
+                    SetBuildNumber(targetGroup, numberString);
                 }
             }
 
@@ -351,7 +352,7 @@ public class OptionVersion : OptionContainer
             if (targetGroup == BuildTargetGroup.Android) {
                 PlayerSettings.Android.bundleVersionCode = version.build;
             } else {
-                SetBuildNumber.Invoke(null, new object[] { targetGroup, version.build.ToString() });
+                SetBuildNumber(targetGroup, version.build.ToString());
             }
         }
 
@@ -363,7 +364,17 @@ public class OptionVersion : OptionContainer
         var targets = new HashSet<BuildTargetGroup>();
         if (sharing == BuildNumberSharing.InProject) {
             foreach (BuildTargetGroup targetGroup in System.Enum.GetValues(typeof(BuildTargetGroup))) {
+                if (targetGroup == BuildTargetGroup.Unknown) continue;
+            #if UNITY_2021_2_OR_NEWER
+                try {
+                    var namedTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+                    targets.Add(targetGroup);
+                } catch {
+                    // ignore
+                }
+            #else
                 targets.Add(targetGroup);
+            #endif
             }
         } else if (sharing == BuildNumberSharing.InProfile) {
             foreach (var profileTarget in EditorProfile.BuildTargets) {
@@ -375,37 +386,58 @@ public class OptionVersion : OptionContainer
         return targets;
     }
 
-    static MethodInfo GetBuildNumber {
-        get {
+    static bool LoadBuildNumberMethods()
+    {
+        if (_getBuildNumber == null) {
+            // internal static extern string GetBuildNumber(BuildTargetGroup targetGroup);
+            _getBuildNumber = typeof(PlayerSettings).GetMethod(
+                "GetBuildNumber", 
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
             if (_getBuildNumber == null) {
-                // internal static extern string GetBuildNumber(BuildTargetGroup targetGroup);
-                _getBuildNumber = typeof(PlayerSettings).GetMethod(
-                    "GetBuildNumber", 
-                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-                );
-                if (_getBuildNumber == null) {
-                    Debug.LogError("OptionVersion: Could not find internal GetBuildNumber method on PlayerSettings.");
-                }
+                Debug.LogError("OptionVersion: Could not find internal GetBuildNumber method on PlayerSettings.");
             }
-            return _getBuildNumber;
         }
+
+        if (_setBuildNumber == null) {
+            // internal static extern void SetBuildNumber(BuildTargetGroup targetGroup, string buildNumber);
+            _setBuildNumber = typeof(PlayerSettings).GetMethod(
+                "SetBuildNumber", 
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (_setBuildNumber == null) {
+                Debug.LogError("OptionVersion: Could not find internal SetBuildNumber method on PlayerSettings.");
+            }
+        }
+
+        return (_getBuildNumber != null && _setBuildNumber != null);
+    }
+
+    static string GetBuildNumber(BuildTargetGroup targetGroup)
+    {
+        if (_getBuildNumber == null)
+            return null;
+
+    #if UNITY_2021_2_OR_NEWER
+        var targetName = NamedBuildTarget.FromBuildTargetGroup(targetGroup).TargetName;
+        return (string)_getBuildNumber.Invoke(null, new object[] { targetName });
+    #else
+        return (string)_getBuildNumber.Invoke(null, new object[] { targetGroup });
+    #endif
     }
     static MethodInfo _getBuildNumber;
 
-    static MethodInfo SetBuildNumber {
-        get {
-            if (_setBuildNumber == null) {
-                // internal static extern void SetBuildNumber(BuildTargetGroup targetGroup, string buildNumber);
-                _setBuildNumber = typeof(PlayerSettings).GetMethod(
-                    "SetBuildNumber", 
-                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-                );
-                if (_setBuildNumber == null) {
-                    Debug.LogError("OptionVersion: Could not find internal SetBuildNumber method on PlayerSettings.");
-                }
-            }
-            return _setBuildNumber;
-        }
+    static void SetBuildNumber(BuildTargetGroup targetGroup, string buildNumber)
+    {
+        if (_setBuildNumber == null)
+            return;
+
+    #if UNITY_2021_2_OR_NEWER
+        var targetName = NamedBuildTarget.FromBuildTargetGroup(targetGroup).TargetName;
+        _setBuildNumber.Invoke(null, new object[] { targetName, buildNumber });
+    #else
+        _setBuildNumber.Invoke(null, new object[] { targetGroup, buildNumber });
+    #endif
     }
     static MethodInfo _setBuildNumber;
 }

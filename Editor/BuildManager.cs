@@ -484,7 +484,13 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         if (PostprocessBuildPlayer == null) {
             Debug.LogWarning("Could not find PostprocessBuildPlayer to determine build file extension.");
         } else {
-            var GetExtensionForBuildTarget = PostprocessBuildPlayer.GetMethod("GetExtensionForBuildTarget", BindingFlags.Public | BindingFlags.Static);
+            var GetExtensionForBuildTarget = PostprocessBuildPlayer.GetMethod(
+                "GetExtensionForBuildTarget", 
+                BindingFlags.Public | BindingFlags.Static, 
+                null,
+                new Type[] { typeof(BuildTargetGroup), typeof(BuildTarget), typeof(BuildOptions) },
+                null
+            );
             if (GetExtensionForBuildTarget == null) {
                 Debug.LogWarning("Could not find GetExtensionForBuildTarget to determine build file extension.");
             } else {
