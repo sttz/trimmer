@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.0.0-pre.2 (2021-10-29)
+* iOS Distro: Add option to allow Xcode to automatically update provisioning
+* iOS Distro: Simplify status messages
+* Fix compatibility with Unity 2021.2
+
 ### 2.0.0-pre.1 (2021-08-19)
 * Switch active build target before builds
 * Add preference to restore active build target after builds
