@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.0.0-pre.3 (2022-03-15)
+* Fix exception in Editor Profile GUI during play mode (caused by Version Option)
+* iOS Distro: Add option to allow Xcode to register new devices
+
 ### 2.0.0-pre.2 (2021-10-29)
 * iOS Distro: Add option to allow Xcode to automatically update provisioning
 * iOS Distro: Simplify status messages
