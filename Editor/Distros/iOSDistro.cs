@@ -47,6 +47,12 @@ public class iOSDistro : DistroBase
     /// Allow Xcode to update provisioning.
     /// </summary>
     public bool allowProvisioningUpdates;
+    /// <summary>
+    /// Allow Xcode to register new devices on the developer portal.
+    /// Only works if <see cref="allowProvisioningUpdates"/> is enabled
+    /// as well.
+    /// </summary>
+    public bool allowProvisioningDeviceRegistration;
 
     const string DefaultExportOptions = @"
 <?xml version=""1.0"" encoding=""UTF-8""?>
@@ -125,6 +131,8 @@ public class iOSDistro : DistroBase
 
         if (allowProvisioningUpdates)
             args += " -allowProvisioningUpdates";
+        if (allowProvisioningDeviceRegistration)
+            args += " -allowProvisioningDeviceRegistration";
 
         await Execute(new ExecutionArgs("xcodebuild", args), task);
     }
@@ -137,6 +145,8 @@ public class iOSDistro : DistroBase
 
         if (allowProvisioningUpdates)
             args += " -allowProvisioningUpdates";
+        if (allowProvisioningDeviceRegistration)
+            args += " -allowProvisioningDeviceRegistration";
 
         await Execute(new ExecutionArgs("xcodebuild", args), task);
     }
