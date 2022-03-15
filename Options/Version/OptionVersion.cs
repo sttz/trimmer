@@ -152,7 +152,8 @@ public class OptionVersion : OptionContainer
             {
                 changed = base.EditGUI();
 
-                if (EditorProfile.BuildTargets.Any() 
+                if (EditorProfile != null 
+                        && EditorProfile.BuildTargets.Any() 
                         && GUILayout.Button("Increment Now", EditorStyles.miniButton)) {
                     var parent = (OptionVersion)Parent;
                     var messages = new List<string>();
