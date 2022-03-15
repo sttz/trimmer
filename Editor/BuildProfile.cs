@@ -284,8 +284,12 @@ public class BuildProfile : EditableProfile, IEditorProfile
 
     public override void EditOption(Option option)
     {
-        if (option.EditGUI()) {
-            Option.changed = true;
+        try {
+            if (option.EditGUI()) {
+                Option.changed = true;
+            }
+        } catch (Exception e) {
+            EditorGUILayout.HelpBox($"Error showing the Option GUI:\n{e.Message}", MessageType.Error);
         }
     }
 

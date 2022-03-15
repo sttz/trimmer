@@ -355,28 +355,32 @@ public class EditorProfile : EditableProfile, IEditorProfile
 
     public override void EditOption(Option option)
     {
-        if (Application.isPlaying) {
-            if (option.EditGUI()) {
-                option.ApplyFromRoot();
+        try {
+            if (Application.isPlaying) {
+                if (option.EditGUI()) {
+                    option.ApplyFromRoot();
+                }
+                return;
             }
-            return;
-        }
-        
-        Option editModeOption = null;
-        if (editModeProfile != null) {
-            editModeOption = editModeProfile.GetOption(option.Path);
-        }
+            
+            Option editModeOption = null;
+            if (editModeProfile != null) {
+                editModeOption = editModeProfile.GetOption(option.Path);
+            }
 
-        if (editModeOption != null) {
-            if (editModeOption.EditGUI()) {
-                Option.changed = true;
-                editModeOption.ApplyFromRoot();
+            if (editModeOption != null) {
+                if (editModeOption.EditGUI()) {
+                    Option.changed = true;
+                    editModeOption.ApplyFromRoot();
+                }
+            
+            } else {
+                if (option.EditGUI()) {
+                    Option.changed = true;
+                }
             }
-        
-        } else {
-            if (option.EditGUI()) {
-                Option.changed = true;
-            }
+        } catch (Exception e) {
+            EditorGUILayout.HelpBox($"Error showing the Option GUI:\n{e.Message}", MessageType.Error);
         }
     }
 
