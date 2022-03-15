@@ -105,7 +105,7 @@ public class OptionKeyStore : OptionContainer
 
     override public bool EditGUI()
     {
-        if (warning == null || success == null) {
+        if (warning == null || success == null) {
             success = new GUIContent(EditorGUIUtility.FindTexture("Collab"));
             warning = new GUIContent(EditorGUIUtility.FindTexture("CollabError"));
         }

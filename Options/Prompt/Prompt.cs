@@ -264,7 +264,7 @@ public class Prompt : MonoBehaviour
             baseInput += option.Name;
         }
 
-        if (option.Variance != OptionVariance.Single && !option.IsDefaultVariant) {
+        if (option.Variance != OptionVariance.Single && !option.IsDefaultVariant) {
             baseInput += "[" + IniAdapter.QuoteParameterIfNeeded(option.VariantParameter) + "]";
         }
         

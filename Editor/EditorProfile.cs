@@ -383,7 +383,7 @@ public class EditorProfile : EditableProfile, IEditorProfile
     // -------- Edit Mode --------
 
     /// <summary>
-    /// Profile used to edit build profiles.
+    /// Profile used to edit the editor profile.
     /// </summary>
     private class EditEditorProfile : RuntimeProfile
     {

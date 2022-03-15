@@ -314,7 +314,8 @@ public abstract class Option
     /// </summary>
     /// <remarks>
     /// > [!NOTE]
-    /// > This property is only available in the editor.
+    /// > This property is only available in the editor
+    /// > when not in play mode.
     /// </remarks>
     public IEditorProfile EditorProfile { get; private set; }
 

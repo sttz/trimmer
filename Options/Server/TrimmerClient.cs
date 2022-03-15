@@ -3,7 +3,7 @@
 // https://sttz.ch/trimmer
 //
 
-#if TRIMMER_CLIENT || UNITY_EDITOR
+#if TRIMMER_CLIENT || UNITY_EDITOR
 
 using UnityEngine;
 using System;

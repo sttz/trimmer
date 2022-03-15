@@ -374,7 +374,7 @@ public class TrimmerServer
 
     void OnConnectionData(IAsyncResult ar)
     {
-        if (server == null || client == null || stream == null)
+        if (server == null || client == null || stream == null)
             return;
         
         try {

@@ -130,7 +130,7 @@ public static class OptionHelper
     public static bool IsFirstScene(Scene scene)
     {
         var scenes = currentBuildOptions.scenes;
-        if (scenes != null && scenes.Length > 0) {
+        if (scenes != null && scenes.Length > 0) {
             return (scenes[0] == scene.path);
         } else if (EditorBuildSettings.scenes.Length > 0) {
             return (EditorBuildSettings.scenes[0].path == scene.path);
