@@ -20,11 +20,11 @@ public static class Common
     /// <summary>
     /// Decode the data received from the network.
     /// </summary>
-    public static string Decode(byte[] bytes, int length = -1)
+    public static string Decode(byte[] bytes, int position = 0, int length = -1)
     {
         try {
             if (length < 0) length = bytes.Length;
-            return System.Text.Encoding.UTF8.GetString(bytes, 0, length);
+            return System.Text.Encoding.UTF8.GetString(bytes, position, length);
         } catch (Exception e) {
             Debug.LogError("Failed to decode string from client: " + e);
             return null;
@@ -295,10 +295,14 @@ public class TrimmerServer
 
     // ------ Server ------
 
+    const int MaxMessageLength = 100 * 1024;
+    const byte MessageEnd = (byte)'\n';
+
     TcpListener server;
     TcpClient client;
     NetworkStream stream;
-    byte[] readBuffer = new byte[2048];
+    byte[] readBuffer = new byte[MaxMessageLength];
+    int readPosition = 0;
     bool clientSaidHello;
 
     Queue<string> messageQueue = new Queue<string>();
@@ -359,6 +363,7 @@ public class TrimmerServer
                 clientSaidHello = false;
                 
                 stream = client.GetStream();
+                readPosition = 0;
                 stream.BeginRead(readBuffer, 0, readBuffer.Length, OnConnectionData, null);
             }
             server.BeginAcceptTcpClient(OnConnection, null);
@@ -378,8 +383,23 @@ public class TrimmerServer
             return;
         
         try {
-            var message = Common.Decode(readBuffer, stream.EndRead(ar));
-            
+            var readLength = stream.EndRead(ar);
+            if (readLength == 0) {
+                Debug.Log("TrimmerServer: Stream closed");
+                DisconnectClient();
+                return;
+            }
+
+            var messageEnd = Array.IndexOf(readBuffer, MessageEnd, readPosition, readLength);
+            if (messageEnd < 0) {
+                // Wait for end of message
+                readPosition += readLength;
+                stream.BeginRead(readBuffer, readPosition, readBuffer.Length - readPosition, OnConnectionData, null);
+                return;
+            }
+
+            // Handle message
+            var message = Common.Decode(readBuffer, 0, messageEnd);
             if (!clientSaidHello) {
                 if (!message.StartsWith(ClientHello)) {
                     // Client sent wrong hello
@@ -404,8 +424,17 @@ public class TrimmerServer
                     messageQueue.Enqueue(message);
                 }
             }
+            
+            // Handle possible remainder message
+            var remaining = (readPosition + readLength) - (messageEnd + 1);
+            if (remaining > 0) {
+                Array.Copy(readBuffer, messageEnd + 1, readBuffer, 0, remaining);
+                readPosition = remaining;
+            } else {
+                readPosition = 0;
+            }
 
-            stream.BeginRead(readBuffer, 0, readBuffer.Length, OnConnectionData, null);
+            stream.BeginRead(readBuffer, readPosition, readBuffer.Length - readPosition, OnConnectionData, null);
         } catch (ObjectDisposedException) {
             // Client was closed
         } catch (Exception e) {
@@ -448,6 +477,13 @@ public class TrimmerServer
             }
 
             var data = Common.Encode(reply + "\n");
+            
+            var endIndex = Array.IndexOf(data, MessageEnd);
+            if (endIndex != data.Length - 1) {
+                Debug.LogError($"TrimmerServer: Reply cannot contain a newlines (found at index {endIndex})");
+                data = Common.Encode("ERROR Invalid reply\n");
+            }
+            
             stream.Write(data, 0, data.Length);
         }
     }

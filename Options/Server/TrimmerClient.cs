@@ -270,11 +270,15 @@ public class TrimmerClient
 
     // ------ Client ------
 
+    const int MaxMessageLength = 100 * 1024;
+    const byte MessageEnd = (byte)'\n';
+
     TcpClient client;
     bool helloReceived;
     string clientHello;
     NetworkStream stream;
-    byte[] readBuffer = new byte[2048];
+    byte[] readBuffer = new byte[MaxMessageLength];
+    int readPosition;
 
     CommandResult onConnect;
     Queue<CommandResult> handlers = new Queue<CommandResult>();
@@ -309,6 +313,7 @@ public class TrimmerClient
             var data = Common.Encode(clientHello);
             stream.Write(data, 0, data.Length);
 
+            readPosition = 0;
             stream.BeginRead(readBuffer, 0, readBuffer.Length, OnDataReceived, null);
         } catch (ObjectDisposedException) {
             // Client was closed
@@ -323,8 +328,23 @@ public class TrimmerClient
             return;
         
         try {
-            var message = Common.Decode(readBuffer, stream.EndRead(ar));
+            var readLength = stream.EndRead(ar);
+            if (readLength == 0) {
+                Debug.Log("TrimmerClient: Stream closed");
+                Disconnect();
+                return;
+            }
 
+            var messageEnd = Array.IndexOf(readBuffer, MessageEnd, readPosition, readLength);
+            if (messageEnd < 0) {
+                // Wait for end of message
+                readPosition += readLength;
+                stream.BeginRead(readBuffer, readPosition, readBuffer.Length - readPosition, OnDataReceived, null);
+                return;
+            }
+            
+            // Handle message
+            var message = Common.Decode(readBuffer, 0, messageEnd);
             if (!helloReceived) {
                 if (!message.StartsWith(ServerHello)) {
                     // Server sent wrong hello
@@ -352,7 +372,16 @@ public class TrimmerClient
                 }
             }
 
-            stream.BeginRead(readBuffer, 0, readBuffer.Length, OnDataReceived, null);
+            // Handle possible remainder message
+            var remaining = (readPosition + readLength) - (messageEnd + 1);
+            if (remaining > 0) {
+                Array.Copy(readBuffer, messageEnd + 1, readBuffer, 0, remaining);
+                readPosition = remaining;
+            } else {
+                readPosition = 0;
+            }
+
+            stream.BeginRead(readBuffer, readPosition, readBuffer.Length - readPosition, OnDataReceived, null);
         } catch (ObjectDisposedException) {
             // Client was closed
         } catch (Exception e) {
@@ -367,7 +396,14 @@ public class TrimmerClient
         }
 
         try {
-            var data = Common.Encode(command + " " + arguments);
+            var data = Common.Encode(command + " " + arguments + "\n");
+            
+            var endIndex = Array.IndexOf(data, MessageEnd);
+            if (endIndex != data.Length - 1) {
+                Debug.LogError($"TrimmerClient: Message cannot contain a newlines (found at index {endIndex})");
+                return;
+            }
+
             stream.Write(data, 0, data.Length);
             handlers.Enqueue(handler);
         } catch (Exception e) {
