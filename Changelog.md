@@ -1,5 +1,15 @@
 # Changelog
 
+### 2.0.0-pre.5 (2022-04-21)
+* Trimmer Server:
+  * Improve using custom commands
+  * Improve handling of long messages
+  * Default to IPv4, add option to use IPv6
+* Added RawFile format option to Zip Distro, this allows to upload a single file
+  with Upload Distro without compressing it first
+* Zip Distro will now also append the version to the root directory inside the
+  created archive if option is enabled
+
 ### 2.0.0-pre.3 (2022-03-15)
 * Fix exception in Editor Profile GUI during play mode (caused by Version Option)
 * iOS Distro: Add option to allow Xcode to register new devices
