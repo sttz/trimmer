@@ -112,6 +112,21 @@ public class TrimmerServer
     bool _isDisoverable = true;
 
     /// <summary>
+    /// The address the server will listen on.
+    /// Defaults to <see cref="IPAddress.Any"/>.
+    /// </summary>
+    public IPAddress ServerAddress {
+        get {
+            return _serverAddress;
+        }
+        set {
+            if (IsRunning) throw new InvalidOperationException();
+            _serverAddress = value;
+        }
+    }
+    IPAddress _serverAddress = IPAddress.Any;
+
+    /// <summary>
     /// The port the server is listening on.
     /// </summary>
     public int ServerPort {
@@ -257,7 +272,7 @@ public class TrimmerServer
     {
         EndDiscoverable();
 
-        var endPoint = new IPEndPoint(IPAddress.IPv6Any, ServerPort);
+        var endPoint = new IPEndPoint(ServerAddress, ServerPort);
         announcer = new UdpClient(endPoint);
         announcer.BeginReceive(OnDiscoverData, null);
 
@@ -278,7 +293,7 @@ public class TrimmerServer
             return;
 
         try {
-            var endPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+            IPEndPoint endPoint = null;
             var message = Common.Decode(announcer.EndReceive(ar, ref endPoint));
             // Only respond to expected hello message
             if (message.StartsWith(ClientHello)) {
@@ -309,8 +324,7 @@ public class TrimmerServer
 
     void StartServer()
     {
-        Debug.Log("StartServer " + ServerPort + " / " + IsDiscoverable);
-        var endPoint = new IPEndPoint(IPAddress.IPv6Any, ServerPort);
+        var endPoint = new IPEndPoint(ServerAddress, ServerPort);
         server = new TcpListener(endPoint);
         server.Start();
         server.BeginAcceptTcpClient(OnConnection, null);

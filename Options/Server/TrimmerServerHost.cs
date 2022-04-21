@@ -16,14 +16,16 @@ namespace sttz.Trimmer.Options
 public class TrimmerServerHost : MonoBehaviour
 {
     public int serverPort;
+    public bool ipv6;
     public bool isDiscoverable;
 
     public TrimmerServer Server { get; set; }
 
-    public void CreateServer(int serverPort, bool isDiscoverable)
+    public void CreateServer(int serverPort, bool isDiscoverable, bool ipv6)
     {
         Server = new TrimmerServer();
         Server.ServerPort = serverPort;
+        Server.ServerAddress = (ipv6 ? System.Net.IPAddress.IPv6Any : System.Net.IPAddress.Any);
         Server.IsDiscoverable = isDiscoverable;
         if (isActiveAndEnabled) {
             Server.Start();
@@ -33,7 +35,7 @@ public class TrimmerServerHost : MonoBehaviour
     void OnEnable()
     {
         if (Server == null && serverPort > 0) {
-            CreateServer(serverPort, isDiscoverable);
+            CreateServer(serverPort, isDiscoverable, ipv6);
         }
 
         if (Server != null) {

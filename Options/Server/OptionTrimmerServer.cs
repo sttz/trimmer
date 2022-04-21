@@ -33,7 +33,11 @@ public class OptionTrimmerServer : OptionToggle
         if (host != null) {
             host.enabled = Value;
             if (Value && host.Server == null) {
-                host.CreateServer(GetChild<OptionServerPort>().Value, GetChild<OptionDiscoverable>().Value);
+                host.CreateServer(
+                    GetChild<OptionServerPort>().Value, 
+                    GetChild<OptionDiscoverable>().Value,
+                    GetChild<OptionIPV6>().Value
+                );
             }
         }
     }
@@ -52,6 +56,7 @@ public class OptionTrimmerServer : OptionToggle
         if (host != null) {
             host.enabled = Value;
             host.serverPort = GetChild<OptionServerPort>().Value;
+            host.ipv6 = GetChild<OptionIPV6>().Value;
             host.isDiscoverable = GetChild<OptionDiscoverable>().Value;
         }
     }
@@ -71,6 +76,14 @@ public class OptionTrimmerServer : OptionToggle
         override protected void Configure()
         {
             DefaultValue = 21076;
+        }
+    }
+
+    public class OptionIPV6 : OptionToggle
+    {
+        override protected void Configure()
+        {
+            DefaultValue = false;
         }
     }
 
