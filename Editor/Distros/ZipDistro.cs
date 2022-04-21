@@ -132,14 +132,35 @@ public class ZipDistro : DistroBase
         return path;
     }
 
-    protected string GetPrettyName(BuildTarget target)
+    protected string GetPrettyName(BuildPath buildPath, string fallback = null)
     {
+        string prettyName = fallback;
         foreach (var name in prettyNames) {
-            if (name.target == target) {
-                return name.name;
+            if (name.target == buildPath.target) {
+                prettyName = name.name;
+                break;
             }
         }
-        return null;
+
+        if (appendVersion) {
+            var versionSuffix = "";
+            var buildInfo = BuildInfo.FromPath(buildPath.path);
+            if (buildInfo != null) {
+                if (!buildInfo.version.IsDefined) {
+                    Debug.LogWarning("ZipDistro: build.json exists but contains no version");
+                } else {
+                    versionSuffix = " " + buildInfo.version.MajorMinorPatch;
+                }
+            }
+
+            if (versionSuffix.Length == 0) {
+                versionSuffix = " " + Application.version;
+            }
+
+            prettyName += versionSuffix;
+        }
+
+        return prettyName;
     }
 
     protected async Task<IEnumerable<BuildPath>> ZipBuilds(IEnumerable<BuildPath> buildPaths, TaskToken task)
@@ -181,8 +202,6 @@ public class ZipDistro : DistroBase
             }
         }
 
-        var sevenZPath = Get7ZipPath();
-
         // Path can point to executable file but there might be files
         // in the containing directory we need as well
         var basePath = OptionHelper.GetBuildBasePath(path);
@@ -204,31 +223,13 @@ public class ZipDistro : DistroBase
             throw new Exception("ZipDistro: Nothing to ZIP in directory: " + basePath);
         }
 
+        var sevenZPath = Get7ZipPath();
+
         // Determine output path first to make it consistent and use absolute path
         // since the script will be run in a different working directory
-        var prettyName = GetPrettyName(target);
-        if (prettyName == null) {
-            prettyName = Path.GetFileNameWithoutExtension(basePath);
-        }
-
-        var versionSuffix = "";
-        if (appendVersion) {
-            var buildInfo = BuildInfo.FromPath(path);
-            if (buildInfo != null) {
-                if (!buildInfo.version.IsDefined) {
-                    Debug.LogWarning("ZipDistro: build.json exists but contains no version");
-                } else {
-                    versionSuffix = " " + buildInfo.version.MajorMinorPatch;
-                }
-            }
-
-            if (versionSuffix.Length == 0) {
-                versionSuffix = " " + Application.version;
-            }
-        }
-
+        var prettyName = GetPrettyName(buildPath, fallback: Path.GetFileNameWithoutExtension(basePath));
         var extension = FileExtensions[(int)format];
-        var zipName = prettyName + versionSuffix + extension;
+        var zipName = prettyName + extension;
         zipName = zipName.Replace(" ", "_");
 
         var outputPath = Path.Combine(Path.GetDirectoryName(basePath), zipName);
