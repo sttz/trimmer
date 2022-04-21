@@ -203,12 +203,12 @@ public class TrimmerClient
     }
 
     /// <summary>
-    /// Send a raw command to the server.
+    /// Send a custom command to the server.
     /// </summary>
     /// <param name="name">Name of the command</param>
     /// <param name="arguments">Arguments of the command (if any)</param>
     /// <param name="onResult">Result callback</param>
-    public void RawCommand(string name, string arguments, CommandResult onResult)
+    public void CustomCommand(string name, string arguments, CommandResult onResult)
     {
         SendCommand(name, arguments, onResult);
     }

@@ -32,8 +32,9 @@ public class OptionTrimmerServer : OptionToggle
         var host = OptionHelper.GetSingleton<TrimmerServerHost>(Value);
         if (host != null) {
             host.enabled = Value;
-            host.serverPort = GetChild<OptionServerPort>().Value;
-            host.isDiscoverable = GetChild<OptionDiscoverable>().Value;
+            if (Value && host.Server == null) {
+                host.CreateServer(GetChild<OptionServerPort>().Value, GetChild<OptionDiscoverable>().Value);
+            }
         }
     }
 

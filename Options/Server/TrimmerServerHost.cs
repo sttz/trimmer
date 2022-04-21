@@ -18,31 +18,37 @@ public class TrimmerServerHost : MonoBehaviour
     public int serverPort;
     public bool isDiscoverable;
 
-    TrimmerServer server;
+    public TrimmerServer Server { get; set; }
 
-    void OnEnable()
+    public void CreateServer(int serverPort, bool isDiscoverable)
     {
-        if (server != null) {
-            server.Start();
+        Server = new TrimmerServer();
+        Server.ServerPort = serverPort;
+        Server.IsDiscoverable = isDiscoverable;
+        if (isActiveAndEnabled) {
+            Server.Start();
         }
     }
 
-    void Start()
+    void OnEnable()
     {
-        server = new TrimmerServer();
-        server.ServerPort = serverPort;
-        server.IsDiscoverable = isDiscoverable;
-        server.Start();
+        if (Server == null && serverPort > 0) {
+            CreateServer(serverPort, isDiscoverable);
+        }
+
+        if (Server != null) {
+            Server.Start();
+        }
     }
 
     void OnDisable()
     {
-        server.Stop();
+        Server.Stop();
     }
 
     void Update()
     {
-        server.Update();
+        Server.Update();
     }
 }
 
