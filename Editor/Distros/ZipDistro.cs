@@ -77,7 +77,8 @@ public class ZipDistro : DistroBase
         Tar,      // Uncompressed Tar
         Wim,      // Windows Imaging Format
         TXZ,      // XZ in Tar
-        Zip       // Zip
+        Zip,      // Zip
+        RawFile,  // Uncompressed (only supported for single files)
     }
 
     /// <summary>
@@ -192,6 +193,22 @@ public class ZipDistro : DistroBase
 
         if (!File.Exists(path) && !Directory.Exists(path)) {
             throw new Exception("ZipDistro: Path to compress does not exist: " + path);
+        }
+
+        // Pass-through build artifact for RawFile format
+        if (format == CompressionFormat.RawFile) {
+            if (!File.Exists(path)) {
+                throw new Exception("ZipDistro: Format RawFile only supports build targets with a single output file: " + path);
+            }
+            var prettySingleName = GetPrettyName(buildPath);
+            if (prettySingleName != null) {
+                var originalExtension = Path.GetExtension(path);
+                var directory = Path.GetDirectoryName(path);
+                var newPath = Path.Combine(directory, prettySingleName + originalExtension);
+                File.Move(path, newPath);
+                buildPath.path = newPath;
+            }
+            return buildPath;
         }
 
         if (ZipIgnorePatterns == null) {
