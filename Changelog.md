@@ -1,5 +1,8 @@
 # Changelog
 
+### 2.0.0-pre.6 (2022-05-18)
+* Zip Distro: Add rule to exclude new name of Burst debug info folder (*_BurstDebugInformation_DoNotShip)
+
 ### 2.0.0-pre.5 (2022-04-21)
 * Trimmer Server:
   * Improve using custom commands
