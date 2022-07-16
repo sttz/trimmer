@@ -206,6 +206,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         // Prepare build
         var options = GetDefaultOptions(EditorUserBuildSettings.activeBuildTarget);
         currentProfile = buildProfile;
+        currentTarget = options.target;
 
         // Run options' PrepareBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
@@ -244,6 +245,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         BuildType = TrimmerBuildType.BuildWindow;
 
         currentProfile = EditorProfile.Instance.ActiveProfile;
+        currentTarget = options.target;
 
         AddScriptingDefineSymbols(currentProfile, ref options);
 
@@ -260,6 +262,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         Debug.LogWarning($"Trimmer: Build started using a unsupported method, some Trimmer features will not work.");
 
         currentProfile = EditorProfile.Instance.ActiveProfile;
+        currentTarget = target;
 
         // We can only react when the build has already started and cannot
         // edit BuildPlayerOptions.extraScriptingDefines, so we have to
@@ -452,6 +455,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         // Prepare build
         BuildType = TrimmerBuildType.Profile;
         currentProfile = buildProfile;
+        currentTarget = options.target;
 
         // Add Trimmer scripting define symbols
         AddScriptingDefineSymbols(buildProfile, ref options);
@@ -521,6 +525,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         }
 
         currentProfile = null;
+        currentTarget = BuildTarget.NoTarget;
         OptionHelper.currentBuildOptions = default;
         return report;
     }
@@ -556,6 +561,10 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// The build profile used for the current build.
     /// </summary>
     static BuildProfile currentProfile;
+    /// <summary>
+    /// 
+    /// </summary>
+    static BuildTarget currentTarget = BuildTarget.NoTarget;
 
     /// <summary>
     /// Create and configure the <see cref="ProfileContainer"/> during the build.
@@ -802,9 +811,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         // Inject profile container into first scene
         InjectProfileContainer(scene);
 
+        // In an Addressables build, report is null
+        var target = (report != null ? report.summary.platform : currentTarget);
+
         // Inject profile and call PostprocessScene, Apply() isn't called during build
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, report.summary.platform);
+            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PostprocessScene(scene, inclusion);
