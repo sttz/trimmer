@@ -339,6 +339,11 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             }
         }
 
+        // Throw if command line build failed to cause non-zero exit code
+        if (Application.isBatchMode && onComplete == null) {
+            onComplete = ScriptableObject.CreateInstance<CommandLineBuildsCompleteListener>();
+        }
+
         BuildProfile profile = null;
         if (Application.isBatchMode && profileName != null) {
             profile = BuildProfile.Find(profileName);
@@ -367,11 +372,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             }
             profile = EditorProfile.Instance.ActiveProfile;
             Debug.Log("Building active profile.");
-        }
-
-        // Throw if command line build failed to cause non-zero exit code
-        if (Application.isBatchMode && onComplete == null) {
-            onComplete = ScriptableObject.CreateInstance<CommandLineBuildsCompleteListener>();
         }
 
         BuildRunner.Job[] jobs;
