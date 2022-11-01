@@ -108,6 +108,7 @@ public class ZipDistro : DistroBase
         "Thumbs.db",
         "desktop.ini",
         "*_BackUpThisFolder_ButDontShipItWithYourGame",
+        "*_BurstDebugInformation_DoNotShip",
         BuildInfo.DEFAULT_NAME
     };
     static Regex[] ZipIgnorePatterns;
