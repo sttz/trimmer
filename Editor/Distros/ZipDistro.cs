@@ -134,11 +134,16 @@ public class ZipDistro : DistroBase
 
     protected string Get7ZipPath()
     {
-        var path = Path.Combine(EditorApplication.applicationContentsPath, "Tools/7za");
-        if (!File.Exists(path)) {
-            throw new Exception("ZipDistro: Could not find 7za bundled with Unity at path: " + path);
+        var toolsPath = Path.Combine(EditorApplication.applicationContentsPath, "Tools");
+        foreach (var name in SevenZipNames) {
+            var path = Path.Combine(toolsPath, name);
+
+            if (File.Exists(path)) {
+                return path;
+            }
         }
-        return path;
+
+        throw new FileNotFoundException($"ZipDistro: Could not find Unity's bundled 7zip executable within {toolsPath}");
     }
 
     protected string GetPrettyName(BuildTarget target)
