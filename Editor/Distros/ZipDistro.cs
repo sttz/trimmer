@@ -123,6 +123,15 @@ public class ZipDistro : DistroBase
         ".zip"
     };
 
+    static readonly string[] SevenZipNames = new string[] {
+        "7z",
+        "7z.exe",
+        "7za",
+        "7za.exe",
+        "7zr",
+        "7zr.exe"
+    };
+
     protected string Get7ZipPath()
     {
         var path = Path.Combine(EditorApplication.applicationContentsPath, "Tools/7za");
