@@ -6,6 +6,7 @@
 #if UNITY_EDITOR && TRIMMER_ADDRESSABLES
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using sttz.Trimmer.BaseOptions;
 using UnityEditor.Build.Reporting;
@@ -76,6 +77,32 @@ public class OptionBuildAddressables : OptionToggle
         protected override void Configure()
         {
             DefaultValue = null;
+        }
+    }
+    
+    /// <summary>
+    /// Option to enable output from <see cref="UnityEngine.AddressableAssets.Addressables.Log"/>
+    /// and its cohorts.
+    /// </summary>
+    /// <remarks>
+    /// This option specifically sets or clears the <c>ADDRESSABLES_LOG_ALL</c> compilation symbol.
+    /// If it's defined by other means, this option will not remove it.
+    /// </remarks>
+    public class OptionLogAllOutput : OptionToggle
+    {
+        const string Symbol = "ADDRESSABLES_LOG_ALL";
+
+        protected override void Configure()
+        {
+            DefaultValue = false;
+        }
+
+        public override void GetScriptingDefineSymbols(OptionInclusion inclusion, HashSet<string> symbols)
+        {
+            base.GetScriptingDefineSymbols(inclusion, symbols);
+
+            if (Value)
+                symbols.Add(Symbol);
         }
     }
 
