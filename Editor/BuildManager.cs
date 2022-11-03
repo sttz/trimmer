@@ -803,8 +803,10 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         InjectProfileContainer(scene);
 
         // Inject profile and call PostprocessScene, Apply() isn't called during build
-        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, report.summary.platform);
+        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder))
+        {
+            var targetPlatform = report?.summary.platform ?? BuildRunner.Current.CurrentJob.target;
+            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, targetPlatform);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PostprocessScene(scene, inclusion);
