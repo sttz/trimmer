@@ -234,26 +234,28 @@ public class OptionBuildAddressables : OptionToggle
             AddressableAssetSettings.BuildPlayerContent(out result);
 
             // Copy relevant logs to the build directory for easier analysis, if requested
-            var localBuildPath = settings.RemoteCatalogBuildPath.GetValue(settings);
-            if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
-                // Copy the build timeline to the output directory
-                const string BuildTimelineFilename = "AddressablesBuildTEP.json";
-                var buildTimelineSource = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
+            var localBuildPath = settings.RemoteCatalogBuildPath?.GetValue(settings);
+            if (localBuildPath != null) { // little bit of insurance against a malformed settings file
+                if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
+                    // Copy the build timeline to the output directory
+                    const string BuildTimelineFilename = "AddressablesBuildTEP.json";
+                    var buildTimelineSource = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
 
-                if (IOFile.Exists(buildTimelineSource)) {
-                    var buildTimelineDestination = IOPath.Combine(localBuildPath, BuildTimelineFilename);
-                    File.Copy(buildTimelineSource, buildTimelineDestination);
+                    if (IOFile.Exists(buildTimelineSource)) {
+                        var buildTimelineDestination = IOPath.Combine(localBuildPath, BuildTimelineFilename);
+                        File.Copy(buildTimelineSource, buildTimelineDestination);
+                    }
                 }
-            }
 
-            if (GetChild<OptionCopyBuildLayoutToOutputDirectory>() is { Value: true }) {
-                // Copy the build layout to the output directory
-                const string BuildLayoutFilename = "buildlayout.txt"; 
-                var buildLayoutSource = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
+                if (GetChild<OptionCopyBuildLayoutToOutputDirectory>() is { Value: true }) {
+                    // Copy the build layout to the output directory
+                    const string BuildLayoutFilename = "buildlayout.txt"; 
+                    var buildLayoutSource = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
 
-                if (IOFile.Exists(buildLayoutSource)) {
-                    var buildLayoutDestination = IOPath.Combine(localBuildPath, BuildLayoutFilename);
-                    File.Copy(buildLayoutSource, buildLayoutDestination);
+                    if (IOFile.Exists(buildLayoutSource)) {
+                        var buildLayoutDestination = IOPath.Combine(localBuildPath, BuildLayoutFilename);
+                        File.Copy(buildLayoutSource, buildLayoutDestination);
+                    }
                 }
             }
         } finally {
