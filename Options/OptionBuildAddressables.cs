@@ -131,7 +131,8 @@ public class OptionBuildAddressables : OptionToggle
     }
 
     /// <summary>
-    /// Option to copy certain Addressables-related build logs into the output directory.
+    /// Option to copy the generated build timeline to the output directory
+    /// to simplify analysis later.
     /// </summary>
     /// <remarks>
     /// Addressables exposes a detailed timeline of its build process through
@@ -139,7 +140,7 @@ public class OptionBuildAddressables : OptionToggle
     /// This file is overwritten with each Addressables build,
     /// which can complicate analysis if your project involves multiple build profiles.
     /// This option, if enabled, will copy the aforementioned file
-    /// to the location given by TODO
+    /// to the directory given by <see cref="AddressableAssetSettings.RemoteCatalogBuildPath"/>.
     /// </remarks>
     /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
     public class OptionCopyBuildTimelineToOutputDirectory : OptionToggle
@@ -151,17 +152,23 @@ public class OptionBuildAddressables : OptionToggle
     }
     
     /// <summary>
-    /// Option to copy certain Addressables-related build logs into the output directory.
+    /// Option to copy the generated build layout to the output directory
+    /// to simplify analysis later.
     /// </summary>
     /// <remarks>
-    /// Addressables exposes a detailed timeline of its build process through
-    /// a file located at <c>Library/com.unity.addressables/AddressablesBuildTEP.json</c>.
+    /// <para>
+    /// Addressables provides a detailed layout of the asset bundles it produces in
+    /// a file located at <c>Library/com.unity.addressables/buildlayout.txt</c>.
     /// This file is overwritten with each Addressables build,
     /// which can complicate analysis if your project involves multiple build profiles.
     /// This option, if enabled, will copy the aforementioned file
-    /// to the location given by TODO
+    /// to the directory given by <see cref="AddressableAssetSettings.RemoteCatalogBuildPath"/>.
+    /// </para>
+    /// <para>
+    /// If build layouts are disabled, this option will do nothing.
+    /// </para>
     /// </remarks>
-    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
+    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildLayoutReport"/>
     public class OptionCopyBuildLayoutToOutputDirectory : OptionToggle
     {
         protected override void Configure()
@@ -226,6 +233,7 @@ public class OptionBuildAddressables : OptionToggle
             // Build!
             AddressableAssetSettings.BuildPlayerContent(out result);
 
+            // Copy relevant logs to the build directory for easier analysis, if requested
             var localBuildPath = settings.RemoteCatalogBuildPath.GetValue(settings);
             if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
                 // Copy the build timeline to the output directory
