@@ -458,8 +458,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         currentProfile = buildProfile;
         currentTarget = options.target;
 
-        try
-        {
+        try {
             // Add Trimmer scripting define symbols
             AddScriptingDefineSymbols(buildProfile, ref options);
 
@@ -470,8 +469,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
                 options = option.PrepareBuild(options, inclusion);
             }
         }
-        catch (Exception)
-        {
+        catch (Exception) {
             OnBuildError(null);
             throw;
         }
