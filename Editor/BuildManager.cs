@@ -15,6 +15,7 @@ using UnityEditor.Callbacks;
 using UnityEditor.Build;
 using UnityEngine.SceneManagement;
 using System.Reflection;
+using JetBrains.Annotations;
 using sttz.Trimmer.Extensions;
 using UnityEditor.Build.Reporting;
 
@@ -457,25 +458,35 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         currentProfile = buildProfile;
         currentTarget = options.target;
 
-        // Add Trimmer scripting define symbols
-        AddScriptingDefineSymbols(buildProfile, ref options);
+        try
+        {
+            // Add Trimmer scripting define symbols
+            AddScriptingDefineSymbols(buildProfile, ref options);
 
-        // Run options' PrepareBuild
-        foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, options.target);
-            options = option.PrepareBuild(options, inclusion);
+            // Run options' PrepareBuild
+            foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
+                if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
+                var inclusion = buildProfile == null ? OptionInclusion.Remove : buildProfile.GetInclusionOf(option, options.target);
+                options = option.PrepareBuild(options, inclusion);
+            }
+        }
+        catch (Exception)
+        {
+            OnBuildError(null);
+            throw;
         }
 
         // Ask for location if none has been set
         if (string.IsNullOrEmpty(options.locationPathName)) {
             if (Application.isBatchMode) {
                 // Cannot pick path in batch mode
+                OnBuildError(null);
                 throw new Exception($"Trimmer: No build path set by profile or in build player options.");
             } else {
                 options.locationPathName = PickBuildLocation(options.target);
                 if (string.IsNullOrEmpty(options.locationPathName)) {
                     Debug.Log("Cancelled build location dialog");
+                    OnBuildError(null); // Arguably not an error here, but there might still be some cleanup to do
                     return null;
                 }
             }
@@ -766,7 +777,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     }
     
     // Unfortunately not a proper Unity event
-    public static void OnBuildError(BuildReport report)
+    public static void OnBuildError([CanBeNull] BuildReport report)
     {
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
@@ -778,11 +789,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             }
         }
 
-        RestoreScriptingDefineSymbolsInPlayerSettings(report.summary.platform);
+        var target = (report != null ? report.summary.platform : currentTarget);
+        RestoreScriptingDefineSymbolsInPlayerSettings(target);
         OptionHelper.currentBuildOptions = default;
         BuildType = TrimmerBuildType.None;
 
-        Debug.LogError(string.Format("Trimmer: Build failed for platform {0}", report.summary.platform));
+        Debug.LogError($"Trimmer: Build failed for platform {target}");
     }
 
     public void OnPostprocessBuild(BuildReport report)
@@ -802,7 +814,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         BuildType = TrimmerBuildType.None;
     }
 
-    public void OnProcessScene(Scene scene, BuildReport report)
+    public void OnProcessScene(Scene scene, [CanBeNull] BuildReport report)
     {
         // OnProcessScene is also called when playing in the editor
         if (!BuildPipeline.isBuildingPlayer)
