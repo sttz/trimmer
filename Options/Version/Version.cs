@@ -187,7 +187,7 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
         if (obj is Version) {
             return CompareTo((Version)obj);
         } else {
-            throw new ArgumentException("Argument is not a Version instance.", "obj");
+            throw new ArgumentException("Argument is not a Version instance.", nameof(obj));
         }
     }
 

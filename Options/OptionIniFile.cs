@@ -86,7 +86,7 @@ public class OptionIniFile : OptionString
             return;
         }
 
-        Debug.Log("Loading ini file: " + path);
+        Debug.Log("Loading Ini file: " + path);
 
         var data = File.ReadAllText(path);
         IniAdapter.Load(RuntimeProfile.Main.Store, data);

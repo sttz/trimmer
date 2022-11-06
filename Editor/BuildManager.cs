@@ -141,7 +141,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         // string SaveBuildPanel(BuildTarget target, string title, string directory, string defaultName, string extension, out bool updateExistingBuild)
         var method = typeof(EditorUtility).GetMethod("SaveBuildPanel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
         if (method == null) {
-            Debug.LogError("Could no find SaveBuildPanel method on EditorUtility class.");
+            Debug.LogError("Could not find SaveBuildPanel method on EditorUtility class.");
             return null;
         }
 
@@ -259,7 +259,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     {
         BuildType = TrimmerBuildType.NonTrimmer;
 
-        Debug.LogWarning($"Trimmer: Build started using a unsupported method, some Trimmer features will not work.");
+        Debug.LogWarning($"Trimmer: Build started using an unsupported method, some Trimmer features will not work.");
 
         currentProfile = EditorProfile.Instance.ActiveProfile;
         currentTarget = target;
@@ -348,7 +348,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         if (Application.isBatchMode && profileName != null) {
             profile = BuildProfile.Find(profileName);
             if (profile == null) {
-                var err = "Build profile named '" + profileName + "' cloud not be found.";
+                var err = "Build profile named '" + profileName + "' could not be found.";
                 if (onComplete != null) {
                     onComplete.OnComplete(false, new[] { ProfileBuildResult.Error(null, err) });
                 } else {
