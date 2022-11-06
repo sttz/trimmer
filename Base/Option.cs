@@ -16,6 +16,7 @@ using sttz.Trimmer.Extensions;
 using System.Diagnostics;
 
 #if UNITY_EDITOR
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 #endif
@@ -589,8 +590,12 @@ public abstract class Option
     /// > [!NOTE]
     /// > This method is only available in the editor.
     /// </remarks>
-    /// <param name="report">Unity's build report</param>
-    public virtual void OnBuildError(BuildReport report)
+    /// <param name="report">
+    /// The build report that Unity provided,
+    /// or <see langword="null"/> if the build failed before
+    /// the player itself could be compiled.
+    /// </param>
+    public virtual void OnBuildError([CanBeNull] BuildReport report)
     {
         if (variants != null) {
             foreach (var variant in variants) {
