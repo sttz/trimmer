@@ -139,15 +139,16 @@ public class OptionBuildAddressables : OptionToggle
     /// a file located at <c>Library/com.unity.addressables/AddressablesBuildTEP.json</c>.
     /// This file is overwritten with each Addressables build,
     /// which can complicate analysis if your project involves multiple build profiles.
-    /// This option, if enabled, will copy the aforementioned file
-    /// to the directory given by <see cref="AddressableAssetSettings.RemoteCatalogBuildPath"/>.
+    /// This option, if not empty, will copy the aforementioned file
+    /// to the directory given by the value,
+    /// as resolved by the profile.
     /// </remarks>
     /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
-    public class OptionCopyBuildTimelineToOutputDirectory : OptionToggle
+    public class OptionCopyBuildTimelineToOutputDirectory : OptionString
     {
         protected override void Configure()
         {
-            DefaultValue = false;
+            DefaultValue = AddressableAssetSettings.kLocalBuildPathValue;
         }
     }
     
@@ -161,19 +162,20 @@ public class OptionBuildAddressables : OptionToggle
     /// a file located at <c>Library/com.unity.addressables/buildlayout.txt</c>.
     /// This file is overwritten with each Addressables build,
     /// which can complicate analysis if your project involves multiple build profiles.
-    /// This option, if enabled, will copy the aforementioned file
-    /// to the directory given by <see cref="AddressableAssetSettings.RemoteCatalogBuildPath"/>.
+    /// This option, if not empty, will copy the aforementioned file
+    /// to the directory given by the value,
+    /// as resolved by the profile.
     /// </para>
     /// <para>
     /// If build layouts are disabled, this option will do nothing.
     /// </para>
     /// </remarks>
     /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildLayoutReport"/>
-    public class OptionCopyBuildLayoutToOutputDirectory : OptionToggle
+    public class OptionCopyBuildLayoutToOutputDirectory : OptionString
     {
         protected override void Configure()
         {
-            DefaultValue = false;
+            DefaultValue = AddressableAssetSettings.kLocalBuildPathValue;
         }
     }
 
@@ -234,29 +236,16 @@ public class OptionBuildAddressables : OptionToggle
             AddressableAssetSettings.BuildPlayerContent(out result);
 
             // Copy relevant logs to the build directory for easier analysis, if requested
-            var localBuildPath = settings.RemoteCatalogBuildPath?.GetValue(settings);
-            if (localBuildPath != null) { // little bit of insurance against a malformed settings file
-                if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
-                    // Copy the build timeline to the output directory
-                    const string BuildTimelineFilename = "AddressablesBuildTEP.json";
-                    var buildTimelineSource = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
+            var buildTimelineDestinationExpression = GetChild<OptionCopyBuildTimelineToOutputDirectory>()?.Value;
+            if (!string.IsNullOrEmpty(buildTimelineDestinationExpression))
+            {
+                CopyBuildLogFile(settings, "AddressablesBuildTEP.json", buildTimelineDestinationExpression);
+            }
 
-                    if (IOFile.Exists(buildTimelineSource)) {
-                        var buildTimelineDestination = IOPath.Combine(localBuildPath, BuildTimelineFilename);
-                        File.Copy(buildTimelineSource, buildTimelineDestination);
-                    }
-                }
-
-                if (GetChild<OptionCopyBuildLayoutToOutputDirectory>() is { Value: true }) {
-                    // Copy the build layout to the output directory
-                    const string BuildLayoutFilename = "buildlayout.txt"; 
-                    var buildLayoutSource = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
-
-                    if (IOFile.Exists(buildLayoutSource)) {
-                        var buildLayoutDestination = IOPath.Combine(localBuildPath, BuildLayoutFilename);
-                        File.Copy(buildLayoutSource, buildLayoutDestination);
-                    }
-                }
+            var buildLayoutDestinationExpression = GetChild<OptionCopyBuildLayoutToOutputDirectory>()?.Value;
+            if (!string.IsNullOrEmpty(buildLayoutDestinationExpression))
+            {
+                CopyBuildLogFile(settings, "buildlayout.txt", buildLayoutDestinationExpression);
             }
         } finally {
             // Restore overrides
@@ -276,6 +265,17 @@ public class OptionBuildAddressables : OptionToggle
         }
 
         Debug.Log($"Built {result.LocationCount} Addressable assets in {result.Duration}s to {result.OutputPath}");
+    }
+
+    void CopyBuildLogFile(AddressableAssetSettings settings, string fileName, string destination)
+    {
+        var sourcePath = IOPath.Combine(Addressables.LibraryPath, fileName);
+
+        if (IOFile.Exists(sourcePath))
+        {
+            var destinationPath = settings.profileSettings.EvaluateString(settings.activeProfileId, destination);
+            File.Copy(sourcePath, IOPath.Combine(destinationPath, fileName));
+        }
     }
 }
 
