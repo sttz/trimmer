@@ -74,7 +74,7 @@ public class ProfileContainer : MonoBehaviour
     public T GetReference<T>(string guid) where T : Object
     {
         if (referenceGUIDs == null || references == null || referenceGUIDs.Count != references.Count) {
-            Debug.LogError($"ProfileContainer.GetReference referenceGUIDs/references null or mismatched");
+            Debug.LogError("ProfileContainer.GetReference referenceGUIDs/references properties are null or have different lengths");
             return null;
         }
         

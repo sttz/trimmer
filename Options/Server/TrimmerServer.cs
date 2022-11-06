@@ -102,14 +102,14 @@ public class TrimmerServer
     /// </summary>
     public bool IsDiscoverable {
         get {
-            return _isDisoverable;
+            return _isDiscoverable;
         }
         set {
             if (IsRunning) throw new InvalidOperationException();
-            _isDisoverable = value;
+            _isDiscoverable = value;
         }
     }
-    bool _isDisoverable = true;
+    bool _isDiscoverable = true;
 
     /// <summary>
     /// The address the server will listen on.

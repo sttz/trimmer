@@ -86,7 +86,7 @@ public class BuildInfo
             var json = File.ReadAllText(jsonPath);
             return FromJson(json);
         } catch (Exception e) {
-            Debug.LogError("Failed to read BuildInfo form path '" + jsonPath + "': " + e.Message);
+            Debug.LogError("Failed to read BuildInfo from path '" + jsonPath + "': " + e.Message);
             return null;
         }
     }
