@@ -82,13 +82,14 @@ public class OptionBuildAddressables : OptionToggle
     
     /// <summary>
     /// Option to enable output from <see cref="UnityEngine.AddressableAssets.Addressables.Log"/>
-    /// and its cohorts.
+    /// and its cohorts at runtime,
+    /// including in player builds.
     /// </summary>
     /// <remarks>
-    /// This option specifically sets or clears the <c>ADDRESSABLES_LOG_ALL</c> compilation symbol.
+    /// This option sets the <c>ADDRESSABLES_LOG_ALL</c> compilation symbol.
     /// If it's defined by other means, this option will not remove it.
     /// </remarks>
-    public class OptionLogAllOutput : OptionToggle
+    public class OptionEnableRuntimeLogging : OptionToggle
     {
         const string Symbol = "ADDRESSABLES_LOG_ALL";
 
