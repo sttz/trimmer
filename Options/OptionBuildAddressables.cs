@@ -10,13 +10,13 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using sttz.Trimmer.BaseOptions;
-using UnityEditor.Build.Reporting;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets;
 using UnityEditor.Build;
 using UnityEditor;
 using UnityEngine.AddressableAssets;
+using IOFile = System.IO.File;
 using IOPath = System.IO.Path;
 
 namespace sttz.Trimmer.Options
@@ -226,24 +226,27 @@ public class OptionBuildAddressables : OptionToggle
             // Build!
             AddressableAssetSettings.BuildPlayerContent(out result);
 
+            var localBuildPath = settings.RemoteCatalogBuildPath.GetValue(settings);
             if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
                 // Copy the build timeline to the output directory
-                const string BuildTimelineFilename = "AddressablesBuildTEP.json"; 
-                var buildLogLibraryPath = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
-                var localBuildPath = settings.profileSettings.GetValueByName(settings.activeProfileId, AddressableAssetSettings.kLocalBuildPath);
-                var localBuildPathResolved = settings.profileSettings.EvaluateString(settings.activeProfileId, localBuildPath);
-                var buildLogDataPath = IOPath.Combine(localBuildPathResolved, BuildTimelineFilename);
-                File.Copy(buildLogLibraryPath, buildLogDataPath);
+                const string BuildTimelineFilename = "AddressablesBuildTEP.json";
+                var buildTimelineSource = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
+
+                if (IOFile.Exists(buildTimelineSource)) {
+                    var buildTimelineDestination = IOPath.Combine(localBuildPath, BuildTimelineFilename);
+                    File.Copy(buildTimelineSource, buildTimelineDestination);
+                }
             }
-            
+
             if (GetChild<OptionCopyBuildLayoutToOutputDirectory>() is { Value: true }) {
-                // Copy the build timeline to the output directory
+                // Copy the build layout to the output directory
                 const string BuildLayoutFilename = "buildlayout.txt"; 
-                var buildLogLibraryPath = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
-                var localBuildPath = settings.profileSettings.GetValueByName(settings.activeProfileId, AddressableAssetSettings.kLocalBuildPath);
-                var localBuildPathResolved = settings.profileSettings.EvaluateString(settings.activeProfileId, localBuildPath);
-                var buildLogDataPath = IOPath.Combine(localBuildPathResolved, BuildLayoutFilename);
-                File.Copy(buildLogLibraryPath, buildLogDataPath);
+                var buildLayoutSource = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
+
+                if (IOFile.Exists(buildLayoutSource)) {
+                    var buildLayoutDestination = IOPath.Combine(localBuildPath, BuildLayoutFilename);
+                    File.Copy(buildLayoutSource, buildLayoutDestination);
+                }
             }
         } finally {
             // Restore overrides
