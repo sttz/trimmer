@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using sttz.Trimmer.BaseOptions;
 using UnityEditor.Build.Reporting;
@@ -15,6 +16,8 @@ using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets;
 using UnityEditor.Build;
 using UnityEditor;
+using UnityEngine.AddressableAssets;
+using IOPath = System.IO.Path;
 
 namespace sttz.Trimmer.Options
 {
@@ -132,6 +135,46 @@ public class OptionBuildAddressables : OptionToggle
         }
     }
 
+    /// <summary>
+    /// Option to copy certain Addressables-related build logs into the output directory.
+    /// </summary>
+    /// <remarks>
+    /// Addressables exposes a detailed timeline of its build process through
+    /// a file located at <c>Library/com.unity.addressables/AddressablesBuildTEP.json</c>.
+    /// This file is overwritten with each Addressables build,
+    /// which can complicate analysis if your project involves multiple build profiles.
+    /// This option, if enabled, will copy the aforementioned file
+    /// to the location given by TODO
+    /// </remarks>
+    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
+    public class OptionCopyBuildTimelineToOutputDirectory : OptionToggle
+    {
+        protected override void Configure()
+        {
+            DefaultValue = false;
+        }
+    }
+    
+    /// <summary>
+    /// Option to copy certain Addressables-related build logs into the output directory.
+    /// </summary>
+    /// <remarks>
+    /// Addressables exposes a detailed timeline of its build process through
+    /// a file located at <c>Library/com.unity.addressables/AddressablesBuildTEP.json</c>.
+    /// This file is overwritten with each Addressables build,
+    /// which can complicate analysis if your project involves multiple build profiles.
+    /// This option, if enabled, will copy the aforementioned file
+    /// to the location given by TODO
+    /// </remarks>
+    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
+    public class OptionCopyBuildLayoutToOutputDirectory : OptionToggle
+    {
+        protected override void Configure()
+        {
+            DefaultValue = false;
+        }
+    }
+
     override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
     {
         options = base.PrepareBuild(options, inclusion);
@@ -182,6 +225,26 @@ public class OptionBuildAddressables : OptionToggle
 
             // Build!
             AddressableAssetSettings.BuildPlayerContent(out result);
+
+            if (GetChild<OptionCopyBuildTimelineToOutputDirectory>() is { Value: true }) {
+                // Copy the build timeline to the output directory
+                const string BuildTimelineFilename = "AddressablesBuildTEP.json"; 
+                var buildLogLibraryPath = IOPath.Combine(Addressables.LibraryPath, BuildTimelineFilename);
+                var localBuildPath = settings.profileSettings.GetValueByName(settings.activeProfileId, AddressableAssetSettings.kLocalBuildPath);
+                var localBuildPathResolved = settings.profileSettings.EvaluateString(settings.activeProfileId, localBuildPath);
+                var buildLogDataPath = IOPath.Combine(localBuildPathResolved, BuildTimelineFilename);
+                File.Copy(buildLogLibraryPath, buildLogDataPath);
+            }
+            
+            if (GetChild<OptionCopyBuildLayoutToOutputDirectory>() is { Value: true }) {
+                // Copy the build timeline to the output directory
+                const string BuildLayoutFilename = "buildlayout.txt"; 
+                var buildLogLibraryPath = IOPath.Combine(Addressables.LibraryPath, BuildLayoutFilename);
+                var localBuildPath = settings.profileSettings.GetValueByName(settings.activeProfileId, AddressableAssetSettings.kLocalBuildPath);
+                var localBuildPathResolved = settings.profileSettings.EvaluateString(settings.activeProfileId, localBuildPath);
+                var buildLogDataPath = IOPath.Combine(localBuildPathResolved, BuildLayoutFilename);
+                File.Copy(buildLogLibraryPath, buildLogDataPath);
+            }
         } finally {
             
             // Clear intermediate data and restore overrides
