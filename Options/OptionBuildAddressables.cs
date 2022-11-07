@@ -167,7 +167,7 @@ public class OptionBuildAddressables : OptionToggle
     /// as resolved by the profile.
     /// </para>
     /// <para>
-    /// If build layouts are disabled, this option will do nothing.
+    /// If build layout reports are disabled, this option will do nothing.
     /// </para>
     /// </remarks>
     /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildLayoutReport"/>
