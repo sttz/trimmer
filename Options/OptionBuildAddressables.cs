@@ -148,7 +148,7 @@ public class OptionBuildAddressables : OptionToggle
     {
         protected override void Configure()
         {
-            DefaultValue = AddressableAssetSettings.kLocalBuildPathValue;
+            DefaultValue = "[UnityEngine.AddressableAssets.Addressables.BuildPath]";
         }
     }
     
@@ -175,7 +175,7 @@ public class OptionBuildAddressables : OptionToggle
     {
         protected override void Configure()
         {
-            DefaultValue = AddressableAssetSettings.kLocalBuildPathValue;
+            DefaultValue = "[UnityEngine.AddressableAssets.Addressables.BuildPath]";
         }
     }
 
