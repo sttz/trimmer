@@ -635,7 +635,8 @@ public class ProfileEditor : UnityEditor.Editor
         var width = GUILayout.Width(EditorGUIUtility.labelWidth - 4);
 
         var isRoot = (option.Parent == null && !showDefaultVariant);
-        using var indentScope = new EditorGUI.IndentLevelScope(EditorGUI.indentLevel - depth);
+        var lastDepth = EditorGUI.indentLevel;
+        EditorGUI.indentLevel = depth;
 
         if (buildProfile != null && isRoot) {
             optionAvailable = option.IsAvailable(buildProfile.BuildTargets);
@@ -721,10 +722,10 @@ public class ProfileEditor : UnityEditor.Editor
                     EditorGUILayout.PrefixLabel(" ");
                 }
 
-                using (new EditorGUI.IndentLevelScope(-EditorGUI.indentLevel))
-                { // Briefly set indent level to 0
-                    profile.EditOption(option);
-                }
+                var level = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
+                profile.EditOption(option);
+                EditorGUI.indentLevel = level;
 
                 if (!isDefault) {
                     if (GUILayout.Button(GUIContent.none, minusStyle)) {
@@ -740,10 +741,10 @@ public class ProfileEditor : UnityEditor.Editor
                 tempContent.text = displayName;
                 EditorGUILayout.PrefixLabel(tempContent);
 
-                using (new EditorGUI.IndentLevelScope(-EditorGUI.indentLevel))
-                { // Briefly set indent level to 0
-                    profile.EditOption(option);
-                }
+                var level = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
+                profile.EditOption(option);
+                EditorGUI.indentLevel = level;
             }
 
             // Include in build toggle
@@ -787,6 +788,8 @@ public class ProfileEditor : UnityEditor.Editor
                 EditorProfile.Instance.SetExpanded(expansionPath, isExpanded);
             }
         }
+
+        EditorGUI.indentLevel = lastDepth;
 
         return isExpanded;
     }
