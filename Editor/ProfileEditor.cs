@@ -142,7 +142,7 @@ public class ProfileEditor : UnityEditor.Editor
     /// </summary>
     public static bool Foldout(string path, bool def, string content, GUIStyle style = null)
     {
-        EditorGUI.BeginChangeCheck();
+        using var _ = new EditorGUI.ChangeCheckScope();
         
         var wasExpanded = EditorProfile.Instance.IsExpanded(path);
         if (def) wasExpanded = !wasExpanded;
