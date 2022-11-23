@@ -113,19 +113,21 @@ public class ProfileEditor : UnityEditor.Editor
         if (style == null) style = EditorStyles.foldout;
 
         // Wrap foldout into a layout region to get the foldout's rect
-        var rect = EditorGUILayout.BeginHorizontal(GUIStyle.none);
-        var clicked = false;
+        bool newFoldout = false;
+        bool clicked = false;
+        using (var rectScope = new EditorGUILayout.HorizontalScope(GUIStyle.none))
+        {
+            var rect = rectScope.rect;
 
-        // Determine if it is being clicked on the foldout before
-        // calling it to avoid it eating the event
-        if (Event.current.type == EventType.MouseUp
-            && rect.Contains(Event.current.mousePosition)) {
-            clicked = true;
+            // Determine if it is being clicked on the foldout before
+            // calling it to avoid it eating the event
+            if (Event.current.type == EventType.MouseUp
+                && rect.Contains(Event.current.mousePosition)) {
+                clicked = true;
+            }
+
+            newFoldout = EditorGUILayout.Foldout(foldout, content, style);
         }
-
-        var newFoldout = EditorGUILayout.Foldout(foldout, content, style);
-
-        EditorGUILayout.EndHorizontal();
 
         // Act in case we saw a click but the foldout didn't toggle
         if (newFoldout == foldout && clicked) {
@@ -683,8 +685,10 @@ public class ProfileEditor : UnityEditor.Editor
 
         // Option GUI
         var lineHeight = EditorGUIUtility.singleLineHeight + linePadding;
-        var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(lineHeight));
+        Rect rect;
+        using (var rectScope = new EditorGUILayout.HorizontalScope(GUILayout.Height(lineHeight)))
         {
+            rect = rectScope.rect;
             // Variant container
             if (option.IsDefaultVariant && !showDefaultVariant) {
                 EditorGUILayout.LabelField(displayName, width);
@@ -771,11 +775,9 @@ public class ProfileEditor : UnityEditor.Editor
                 }
             } else {
                 // Not including a layout group here somehow makes the parent group taller
-                EditorGUILayout.BeginHorizontal(GUILayout.Width(0));
-                EditorGUILayout.EndHorizontal();
+                using var _ = new EditorGUILayout.HorizontalScope(GUILayout.Width(0));
             }
         }
-        EditorGUILayout.EndHorizontal();
 
         // Expansion toggle
         if (expandable) {
