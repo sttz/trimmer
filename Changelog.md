@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.0.0-pre.7 (2023-01-25)
+* Add "Enable Runtime Logging" and "Rebuild Content" sub-options to "Build Addressables" (@JesseTG)
+* Fix Zip Distro not finding Unity-bundled 7-Zip on Windows (@JesseTG)
+* Fix exception when building scenes with Addressables
+* Fix command line build not exiting if build profile cannot be found or is not set
+* Fix `OnBuildError` is not called if `PrepareBuild` throws an exception (@JesseTG)
+
 ### 2.0.0-pre.6 (2022-05-18)
 * Zip Distro: Add rule to exclude new name of Burst debug info folder (*_BurstDebugInformation_DoNotShip)
 
