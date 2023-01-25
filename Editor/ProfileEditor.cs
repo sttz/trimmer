@@ -934,7 +934,7 @@ public class ProfileEditor : UnityEditor.Editor
 
     void FlushProfile()
     {
-        profile.EditProfile.SaveToStore(clear: false);
+        profile.SaveToStore();
         profile.SaveIfNeeded();
     }
 }

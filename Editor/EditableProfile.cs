@@ -26,6 +26,11 @@ public abstract class EditableProfile : BatchItem
     public abstract RuntimeProfile EditProfile { get; }
 
     /// <summary>
+    /// Save the option instance values to the profile's store.
+    /// </summary>
+    public abstract void SaveToStore();
+
+    /// <summary>
     /// Callback to save the profile if it has been changed.
     /// </summary>
     public abstract void SaveIfNeeded();

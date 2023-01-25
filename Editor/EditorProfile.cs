@@ -346,6 +346,12 @@ public class EditorProfile : EditableProfile, IEditorProfile
         }
     }
 
+    public override void SaveToStore()
+    {
+        editProfile.SaveToStore(clear: false);
+        editModeProfile.SaveToStore(clear: false);
+    }
+
     public override void SaveIfNeeded()
     {
         if (store.IsDirty(true) || profileDirty) {

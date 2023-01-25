@@ -270,6 +270,11 @@ public class BuildProfile : EditableProfile, IEditorProfile
         }
     }
 
+    public override void SaveToStore()
+    {
+        EditProfile.SaveToStore(clear: false);
+    }
+
     public override void SaveIfNeeded()
     {
         // Unity overrides the == operator and this will be true if the profile
