@@ -287,7 +287,7 @@ public class ZipDistro : DistroBase
 
         var inputName = Path.GetFileName(basePath);
         var args = string.Format(
-            "a '{0}' '{1}' -r -mx{2} {3}",
+            "a '{0}' '{1}' -mx{2} {3}",
             outputPath, inputName, (int)compression, excludes
         );
 
