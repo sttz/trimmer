@@ -87,9 +87,6 @@ public class SteamDistro : DistroBase
         if (string.IsNullOrEmpty(steamLogin.User))
            throw new Exception("SteamDistro: No Steam user set.");
 
-        if (steamLogin.GetPassword(keychainService) == null)
-            throw new Exception("SteamDistro: No Steam password found in Keychain.");
-
         // Check scripts
         if (string.IsNullOrEmpty(scriptsFolder) || !Directory.Exists(scriptsFolder))
             throw new Exception("SteamDistro: Path to scripts folder not set.");
@@ -163,12 +160,16 @@ public class SteamDistro : DistroBase
             }
 
             // Build
-            var scriptPath = Path.GetFullPath(Path.Combine(tempDir, appScript));
-            var args = string.Format(
-                "+login '{0}' '{1}' +run_app_build_http '{2}' +quit", 
-                steamLogin.User, steamLogin.GetPassword(keychainService), scriptPath
-            );
+            string loginArgs;
+            var password = steamLogin.GetPassword(keychainService);
+            if (string.IsNullOrEmpty(password)) {
+                loginArgs = $"'{steamLogin.User}'";
+            } else {
+                loginArgs = $"'{steamLogin.User}' '{password}'";
+            }
 
+            var scriptPath = Path.GetFullPath(Path.Combine(tempDir, appScript));
+            var args = $"+login {loginArgs} +run_app_build '{scriptPath}' +quit";
             await Execute(new ExecutionArgs(cmd, args) { 
                 onOutput = (output) => {
                     if (output.Contains("Logged in OK")) {
@@ -236,29 +237,30 @@ public class SteamDistro : DistroBase
         if (!File.Exists(steamdSDKPath) && !Directory.Exists(steamdSDKPath))
             throw new Exception("SteamDistro: Steam SDK path does not exist.");
 
-        // Assume file is steamcmd
         if (File.Exists(steamdSDKPath)) {
+            // Path points to a file, assume it's SteamCmd
             return steamdSDKPath;
         }
 
+        // Look for SteamCmd in given SDK path,
+        // so that we can be pointed to a sub-directory of the SDK
+        // but still can find the executable at its sub-path.
         var current = steamdSDKPath;
-        while (true) {
-            var match = false;
-            for (int i = 0; i < SteamCMDPath.Length; i++) {
-                var next = Path.Combine(current, SteamCMDPath[i]);
-                if (i < SteamCMDPath.Length - 1) {
-                    if (Directory.Exists(next)) {
-                        current = next;
-                        match = true;
-                        break;
-                    }
+        for (int i = 0; i < SteamCMDPath.Length; i++) {
+            var next = Path.Combine(current, SteamCMDPath[i]);
+
+            var isExecutable = (i == SteamCMDPath.Length - 1);
+            if (isExecutable) {
+                if (File.Exists(next)) {
+                    return next; // Found SteamCmd executable
+                }
+            } else {
+                if (!Directory.Exists(next)) {
+                    continue; // Try with next path segment
                 } else {
-                    if (File.Exists(next)) {
-                        return next;
-                    }
+                    current = next; // Path matched, continue search inside
                 }
             }
-            if (!match) break;
         }
 
         throw new Exception($"SteamDistro: Could not find {SteamCMDPath.Last()} at the SDK path: {steamdSDKPath}");
