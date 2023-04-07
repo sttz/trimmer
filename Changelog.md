@@ -1,5 +1,14 @@
 # Changelog
 
+### 2.0.0-pre.8 (2023-04-07)
+* NotarizationDistro: Update to use notarytool instead of altool (part of XCode 13+)
+* SteamDistro: Make password optional and fix locating `steamcmd` from a SDK subdirectory
+* iOSDistro: Fix build error when using an Apple Silicon Mac
+* OptionVersion: If share build number is set to "In Project", always set build number of all targets
+* OptionEnum: Explicitly limit generic arguments to enums
+* Fix incorrect use of 7zip's `-r` option in ZipDistro that could include additional folders
+* Fix `Option.EditorProfile` not set in options with `ExecuteInEditMode` capability
+
 ### 2.0.0-pre.7 (2023-01-25)
 * Add "Enable Runtime Logging" and "Rebuild Content" sub-options to "Build Addressables" (@JesseTG)
 * Fix Zip Distro not finding Unity-bundled 7-Zip on Windows (@JesseTG)
