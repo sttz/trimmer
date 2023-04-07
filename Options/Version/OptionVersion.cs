@@ -340,7 +340,7 @@ public class OptionVersion : OptionContainer
             numberString = version.build.ToString();
             foreach (var targetGroup in GetSharedTargets(sharing)) {
                 var value = GetBuildNumber(targetGroup);
-                if (!string.IsNullOrEmpty(value) && value != "0") {
+                if (!string.IsNullOrEmpty(value)) {
                     SetBuildNumber(targetGroup, numberString);
                 }
             }
