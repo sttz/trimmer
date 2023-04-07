@@ -4,13 +4,10 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
-using UnityEditor.iOS.Xcode;
 using UnityEngine;
 
 namespace sttz.Trimmer.Editor
@@ -20,9 +17,16 @@ namespace sttz.Trimmer.Editor
 /// Sign, upload a macOS build for notarization and staple the ticket.
 /// </summary>
 /// <remarks>
-/// From macOS 10.15 Catalina it's required to sign and notarize builds
+/// From macOS 10.15 Catalina, it's required to sign and notarize builds
 /// to pass Gate Keeper checks and to be able to open them without going
 /// through the Open context menu.
+/// 
+/// This distro uses notarytool to upload builds and wait for the
+/// notarization to complete. Credentials are handled by notarytool and
+/// stored in a keychain profile (API Key or App-specific password, 
+/// including Team ID). Use 'xcrun notarytool store-credentials' to 
+/// set up a profile interactively and then set the profile name
+/// in the distro options.
 /// 
 /// If you don't use IL2CPP, the following entitlement is required:
 /// com.apple.security.cs.allow-unsigned-executable-memory
@@ -41,30 +45,38 @@ public class NotarizationDistro : DistroBase
     /// </summary>
     public string appSignIdentity;
     /// <summary>
-    /// The entitlements file.
+    /// The entitlements file (optional).
     /// </summary>
     public DefaultAsset entitlements;
 
     [Header("Notarization")]
 
     /// <summary>
-    /// Id use to identify the product, does not need to match app bundle id.
+    /// Wether to notarize or only sign the build.
     /// </summary>
-    public string primaryBundleId;
-    /// <summary>
-    /// App Store Connect login.
-    /// </summary>
-    [Keychain(keychainService)] public Login ascLogin;
-    const string keychainService = "NotarizationDistro";
-    /// <summary>
-    /// App Store Connect provider ID (only required if account is part of multiple teams).
-    /// </summary>
-    public string ascProvider;
+    public bool notraize;
+
+    [Space]
 
     /// <summary>
-    /// Interval in seconds between request status checks.
+    /// They notarytool keychain profile to use.
     /// </summary>
-    const float statusCheckInterval = 30;
+    public string keychainProfile;
+
+    [Space]
+
+    /// <summary>
+    /// Tell notarytool to wait for app to be notarized.
+    /// </summary>
+    public bool waitForCompletion = true;
+    /// <summary>
+    /// Timeout to wait for notarization to complete.
+    /// </summary>
+    /// <remarks>
+    /// Empty = no timeout.
+    /// Duration is an integer followed by an optional suffix: seconds 's' (default), minutes 'm', hours 'h'. Examples: '3600', '60m', '1h'
+    /// </remarks>
+    public string waitTimeout;
 
     protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
@@ -112,17 +124,11 @@ public class NotarizationDistro : DistroBase
         if (string.IsNullOrEmpty(appSignIdentity))
             throw new Exception("NotarizationDistro: App sign identity not set.");
 
-        if (entitlements == null)
-            throw new Exception("NotarizationDistro: Entitlements file not set.");
+        // Check keychain profile
+        if (string.IsNullOrEmpty(keychainProfile))
+            throw new Exception("NotarizationDistro: No keychain profile set (use 'xcrun notarytool store-credentials' to set it up).");
 
-        // Check User
-        if (string.IsNullOrEmpty(ascLogin.User))
-            throw new Exception("NotarizationDistro: No App Store Connect user set.");
-
-        if (ascLogin.GetPassword(keychainService) == null)
-            throw new Exception("NotarizationDistro: No App Store Connect password found in Keychain.");
-
-        task.Report(0, 6, "Checking if app is already notarized");
+        task.Report(0, 5, "Checking if app is already notarized");
 
         // Try stapling in case the build has already been notarized
         if (await Staple(path, silentError: true, task)) {
@@ -145,39 +151,39 @@ public class NotarizationDistro : DistroBase
         }
 
         // Sign application
-        var entitlementsPath = AssetDatabase.GetAssetPath(entitlements);
+        string entitlementsPath = null;
+        if (entitlements != null) {
+            entitlementsPath = AssetDatabase.GetAssetPath(entitlements);
+        }
         await Sign(path, task, entitlementsPath);
 
-        task.Report(2, description: "Zipping app");
+        if (notraize) {
+            task.Report(2, description: "Zipping app");
 
-        // Zip app
-        var zipPath = path + ".zip";
-        await Zip(path, zipPath, task);
+            // Zip app
+            var zipPath = path + ".zip";
+            await Zip(path, zipPath, task);
 
-        task.Report(3, description: "Uploading app");
+            task.Report(3, description: "Notarizing app");
 
-        // Upload for notarization
-        string requestUUID = null;
-        try {
-            requestUUID = await Upload(zipPath, task);
-            if (requestUUID == null)
-                throw new Exception("NotarizationDistro: Could not parse request UUID from upload output");
-        } finally {
-            // Delete ZIP regardless of upload result
-            File.Delete(zipPath);
+            // Upload for notarization
+            string requestUUID = null;
+            try {
+                requestUUID = await Notarize(zipPath, task);
+            } finally {
+                // Delete ZIP regardless of upload result
+                File.Delete(zipPath);
+            }
+
+            if (!string.IsNullOrEmpty(requestUUID)) {
+                Debug.Log($"NotarizationDistro: Request UUID is {requestUUID}");
+            }
+
+            task.Report(4, description: "Stapling ticket to app");
+
+            // Staple
+            await Staple(path, silentError: false, task);
         }
-
-        task.Report(4, description: "Waiting for notarization result");
-
-        // Wait for notarization to complete
-        var status = await WaitForCompletion(requestUUID, task);
-        if (status != "success")
-            throw new Exception($"NotarizationDistro: Got '{status}' notarization status");
-
-        task.Report(5, description: "Stapling ticket to app");
-
-        // Staple
-        await Staple(path, silentError: false, task);
     }
 
     protected async Task Sign(IEnumerable<string> paths, TaskToken task)
@@ -222,75 +228,41 @@ public class NotarizationDistro : DistroBase
         await Execute(new ExecutionArgs("zip", args), task);
     }
 
-    static readonly Regex RequestUUIDRegex = new Regex(@"RequestUUID = ([a-z0-9-]+)");
-
-    protected async Task<string> Upload(string path, TaskToken task)
+    [Serializable]
+    public struct NotarytoolResult
     {
-        var asc = "";
-        if (!string.IsNullOrEmpty(ascProvider)) {
-            asc = $" --asc-provider '{ascProvider}'";
-        }
-
-        var args = $"altool"
-            + $" --notarize-app"
-            + $" --primary-bundle-id '{primaryBundleId}'"
-            + $" --username '{ascLogin.User}'"
-            + asc
-            + $" --file '{path}'";
-
-        string requestUUID = null;
-        await Execute(new ExecutionArgs("xcrun", args) {
-            input = ascLogin.GetPassword(keychainService) + "\n", 
-            onOutput = (output) => {
-                if (requestUUID != null) return;
-                var match = RequestUUIDRegex.Match(output);
-                if (match.Success) {
-                    requestUUID = match.Groups[1].Value;
-                }
-            }
-        }, task);
-
-        return requestUUID;
+        public string id;
+        public string status;
+        public string message;
     }
 
-    static readonly Regex StatusRegex = new Regex(@"Status: ([\w ]+)");
-    static readonly Regex LogFileRegex = new Regex(@"LogFileURL: (\S+)");
-
-    protected async Task<string> WaitForCompletion(string requestUUID, TaskToken task)
+    protected async Task<string> Notarize(string path, TaskToken task)
     {
-        string status = null, logFile = null;
-        do {
-            await Task.Delay(TimeSpan.FromSeconds(statusCheckInterval));
-
-            var args = $"altool"
-                + $" --notarization-info '{requestUUID}'"
-                + $" --username '{ascLogin.User}'";
-            
-            status = null;
-            await Execute(new ExecutionArgs("xcrun", args) { 
-                input =  ascLogin.GetPassword(keychainService) + "\n",
-                onOutput = (output) => {
-                    if (status == null) {
-                        var match = StatusRegex.Match(output);
-                        if (match.Success) {
-                            status = match.Groups[1].Value;
-                        }
-                    }
-                    if (logFile == null) {
-                        var match = LogFileRegex.Match(output);
-                        if (match.Success) {
-                            logFile = match.Groups[1].Value;
-                        }
-                    }
-                }
-            }, task);
-        } while (status == "in progress");
-
-        if (logFile != null) {
-            Debug.Log("Notarization log file: " + logFile);
+        var wait = "";
+        if (waitForCompletion) {
+            wait = $" --wait";
+            if (!string.IsNullOrEmpty(waitTimeout)) {
+                wait += $" --timeout '{waitTimeout}'";
+            }
         }
 
-        return status;
+        var args = $"notarytool"
+            + $" submit"
+            + $" --output-format json"
+            + $" --keychain-profile '{keychainProfile}'"
+            + wait
+            + $" '{path}'";
+
+        string output = "";
+        await Execute(new ExecutionArgs("xcrun", args) {
+            onOutput = (o) => output +=o
+        }, task);
+
+        var result = JsonUtility.FromJson<NotarytoolResult>(output);
+        if (result.status != "Accepted")
+            throw new Exception($"Notarization failed with status '{result.status}': {result.message} ({result.id})");
+
+        return result.id;
     }
 
     protected async Task<bool> Staple(string path, bool silentError, TaskToken task)
