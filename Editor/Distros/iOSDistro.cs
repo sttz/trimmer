@@ -127,7 +127,8 @@ public class iOSDistro : DistroBase
         var args = $"archive"
             + $" -project '{projectPath}'"
             + $" -archivePath '{archivePath}'"
-            + $" -scheme '{schemeName}'";
+            + $" -scheme '{schemeName}'"
+            + $" -destination 'generic/platform=iOS'";
 
         if (allowProvisioningUpdates)
             args += " -allowProvisioningUpdates";
