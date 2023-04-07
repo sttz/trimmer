@@ -25,6 +25,7 @@ namespace sttz.Trimmer.BaseOptions
 /// this by setting <see cref="IsMask"/> in <see cref="Option.Configure"/>.
 /// </remarks>
 public abstract class OptionEnum<TEnum> : Option<TEnum>
+    where TEnum : struct, System.Enum
 {
     #if UNITY_EDITOR
     public override bool EditGUI()
