@@ -439,7 +439,12 @@ public class EditorProfile : EditableProfile, IEditorProfile
     /// </remarks>
     private class EditModeProfile : RuntimeProfile
     {
-        public EditModeProfile(ValueStore store) : base(store) { }
+        public EditModeProfile(IEditorProfile profile, ValueStore store) : base(store)
+        {
+            foreach (var option in this) {
+                option.SetEditorProfile(profile);
+            }
+        }
 
         protected override bool ShouldCreateOption(Type optionType)
         {
@@ -455,7 +460,7 @@ public class EditorProfile : EditableProfile, IEditorProfile
     /// </summary>
     private void InitEditModeProfile()
     {
-        editModeProfile = new EditModeProfile(store);
+        editModeProfile = new EditModeProfile(this, store);
         editModeProfile.Apply();
     }
 
