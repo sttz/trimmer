@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.0.0-pre.10 (2023-07-20)
+* Add APIs for editor scripts that cannot easily be integrated into Trimmer
+  but still want to integrate into Trimmer builds.
+  * `BuildManager.CurrentProfile` allows to access the profile of the current build.
+  * `BuildManager.GetCurrentInclusion` allows to get the inclusion of a specific option
+    in the current build.
+
 ### 2.0.0-pre.8 (2023-04-07)
 * NotarizationDistro: Update to use notarytool instead of altool (part of XCode 13+)
 * SteamDistro: Make password optional and fix locating `steamcmd` from a SDK subdirectory
