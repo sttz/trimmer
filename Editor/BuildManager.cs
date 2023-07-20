@@ -91,12 +91,17 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </summary>
     public const string NO_TRIMMER = "NO_TRIMMER";
 
-    // -------- Building --------
+    // -------- API --------
 
     /// <summary>
     /// The type of the current build.
     /// </summary>
     public static TrimmerBuildType BuildType { get; private set; }
+
+    /// <summary>
+    /// The profile used for the current build.
+    /// </summary>
+    public static BuildProfile CurrentProfile { get; private set; }
 
     /// <summary>
     /// Populate the `BuildPlayerOptions` with default values.
@@ -116,6 +121,34 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         return playerOptions;
     }
+
+    /// <summary>
+    /// Get the inclusion of an option in the current build.
+    /// </summary>
+    /// <remarks>
+    /// This is only valid to call when <see cref="BuildType">
+    /// is not <see cref="TrimmerBuildType.None"/>.
+    /// If no profile is set or the option doesn't exist in the
+    /// profile, the method returns <see cref="OptionInclusion.Remove"/>.
+    /// </remarks>
+    public static OptionInclusion GetCurrentInclusion(string optionPath)
+    {
+        if (BuildType == TrimmerBuildType.None)
+            throw new Exception($"BuildManager.GetCurrentInclusion: Can only be called during a build");
+
+        if (CurrentProfile == null)
+            return OptionInclusion.Remove;
+
+        var option = CurrentProfile.EditProfile.GetOption(optionPath);
+        if (option == null) {
+            Debug.LogWarning($"BuildManager.GetCurrentInclusion: Could not find option for path '{optionPath}'");
+            return OptionInclusion.Remove;
+        }
+
+        return CurrentProfile.GetInclusionOf(option, OptionHelper.currentBuildOptions.target);
+    }
+
+    // -------- Building --------
 
     /// <summary>
     /// Show a dialog to let the user pick a build location.
@@ -206,8 +239,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         // Prepare build
         var options = GetDefaultOptions(EditorUserBuildSettings.activeBuildTarget);
-        currentProfile = buildProfile;
-        currentTarget = options.target;
+        CurrentProfile = buildProfile;
 
         // Run options' PrepareBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
@@ -244,11 +276,9 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static void UnityDefaultBuild(ref BuildPlayerOptions options)
     {
         BuildType = TrimmerBuildType.BuildWindow;
+        CurrentProfile = EditorProfile.Instance.ActiveProfile;
 
-        currentProfile = EditorProfile.Instance.ActiveProfile;
-        currentTarget = options.target;
-
-        AddScriptingDefineSymbols(currentProfile, ref options);
+        AddScriptingDefineSymbols(CurrentProfile, ref options);
 
         OptionHelper.currentBuildOptions = options;
     }
@@ -259,16 +289,14 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static void NonTrimmerBuild(BuildTarget target)
     {
         BuildType = TrimmerBuildType.NonTrimmer;
+        CurrentProfile = EditorProfile.Instance.ActiveProfile;
 
         Debug.LogWarning($"Trimmer: Build started using an unsupported method, some Trimmer features will not work.");
-
-        currentProfile = EditorProfile.Instance.ActiveProfile;
-        currentTarget = target;
 
         // We can only react when the build has already started and cannot
         // edit BuildPlayerOptions.extraScriptingDefines, so we have to
         // change PlayerSettings.
-        ApplyScriptingDefineSymbolsToPlayerSettings(currentProfile, target);
+        ApplyScriptingDefineSymbolsToPlayerSettings(CurrentProfile, target);
 
         OptionHelper.currentBuildOptions = default;
     }
@@ -455,8 +483,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     {
         // Prepare build
         BuildType = TrimmerBuildType.Profile;
-        currentProfile = buildProfile;
-        currentTarget = options.target;
+        CurrentProfile = buildProfile;
 
         try {
             // Add Trimmer scripting define symbols
@@ -533,8 +560,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             buildProfile.SetLastBuildPath(options.target, options.locationPathName);
         }
 
-        currentProfile = null;
-        currentTarget = BuildTarget.NoTarget;
+        CurrentProfile = null;
         OptionHelper.currentBuildOptions = default;
         return report;
     }
@@ -547,8 +573,8 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static void GenerateBuildInfo(GUID buildGuid)
     {
         var profileGuid = "";
-        if (currentProfile != null) {
-            var path = AssetDatabase.GetAssetPath(currentProfile);
+        if (CurrentProfile != null) {
+            var path = AssetDatabase.GetAssetPath(CurrentProfile);
             profileGuid = AssetDatabase.AssetPathToGUID(path);
         }
 
@@ -565,15 +591,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     }
 
     // -------- Profiles --------
-
-    /// <summary>
-    /// The build profile used for the current build.
-    /// </summary>
-    static BuildProfile currentProfile;
-    /// <summary>
-    /// 
-    /// </summary>
-    static BuildTarget currentTarget = BuildTarget.NoTarget;
 
     /// <summary>
     /// Create and configure the <see cref="ProfileContainer"/> during the build.
@@ -600,8 +617,8 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </summary>
     static RuntimeProfile GetCurrentEditProfile()
     {
-        if (currentProfile != null) {
-            return currentProfile.EditProfile;
+        if (CurrentProfile != null) {
+            return CurrentProfile.EditProfile;
         } else {
             return BuildProfile.EmptyEditProfile;
         }
@@ -693,6 +710,24 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         previousScriptingDefineSymbols = null;
     }
 
+    /// <summary>
+    /// Try to get the current build target.
+    /// Will try to get it from the build report and fall back to the
+    /// current `BuildPlayerOptions` if the report is `null`
+    /// (e.g. during an Addressables build).
+    /// </summary>
+    static BuildTarget GetCurrentBuildTarget(BuildReport report)
+    {
+        if (report != null)
+            return report.summary.platform;
+        
+        var optionsTarget = OptionHelper.currentBuildOptions.target;
+        if (optionsTarget != BuildTarget.NoTarget && optionsTarget != 0)
+            return optionsTarget;
+
+        return BuildTarget.NoTarget;
+    }
+
     // ------ Unity Callbacks ------
 
     static string previousScriptingDefineSymbols;
@@ -709,7 +744,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static void BuildPlayerHandler(BuildPlayerOptions options)
     {
         // Show a dialog of no active build profile has been set
-        if (currentProfile == null 
+        if (CurrentProfile == null 
             && EditorProfile.Instance.ActiveProfile == null
             && !EditorUtility.DisplayDialog(
                 "Trimmer: No Active Profile Set", 
@@ -727,8 +762,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
     public void OnPreprocessBuild(BuildReport report)
     {
-        var target = report.summary.platform;
-        var path = report.summary.outputPath;
+        var target = GetCurrentBuildTarget(report);
 
         if (BuildType == TrimmerBuildType.None) {
             NonTrimmerBuild(target);
@@ -737,7 +771,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         // Run options' PreprocessBuild
         includesAnyOption = false;
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
+            var inclusion = CurrentProfile == null ? OptionInclusion.Remove : CurrentProfile.GetInclusionOf(option, target);
             includesAnyOption |= ((inclusion & OptionInclusion.Option) != 0);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
@@ -760,12 +794,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
         Debug.Log(string.Format(
             "Trimmer: Building profile '{0}' for '{1}' to '{2}'\nIncluded: {3}\nSymbols: {4}",
-            currentProfile != null ? currentProfile.name : "null", 
-            target, path, 
+            CurrentProfile != null ? CurrentProfile.name : "null", 
+            target, report.summary.outputPath, 
             GetCurrentEditProfile()
                 .Where(o => {
-                    if (currentProfile == null) return false;
-                    var inclusion = currentProfile.GetInclusionOf(o, target);
+                    if (CurrentProfile == null) return false;
+                    var inclusion = CurrentProfile.GetInclusionOf(o, target);
                     return inclusion.HasFlag(OptionInclusion.Feature) || inclusion.HasFlag(OptionInclusion.Option);
                 })
                 .Select(o => o.Name)
@@ -777,6 +811,8 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     // Unfortunately not a proper Unity event
     public static void OnBuildError([CanBeNull] BuildReport report)
     {
+        var target = GetCurrentBuildTarget(report);
+
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
             try {
@@ -787,7 +823,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             }
         }
 
-        var target = (report != null ? report.summary.platform : currentTarget);
         RestoreScriptingDefineSymbolsInPlayerSettings(target);
         OptionHelper.currentBuildOptions = default;
         BuildType = TrimmerBuildType.None;
@@ -797,13 +832,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
     public void OnPostprocessBuild(BuildReport report)
     {
-        var target = report.summary.platform;
-        var path = report.summary.outputPath;
+        var target = GetCurrentBuildTarget(report);
 
         // Run options' PostprocessBuild
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) == 0) continue;
-            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
+            var inclusion = CurrentProfile == null ? OptionInclusion.Remove : CurrentProfile.GetInclusionOf(option, target);
             option.PostprocessBuild(report, inclusion);
         }
 
@@ -818,15 +852,14 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         if (!BuildPipeline.isBuildingPlayer)
             return;
 
+        var target = GetCurrentBuildTarget(report);
+
         // Inject profile container into first scene
         InjectProfileContainer(scene);
 
-        // In an Addressables build, report is null
-        var target = (report != null ? report.summary.platform : currentTarget);
-
         // Inject profile and call PostprocessScene, Apply() isn't called during build
         foreach (var option in GetCurrentEditProfile().OrderBy(o => o.PostprocessOrder)) {
-            var inclusion = currentProfile == null ? OptionInclusion.Remove : currentProfile.GetInclusionOf(option, target);
+            var inclusion = CurrentProfile == null ? OptionInclusion.Remove : CurrentProfile.GetInclusionOf(option, target);
 
             if ((option.Capabilities & OptionCapabilities.ConfiguresBuild) != 0) {
                 option.PostprocessScene(scene, inclusion);
