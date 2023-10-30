@@ -22,6 +22,7 @@ namespace sttz.Trimmer.Editor
 public class DistroEditor : UnityEditor.Editor
 {
     DistroBase distro;
+    SerializedProperty listProperty;
     UnityEditorInternal.ReorderableList list;
 
     protected void OnEnable()
@@ -29,8 +30,9 @@ public class DistroEditor : UnityEditor.Editor
         distro = (DistroBase)target;
         if (distro.builds == null) distro.builds = new List<BuildProfile>();
 
+        listProperty = serializedObject.FindProperty(nameof(DistroBase.builds));
         list = new UnityEditorInternal.ReorderableList(
-            distro.builds, typeof(BuildProfile),
+            serializedObject, listProperty,
             true, false, true, true
         );
         list.elementHeight = EditorGUIUtility.singleLineHeight + 2;
@@ -38,10 +40,12 @@ public class DistroEditor : UnityEditor.Editor
         list.drawElementCallback = (rect, index, selected, focused) => {
             rect.y += 1;
             rect.height -= 2;
-            distro.builds[index] = (BuildProfile)EditorGUI.ObjectField(rect, distro.builds[index], typeof(BuildProfile), false);
+            var itemProperty = listProperty.GetArrayElementAtIndex(index);
+            EditorGUI.PropertyField(rect, itemProperty, GUIContent.none);
         };
         list.onAddCallback = (list) => {
-            list.list.Add(null);
+            listProperty.arraySize++;
+            listProperty.GetArrayElementAtIndex(listProperty.arraySize - 1).objectReferenceValue = null;
         };
     }
 
@@ -52,7 +56,9 @@ public class DistroEditor : UnityEditor.Editor
         GUILayout.Space(25);
 
         GUILayout.Label("Build Profiles", EditorStyles.boldLabel);
+
         list.DoLayoutList();
+        serializedObject.ApplyModifiedProperties();
 
         GUILayout.Space(25);
 
