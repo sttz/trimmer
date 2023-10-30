@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.0.0-pre.11 (2023-10-30)
+* Fix Distro editor not always saving changes to Profile list
+* Fix Game Core Xbox Series not appearing in build targets drop down
+
 ### 2.0.0-pre.10 (2023-07-20)
 * Add APIs for editor scripts that cannot easily be integrated into Trimmer
   but still want to integrate into Trimmer builds.
