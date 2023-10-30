@@ -532,13 +532,14 @@ public class ProfileEditor : UnityEditor.Editor
                 var menu = new GenericMenu();
                 var type = typeof(BuildTarget);
                 var obsoleteType = typeof(ObsoleteAttribute);
-                foreach (var target in Enum.GetValues(type).Cast<BuildTarget>().OrderBy(b => b.ToString())) {
-                    var isObsolete = type.GetMember(target.ToString()).First().GetCustomAttributes(obsoleteType, true).Length > 0;
+                foreach (var targetName in Enum.GetNames(type).OrderBy(b => b)) {
+                    var targetValue = Enum.Parse<BuildTarget>(targetName);
+                    var isObsolete = type.GetMember(targetName).First().GetCustomAttributes(obsoleteType, true).Length > 0;
                     if (isObsolete 
-                        || (int)target < 0 
-                        || (!usesActive && buildProfile.BuildTargets.Contains(target)))
+                        || (int)targetValue < 0 
+                        || (!usesActive && buildProfile.BuildTargets.Contains(targetValue)))
                         continue;
-                    menu.AddItem(new GUIContent(target.ToString()), false, AddBuildTarget, target);
+                    menu.AddItem(new GUIContent(targetName), false, AddBuildTarget, targetValue);
                 }
                 menu.ShowAsContext();
             }
