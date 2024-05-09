@@ -387,6 +387,9 @@ public class EditorProfile : EditableProfile, IEditorProfile
             }
         } catch (Exception e) {
             EditorGUILayout.HelpBox($"Error showing the Option GUI:\n{e.Message}", MessageType.Error);
+            if (Event.current.type == EventType.MouseUp && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition)) {
+                Debug.LogException(e);
+            }
         }
     }
 
