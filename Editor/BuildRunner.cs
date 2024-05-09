@@ -4,10 +4,12 @@
 //
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace sttz.Trimmer.Editor
@@ -246,6 +248,7 @@ public class BuildRunner : ScriptableObject
     int debounceCount;
     TaskToken token;
     float lastProgressRefresh;
+    int compileErrorCount;
 
     void EnsureNotRunning()
     {
@@ -272,11 +275,39 @@ public class BuildRunner : ScriptableObject
         }
 
         EditorApplication.update += EditorUpdate;
+        CompilationPipeline.compilationStarted += OnCompilationStarted;
+        CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompilationFinished;
+        CompilationPipeline.compilationFinished += OnCompilatioFinished;
+    }
+
+    void OnCompilationStarted(object ctx)
+    {
+        compileErrorCount = 0;
+    }
+
+    void OnAssemblyCompilationFinished(string assemblyPath, CompilerMessage[] messages)
+    {
+        compileErrorCount += messages.Count(m => m.type == CompilerMessageType.Error);
+    }
+
+    void OnCompilatioFinished(object ctx)
+    {
+        // When switching build target causes compile errors,
+        // we never get a domain reload and the build task continues running,
+        // until something else causes a domain reload.
+        // Detect compile errors here when switching build targets and abort.
+        if (continueTask == ContinueTask.BuildAfterSwitchingTarget && compileErrorCount > 0) {
+            Debug.LogError($"Trimmer BuildRunner: Compile errors when switching build target, aborting.");
+            Complete(false);
+        }
     }
 
     void OnDisable()
     {
         EditorApplication.update -= EditorUpdate;
+        CompilationPipeline.compilationStarted -= OnCompilationStarted;
+        CompilationPipeline.assemblyCompilationFinished -= OnAssemblyCompilationFinished;
+        CompilationPipeline.compilationFinished -= OnCompilatioFinished;
     }
 
     void EditorUpdate()
@@ -396,13 +427,12 @@ public class BuildRunner : ScriptableObject
         } else if (!activeTargetMatches) {
             token.Report(jobIndex, description: $"Switching active build target to {job.target}");
 
-            var group = BuildPipeline.GetBuildTargetGroup(job.target);
-            if (!EditorUserBuildSettings.SwitchActiveBuildTarget(group, job.target)) {
-                Debug.LogError($"Trimmer BuildRunner: Failed to switch active build target, aborting.");
-                Complete(false);
+            if (!SwitchActiveBuildTarget(job.target)) {
+                throw new Exception($"Trimmer BuildRunner: Failed to switch active build target, aborting.");
+            } else {
+                ContinueWith(ContinueTask.BuildAfterSwitchingTarget, afterDomainRelaod: true);
             }
-            
-            ContinueWith(ContinueTask.BuildAfterSwitchingTarget, afterDomainRelaod: true);
+
             return;
         }
 
@@ -467,14 +497,23 @@ public class BuildRunner : ScriptableObject
         if (restoreActiveTargetTo == 0 || EditorUserBuildSettings.activeBuildTarget == restoreActiveTargetTo)
             return false;
 
-        var group = BuildPipeline.GetBuildTargetGroup(restoreActiveTargetTo);
-        if (!EditorUserBuildSettings.SwitchActiveBuildTarget(group, restoreActiveTargetTo)) {
-            Debug.LogError($"Trimmer BuildRunner: Failed to restore active build target.");
+        token.Report(jobIndex, description: $"Restoring active build target to {restoreActiveTargetTo}");
+
+        if (!SwitchActiveBuildTarget(restoreActiveTargetTo))
+            throw new Exception($"Trimmer BuildRunner: Failed to restore active build target.");
+
+        ContinueWith(ContinueTask.CompleteAfterSwichingTarget, afterDomainRelaod: true);
+        return true;
+    }
+
+    bool SwitchActiveBuildTarget(BuildTarget target)
+    {
+        var group = BuildPipeline.GetBuildTargetGroup(target);
+        if (!EditorUserBuildSettings.SwitchActiveBuildTarget(group, target)) {
             Complete(false);
+            return false;
         }
 
-        token.Report(jobIndex, description: $"Restoring active build target to {restoreActiveTargetTo}");
-        ContinueWith(ContinueTask.CompleteAfterSwichingTarget, afterDomainRelaod: true);
         return true;
     }
 
