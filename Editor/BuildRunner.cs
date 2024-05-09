@@ -397,7 +397,10 @@ public class BuildRunner : ScriptableObject
             token.Report(jobIndex, description: $"Switching active build target to {job.target}");
 
             var group = BuildPipeline.GetBuildTargetGroup(job.target);
-            EditorUserBuildSettings.SwitchActiveBuildTarget(group, job.target);
+            if (!EditorUserBuildSettings.SwitchActiveBuildTarget(group, job.target)) {
+                Debug.LogError($"Trimmer BuildRunner: Failed to switch active build target, aborting.");
+                Complete(false);
+            }
             
             ContinueWith(ContinueTask.BuildAfterSwitchingTarget, afterDomainRelaod: true);
             return;
@@ -465,7 +468,10 @@ public class BuildRunner : ScriptableObject
             return false;
 
         var group = BuildPipeline.GetBuildTargetGroup(restoreActiveTargetTo);
-        EditorUserBuildSettings.SwitchActiveBuildTarget(group, restoreActiveTargetTo);
+        if (!EditorUserBuildSettings.SwitchActiveBuildTarget(group, restoreActiveTargetTo)) {
+            Debug.LogError($"Trimmer BuildRunner: Failed to restore active build target.");
+            Complete(false);
+        }
 
         token.Report(jobIndex, description: $"Restoring active build target to {restoreActiveTargetTo}");
         ContinueWith(ContinueTask.CompleteAfterSwichingTarget, afterDomainRelaod: true);
