@@ -195,7 +195,7 @@ public class BuildRunner : ScriptableObject
         Current = this;
         this.jobs = jobs;
         this.results = results;
-        restoreActiveTargetTo = EditorUserBuildSettings.activeBuildTarget;
+        restoreActiveTargetTo = restoreActiveBuildTarget ? EditorUserBuildSettings.activeBuildTarget : 0;
         jobIndex = -1;
 
         token = TaskToken.Start(context?.name ?? "Trimmer", options: Progress.Options.Synchronous);
