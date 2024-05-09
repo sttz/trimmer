@@ -84,6 +84,7 @@ public struct TaskToken
     /// </summary>
     /// <param name="progress">Current progress</param>
     /// <param name="description">New optional description</param>
+    [HideInCallstack]
     public void Report(float progress, string description = null)
     {
         Progress.Report(taskId, progress, description);
@@ -99,6 +100,7 @@ public struct TaskToken
     /// <param name="currentStep">Current step</param>
     /// <param name="totalSteps">Total steps (only needs to be set the first time)</param>
     /// <param name="description">New optional description</param>
+    [HideInCallstack]
     public void Report(int currentStep, int totalSteps = -1, string description = null)
     {
         if (totalSteps == -1) totalSteps = Progress.GetTotalSteps(taskId);
