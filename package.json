@@ -1,7 +1,7 @@
 {
   "name": "ch.sttz.trimmer",
   "displayName": "Trimmer",
-  "version": "2.0.0-pre.11",
+  "version": "2.0.0-pre.12",
   "unity": "2019.4",
   "description": "An editor, build and player configuration framework for the Unity game engine.",
   "keywords": [
@@ -21,8 +21,5 @@
     "type": "git",
     "url": "https://github.com/sttz/trimmer.git"
   },
-  "type": "tool",
-  "publishConfig": {
-      "registry": "https://unity.sttz.ch"
-  }
+  "type": "tool"
 }

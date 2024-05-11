@@ -1,5 +1,11 @@
 # Changelog
 
+### 2.0.0-pre.12 (2024-05-11)
+* Fix build getting stuck or continuing later when active build target switch fails due to compile errors
+* Fix Restore Active Build Target option not being applied, always restoring last active build target
+* Add clicking on exception GUI box prints full exception with stack trace
+* Add HideInCallstack attribute to TaskToken.Report (only hides, doesn't work for double-click opening)
+
 ### 2.0.0-pre.11 (2023-10-30)
 * Fix Distro editor not always saving changes to Profile list
 * Fix Game Core Xbox Series not appearing in build targets drop down
