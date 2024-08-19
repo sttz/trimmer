@@ -628,9 +628,9 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// Convenience method to get the current scripting define symbols as a
     /// hash set (instead of a colon-delimited string).
     /// </summary>
-    static HashSet<string> GetCurrentScriptingDefineSymbols(BuildTargetGroup targetGroup)
+    static HashSet<string> GetCurrentScriptingDefineSymbols(NamedBuildTarget buildTarget)
     {
-        var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+        PlayerSettings.GetScriptingDefineSymbols(buildTarget, out var defines);
         return new HashSet<string>(defines);
     }
 
@@ -658,11 +658,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </summary>
     static void AddScriptingDefineSymbols(BuildProfile buildProfile, ref BuildPlayerOptions options)
     {
-    #if !UNITY_2020_1_OR_NEWER
-        // Before Unity 2020.1 BuildPlayerOptions.extraScriptingDefines didn't exist,
-        // fall back to changing player settings
-        ApplyScriptingDefineSymbolsToPlayerSettings(buildProfile, options.target);
-    #else
         var symbols = new HashSet<string>();
 
         if (options.extraScriptingDefines != null) {
@@ -672,7 +667,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         GetScriptingDefineSymbols(buildProfile, options.target, symbols);
 
         options.extraScriptingDefines = symbols.ToArray();
-    #endif
     }
 
     /// <summary>
@@ -682,9 +676,9 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     static void ApplyScriptingDefineSymbolsToPlayerSettings(BuildProfile buildProfile, BuildTarget target)
     {
         // Run options' PreprocessBuild and collect scripting define symbols
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        previousScriptingDefineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
-        var symbols = GetCurrentScriptingDefineSymbols(targetGroup);
+        var namedTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(target));
+        PlayerSettings.GetScriptingDefineSymbols(namedTarget, out previousScriptingDefineSymbols);
+        var symbols = GetCurrentScriptingDefineSymbols(namedTarget);
 
         // Remove all symbols previously added by Trimmer
         symbols.RemoveWhere(d => d.StartsWith(Option.DEFINE_PREFIX));
@@ -694,7 +688,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         GetScriptingDefineSymbols(buildProfile, target, symbols);
 
         // Apply scripting define symbols
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbols.ToArray()));
+        PlayerSettings.SetScriptingDefineSymbols(namedTarget, symbols.ToArray());
     }
 
     /// <summary>
@@ -704,8 +698,8 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     {
         if (previousScriptingDefineSymbols == null) return;
 
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, previousScriptingDefineSymbols);
+        var namedTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(target));
+        PlayerSettings.SetScriptingDefineSymbols(namedTarget, previousScriptingDefineSymbols);
 
         previousScriptingDefineSymbols = null;
     }
@@ -730,7 +724,7 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
 
     // ------ Unity Callbacks ------
 
-    static string previousScriptingDefineSymbols;
+    static string[] previousScriptingDefineSymbols;
     static bool includesAnyOption;
 
     public int callbackOrder { get { return 0; } }
@@ -782,15 +776,10 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         GenerateBuildInfo(report.summary.guid);
 
         string defines = null;
-    #if UNITY_2020_1_OR_NEWER
         var extraScriptingDefines = OptionHelper.currentBuildOptions.extraScriptingDefines;
         if (extraScriptingDefines != null && extraScriptingDefines.Length > 0) {
             defines = extraScriptingDefines.Join();
         }
-    #else
-        var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
-        defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
-    #endif
 
         Debug.Log(string.Format(
             "Trimmer: Building profile '{0}' for '{1}' to '{2}'\nIncluded: {3}\nSymbols: {4}",
