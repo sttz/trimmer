@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.0.0-pre.14 (2024-08-19)
+* Fix Distro script callbacks being executed on non-main thread, possibly breaking them
+* Fix SteamDistro parsing of SteamCMD output
+* Clean up scripting define symbols handling by removing code supporting Unity < 2021.3
+* Use FindAnyObjectByType instead of FindObjectOfType to fix warning
+* Require Unity 2021.3+
+
 ### 2.0.0-pre.12 (2024-05-11)
 * Fix build getting stuck or continuing later when active build target switch fails due to compile errors
 * Fix Restore Active Build Target option not being applied, always restoring last active build target
