@@ -374,37 +374,60 @@ public static class OptionHelper
         var script = new System.Diagnostics.Process();
         script.StartInfo = startInfo;
         script.StartInfo.UseShellExecute = false;
-        script.StartInfo.RedirectStandardOutput = true;
-        script.StartInfo.RedirectStandardError = true;
+        script.StartInfo.CreateNoWindow = true;
         script.EnableRaisingEvents = true;
+
+        if (onOutput != null) {
+            script.StartInfo.RedirectStandardOutput = true;
+            script.OutputDataReceived += (s, a) => {
+                EditorApplication.delayCall += () => {
+                    try {
+                        onOutput.Invoke(a.Data);
+                    } catch (Exception e) {
+                        Debug.LogException(e);
+                    }
+                };
+            };
+        }
+
+        if (onError != null) {
+            script.StartInfo.RedirectStandardError = true;
+            script.ErrorDataReceived += (s, a) => {
+                EditorApplication.delayCall += () => {
+                    try {
+                        onError.Invoke(a.Data);
+                    } catch (Exception e) {
+                        Debug.LogException(e);
+                    }
+                };
+            };
+        }
 
         if (!string.IsNullOrEmpty(input)) {
             script.StartInfo.RedirectStandardInput = true;
         }
 
-        script.OutputDataReceived += (s, a) => {
-            if (onOutput != null) {
-                onOutput(a.Data);
-            }
-        };
-        script.ErrorDataReceived += (s, a) => {
-            if (onError != null) {
-                onError(a.Data);
-            }
-        };
-        script.Exited += (s, a) => {
-            if (onExit != null) {
-                // Wait for stdout and stderr to flush
-                script.WaitForExit();
-                onExit(script.ExitCode);
-            }
-        };
+        if (onExit != null) {
+            script.Exited += (s, a) => {
+                EditorApplication.delayCall += () => {
+                    try {
+                        // Wait for stdout and stderr to flush
+                        script.WaitForExit();
+                        onExit(script.ExitCode);
+                    } catch (Exception e) {
+                        Debug.LogException(e);
+                    }
+                };
+            };
+        }
 
         try {
             script.Start();
 
-            script.BeginOutputReadLine();
-            script.BeginErrorReadLine();
+            if (onOutput != null)
+                script.BeginOutputReadLine();
+            if (onError != null)
+                script.BeginErrorReadLine();
 
             if (!string.IsNullOrEmpty(input)) {
                 // Unity's old Mono runtime writes a BOM to the input stream,
