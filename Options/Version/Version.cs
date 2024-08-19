@@ -63,7 +63,7 @@ public struct Version : IComparable, IComparable<Version>, IEquatable<Version>
             // In case someone calls this before the container's OnEnable is invoked
             if (!loadedVersion) {
                 loadedVersion = true;
-                var container = UnityEngine.Object.FindObjectOfType<VersionContainer>();
+                var container = UnityEngine.Object.FindAnyObjectByType<VersionContainer>();
                 if (container != null) {
                     _projectVersion = container.version;
                 }
