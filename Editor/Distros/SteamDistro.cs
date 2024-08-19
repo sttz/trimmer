@@ -78,6 +78,40 @@ public class SteamDistro : DistroBase
     /// </summary>
     public NotarizationDistro macNotarization;
 
+    /// <summary>
+    /// Context menu to process and save the VDF scripts at a chosen location.
+    /// </summary>
+    [ContextMenu("Save Scripts")]
+    public void SaveScripts()
+    {
+        var buildPaths = GetBuildPaths();
+        if (!buildPaths.Any()) {
+            EditorUtility.DisplayDialog(
+                "Cannot Create Scripts", 
+                "There are no builds in the Build Profiles of this distro", 
+                "OK"
+            );
+            return;
+        }
+
+        var outputDir = EditorUtility.SaveFolderPanel(
+            "Save Scripts",
+            Path.GetDirectoryName(Application.dataPath),
+            $"{name} VDF Scripts"
+        );
+        if (string.IsNullOrEmpty(outputDir))
+            return;
+
+        var error = ConvertScripts(outputDir, buildPaths);
+        if (error != null) {
+            EditorUtility.DisplayDialog(
+                "Failed Creating Scripts", 
+                error, 
+                "OK"
+            );
+        }
+    }
+
     protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
     {
         // Check SDK
@@ -101,54 +135,10 @@ public class SteamDistro : DistroBase
         // Process scripts
         var tempDir = FileUtil.GetUniqueTempPathInProject();
         try {
-            Directory.CreateDirectory(tempDir);
-
-            var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.target));
-            string convertError = null;
-            foreach (var file in Directory.GetFiles(scriptsFolder)) {
-                if (Path.GetExtension(file).ToLower() != ".vdf") continue;
-
-                var contents = PathVarRegex.Replace(File.ReadAllText(file), (match) => {
-                    var platformName = match.Groups[1].Value.ToLower();
-
-                    if (platformName == "project") {
-                        return Path.GetDirectoryName(Application.dataPath);
-                    } else if (platformName == "scripts") {
-                        return Path.GetFullPath(scriptsFolder);
-                    }
-
-                    BuildTarget target;
-                    try {
-                        target = (BuildTarget)System.Enum.Parse(typeof(BuildTarget), platformName, true);
-                    } catch {
-                        convertError = $"SteamDistro: Invalid build target path variable '{platformName}' in VDF script: {file}";
-                        return "";
-                    }
-
-                    if (!buildPaths.Any(p => p.target == target)) {
-                        convertError = $"SteamDistro: Build target '{platformName}' not part of given build profile(s) in VDF script: {file}";
-                        return "";
-                    }
-                    targets.Remove(target);
-
-                    var path = buildPaths.Where(p => p.target == target).Select(p => p.path).First();
-                    path = OptionHelper.GetBuildBasePath(path);
-
-                    return Path.GetFullPath(path);
-                });
-                if (convertError != null) break;
-
-                var targetPath = Path.Combine(tempDir, Path.GetFileName(file));
-                File.WriteAllText(targetPath, contents);
-            }
-
+            // Process VDF scripts
+            var convertError = ConvertScripts(tempDir, buildPaths);
             if (convertError != null) {
                 throw new Exception($"SteamDistro: {convertError}");
-            }
-
-            if (targets.Count > 0) {
-                Debug.LogWarning("SteamDistro: Not all build targets filled into variables. Left over: " 
-                    + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
             }
 
             // Notarize mac builds
@@ -172,14 +162,15 @@ public class SteamDistro : DistroBase
             var args = $"+login {loginArgs} +run_app_build '{scriptPath}' +quit";
             await Execute(new ExecutionArgs(cmd, args) { 
                 onOutput = (output) => {
-                    if (output.Contains("Logged in OK")) {
+                    if (output == null) return;
+                    if (output.Contains("Waiting for user info...OK")) {
                         task.Report(0, description: "Logged in");
                     } else if (output.Contains("Building depot")) {
                         var match = BuildingDepotRegex.Match(output);
                         if (match.Success) {
                             task.Report(0, description: $"Building depo {match.Groups[1].Value}");
                         }
-                    } else if (output.Contains("")) {
+                    } else if (output.Contains("Successfully finished AppID")) {
                         var match = SuccessBuildIdRegex.Match(output);
                         if (match.Success) {
                             Debug.Log("SteamDistro: Build uploaded, ID = " + match.Groups[1].Value);
@@ -224,7 +215,7 @@ public class SteamDistro : DistroBase
     /// <summary>
     /// Regex used to match SteamCmd output.
     /// </summary>
-    static readonly Regex SuccessBuildIdRegex = new Regex(@"Successfully finished appID.*\(BuildID (\d+)\)");
+    static readonly Regex SuccessBuildIdRegex = new Regex(@"Successfully finished AppID.*\(BuildID (\d+)\)");
 
     /// <summary>
     /// Find the SteamCmd tool in the Steam SDK.
@@ -264,6 +255,64 @@ public class SteamDistro : DistroBase
         }
 
         throw new Exception($"SteamDistro: Could not find {SteamCMDPath.Last()} at the SDK path: {steamdSDKPath}");
+    }
+
+    /// <summary>
+    /// Process the Steam VDF scripts, replacing variables inside of them
+    /// and copying them to the given output directory.
+    /// </summary>
+    /// <param name="outputDir">The directory to copy the VDF scrips to (will be created, but not parent directories)</param>
+    /// <param name="buildPaths">The input build paths from the build profiles</param>
+    /// <returns>Error string or `null` if conversion was successful</returns>
+    public string ConvertScripts(string outputDir, IEnumerable<BuildPath> buildPaths)
+    {
+        Directory.CreateDirectory(outputDir);
+
+        var targets = new HashSet<BuildTarget>(buildPaths.Select(p => p.target));
+        string convertError = null;
+        foreach (var file in Directory.GetFiles(scriptsFolder)) {
+            if (Path.GetExtension(file).ToLower() != ".vdf") continue;
+
+            var contents = PathVarRegex.Replace(File.ReadAllText(file), (match) => {
+                var platformName = match.Groups[1].Value.ToLower();
+
+                if (platformName == "project") {
+                    return Path.GetDirectoryName(Application.dataPath);
+                } else if (platformName == "scripts") {
+                    return Path.GetFullPath(scriptsFolder);
+                }
+
+                BuildTarget target;
+                try {
+                    target = (BuildTarget)Enum.Parse(typeof(BuildTarget), platformName, true);
+                } catch {
+                    convertError = $"SteamDistro: Invalid build target path variable '{platformName}' in VDF script: {file}";
+                    return "";
+                }
+
+                if (!buildPaths.Any(p => p.target == target)) {
+                    convertError = $"SteamDistro: Build target '{platformName}' not part of given build profile(s) in VDF script: {file}";
+                    return "";
+                }
+                targets.Remove(target);
+
+                var path = buildPaths.Where(p => p.target == target).Select(p => p.path).First();
+                path = OptionHelper.GetBuildBasePath(path);
+
+                return Path.GetFullPath(path);
+            });
+            if (convertError != null) break;
+
+            var targetPath = Path.Combine(outputDir, Path.GetFileName(file));
+            File.WriteAllText(targetPath, contents);
+        }
+
+        if (targets.Count > 0) {
+            Debug.LogWarning("SteamDistro: Not all build targets filled into variables. Left over: " 
+                + string.Join(", ", targets.Select(t => t.ToString()).ToArray()));
+        }
+
+        return convertError;
     }
 }
 
