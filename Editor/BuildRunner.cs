@@ -451,7 +451,7 @@ public class BuildRunner : ScriptableObject
             throw;
         }
 
-        if (report.summary.result != BuildResult.Succeeded) {
+        if (report == null || report.summary.result != BuildResult.Succeeded) {
             throw new Exception($"Trimmer BuildRunner: Build failed");
         }
 
