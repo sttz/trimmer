@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.0.0-pre.15 (2024-08-19)
+* Ask to save or discard modified scenes before starting a build
+* Fix distros using `RunScript` getting stuck in background until editor regains focus
+* Fix exception when build is canceled during preparation
+
 ### 2.0.0-pre.14 (2024-08-19)
 * Fix Distro script callbacks being executed on non-main thread, possibly breaking them
 * Fix SteamDistro parsing of SteamCMD output
