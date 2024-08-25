@@ -5,19 +5,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
-using UnityEngine;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
+using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Reflection;
+
 using JetBrains.Annotations;
 using sttz.Trimmer.Extensions;
-using UnityEditor.Build.Reporting;
 
 #if UNITY_CLOUD_BUILD
 using UnityEngine.CloudBuild;
@@ -481,6 +482,12 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
     /// </remarks>
     public static BuildReport BuildSync(BuildProfile buildProfile, BuildPlayerOptions options)
     {
+        // Check for unsaved scenes
+        if (!HandleModifiedScenes()) {
+            OnBuildError(null);
+            return null;
+        }
+
         // Prepare build
         BuildType = TrimmerBuildType.Profile;
         CurrentProfile = buildProfile;
@@ -510,7 +517,6 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
             } else {
                 options.locationPathName = PickBuildLocation(options.target);
                 if (string.IsNullOrEmpty(options.locationPathName)) {
-                    Debug.Log("Cancelled build location dialog");
                     OnBuildError(null); // Arguably not an error here, but there might still be some cleanup to do
                     return null;
                 }
@@ -563,6 +569,68 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         CurrentProfile = null;
         OptionHelper.currentBuildOptions = default;
         return report;
+    }
+
+    /// <summary>
+    /// Handle asking the user what to do when scenes with unsaved changes are open.
+    /// </summary>
+    /// <remarks>
+    /// Addressables requires all scenes to be saved before a content build.
+    /// Unity doesn't but it's inconsistent wether unsaved changes will make it into the build.
+    /// So it's better to not have an unsaved changes when doing a build.
+    /// </remarks>
+    /// <returns>`true` if build can proceed, `false` to cancel</returns>
+    static bool HandleModifiedScenes()
+    {
+        if (Application.isBatchMode)
+            return true;
+
+        List<Scene> dirtyScenes = null;
+        for (int i = 0, count = EditorSceneManager.sceneCount; i < count; i++) {
+            var scene = EditorSceneManager.GetSceneAt(i);
+            if (!string.IsNullOrEmpty(scene.path) && scene.isDirty) {
+                dirtyScenes ??= new();
+                dirtyScenes.Add(scene);
+            }
+        }
+
+        if (dirtyScenes == null)
+            return true;
+
+        int choice;
+
+        var reloadScene = typeof(EditorSceneManager).GetMethod("ReloadScene", BindingFlags.Static | BindingFlags.NonPublic);
+        if (reloadScene != null) {
+            choice = EditorUtility.DisplayDialogComplex(
+                "Unsaved Scenes", "Modified Scenes must be saved or changes discarded to continue.",
+                "Save", "Cancel", "Discard Changes"
+            );
+        } else {
+            // Method for discarding changes not found, just offer saving
+            choice = EditorUtility.DisplayDialog(
+                "Unsaved Scenes", "Modified Scenes must be saved to continue.",
+                "Save", "Cancel"
+            ) ? 1 : 0;
+        }
+
+        if (choice == 0) {
+            // Save changes
+            EditorSceneManager.SaveScenes(dirtyScenes.ToArray());
+        } else if (choice == 1) {
+            // Cancel
+            return false;
+        } else if (choice == 2) {
+            // Discard changes
+            var argumentArray = new object[1];
+            foreach (var scene in dirtyScenes) {
+                argumentArray[0] = scene;
+                reloadScene.Invoke(null, argumentArray);
+            }
+        } else {
+            throw new Exception($"Invalid return value from DisplayDialogComplex: {choice}");
+        }
+
+        return true;
     }
 
     // -------- BuildInfo --------
