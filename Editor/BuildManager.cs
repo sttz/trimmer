@@ -884,7 +884,9 @@ public class BuildManager : IProcessSceneWithReport, IPreprocessBuildWithReport,
         OptionHelper.currentBuildOptions = default;
         BuildType = TrimmerBuildType.None;
 
-        Debug.LogError($"Trimmer: Build failed for platform {target}");
+        if (report != null) {
+            Debug.LogError($"Trimmer: Build failed for platform {target}");
+        }
     }
 
     public void OnPostprocessBuild(BuildReport report)
