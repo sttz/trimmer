@@ -112,7 +112,7 @@ public static class OptionHelper
         return script;
     }
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
 
     /// <summary>
     /// The options used to start the current Trimmer build (if any).
@@ -208,6 +208,8 @@ public static class OptionHelper
 
         return GetSingleton<T>(true);
     }
+
+    // ------ Execution ------
 
     /// <summary>
     /// Run an external process/script with given arguments and wait for it to exit.
@@ -380,26 +382,26 @@ public static class OptionHelper
         if (onOutput != null) {
             script.StartInfo.RedirectStandardOutput = true;
             script.OutputDataReceived += (s, a) => {
-                EditorApplication.delayCall += () => {
+                RunOnMainThread(() => {
                     try {
                         onOutput.Invoke(a.Data);
                     } catch (Exception e) {
                         Debug.LogException(e);
                     }
-                };
+                });
             };
         }
 
         if (onError != null) {
             script.StartInfo.RedirectStandardError = true;
             script.ErrorDataReceived += (s, a) => {
-                EditorApplication.delayCall += () => {
+                RunOnMainThread(() => {
                     try {
                         onError.Invoke(a.Data);
                     } catch (Exception e) {
                         Debug.LogException(e);
                     }
-                };
+                });
             };
         }
 
@@ -409,7 +411,7 @@ public static class OptionHelper
 
         if (onExit != null) {
             script.Exited += (s, a) => {
-                EditorApplication.delayCall += () => {
+                RunOnMainThread(() => {
                     try {
                         // Wait for stdout and stderr to flush
                         script.WaitForExit();
@@ -417,7 +419,7 @@ public static class OptionHelper
                     } catch (Exception e) {
                         Debug.LogException(e);
                     }
-                };
+                });
             };
         }
 
@@ -452,11 +454,52 @@ public static class OptionHelper
         };
     }
 
-    #endif
+    /// <summary>
+    /// Run a callback on Unity's main thread.
+    /// </summary>
+    /// <remarks>
+    /// Currently this uses <see cref="EditorApplication.Update"/> to 
+    /// execute the queued actions on the main thread.
+    /// Note that <see cref="EditorApplication.delayCall"/> cannot be used,
+    /// since it only gets called once the editor has focus.
+    /// </remarks>
+    public static void RunOnMainThread(Action action)
+    {
+        lock (actionQueue) {
+            actionQueue.Add(action);
+
+            if (!hasQueuedActions) {
+                hasQueuedActions = true;
+                EditorApplication.update += ProcessActionQueue;
+            }
+        }
+    }
+
+    static bool hasQueuedActions;
+    static List<Action> actionQueue = new();
+    static List<Action> currentQueue = new();
+
+    static void ProcessActionQueue()
+    {
+        lock (actionQueue) {
+            currentQueue.AddRange(actionQueue);
+            actionQueue.Clear();
+
+            hasQueuedActions = false;
+            EditorApplication.update -= ProcessActionQueue;
+        }
+
+        foreach (var action in currentQueue) {
+            try {
+                action();
+            } catch (Exception e) {
+                Debug.LogException(e);
+            }
+        }
+        currentQueue.Clear();
+    }
 
     // -------- Plugin Removal --------
-
-    #if UNITY_EDITOR
 
     static bool DontIncludeInBuild(string path)
     {
@@ -557,7 +600,8 @@ public static class OptionHelper
         return buildPath;
     }
 
-    #endif
+#endif
+
 }
 
 }
