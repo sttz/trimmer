@@ -270,14 +270,16 @@ public abstract class DistroBase : BatchItem
         /// </summary>
         public bool silentError;
 
-        public ExecutionArgs(string path, string args)
+        public ExecutionArgs(System.Diagnostics.ProcessStartInfo startInfo)
         {
-            this.startInfo = new System.Diagnostics.ProcessStartInfo(path, args);
+            this.startInfo = startInfo;
             this.input = null;
             this.onOutput = null;
             this.onError = null;
             this.silentError = false;
         }
+
+        public ExecutionArgs(string path, string args) : this(new System.Diagnostics.ProcessStartInfo(path, args)) { }
     }
 
     /// <summary>

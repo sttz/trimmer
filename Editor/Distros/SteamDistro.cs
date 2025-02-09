@@ -160,24 +160,33 @@ public class SteamDistro : DistroBase
 
             var scriptPath = Path.GetFullPath(Path.Combine(tempDir, appScript));
             var args = $"+login {loginArgs} +run_app_build '{scriptPath}' +quit";
-            await Execute(new ExecutionArgs(cmd, args) { 
-                onOutput = (output) => {
-                    if (output == null) return;
-                    if (output.Contains("Waiting for user info...OK")) {
-                        task.Report(0, description: "Logged in");
-                    } else if (output.Contains("Building depot")) {
-                        var match = BuildingDepotRegex.Match(output);
-                        if (match.Success) {
-                            task.Report(0, description: $"Building depo {match.Groups[1].Value}");
-                        }
-                    } else if (output.Contains("Successfully finished AppID")) {
-                        var match = SuccessBuildIdRegex.Match(output);
-                        if (match.Success) {
-                            Debug.Log("SteamDistro: Build uploaded, ID = " + match.Groups[1].Value);
-                        }
+
+            var execArgs = new ExecutionArgs(cmd, args);
+
+            // Set the HOME environment variable to force steamcmd to create a separate
+            // configuration in the SDK directory.
+            // Otherwise, using the steam client will trash steamcmd's credentials
+            // and force a new login / 2FA.
+            execArgs.startInfo.Environment.Add("HOME", steamdSDKPath);
+
+            execArgs.onOutput = (output) => {
+                if (output == null) return;
+                if (output.Contains("Waiting for user info...OK")) {
+                    task.Report(0, description: "Logged in");
+                } else if (output.Contains("Building depot")) {
+                    var match = BuildingDepotRegex.Match(output);
+                    if (match.Success) {
+                        task.Report(0, description: $"Building depo {match.Groups[1].Value}");
+                    }
+                } else if (output.Contains("Successfully finished AppID")) {
+                    var match = SuccessBuildIdRegex.Match(output);
+                    if (match.Success) {
+                        Debug.Log("SteamDistro: Build uploaded, ID = " + match.Groups[1].Value);
                     }
                 }
-            }, task);
+            };
+
+            await Execute(execArgs, task);
         } finally {
             // Always clean up temp files
             Directory.Delete(tempDir, true);
