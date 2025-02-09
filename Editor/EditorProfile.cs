@@ -336,6 +336,7 @@ public class EditorProfile : EditableProfile, IEditorProfile
 
     // ------ EditableProfile ------
 
+    bool IEditorProfile.IsEditorProfile => true;
     IEnumerable<BuildTarget> IEditorProfile.BuildTargets => Enumerable.Empty<BuildTarget>();
 
     [SerializeField] ValueStore store = new ValueStore();

@@ -270,6 +270,9 @@ public class BuildProfile : EditableProfile, IEditorProfile
         }
     }
 
+    // We're just a lowly build profile...
+    bool IEditorProfile.IsEditorProfile => false;
+
     public override void SaveToStore()
     {
         EditProfile.SaveToStore(clear: false);

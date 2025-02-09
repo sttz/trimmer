@@ -80,6 +80,13 @@ public enum OptionInclusion
 public interface IEditorProfile
 {
     /// <summary>
+    /// Wether this is the <see cref="Trimmer.Editor.EditorProfile"/>
+    /// (or a <see cref="Trimmer.Editor.BuildProfile"/>).
+    /// Allows to check if the option is part of the profile
+    /// used when playing in the editor or a build profile just for editing.
+    /// </summary>
+    bool IsEditorProfile { get; }
+    /// <summary>
     /// The build targets of this profile.
     /// </summary>
     IEnumerable<BuildTarget> BuildTargets { get; }
