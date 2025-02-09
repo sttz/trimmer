@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.0.0-pre.17 (2025-02-09)
+* SteamDistro: Set $HOME to separate session from Steam client
+* Add `IEditorProfile.IsEditorProfile` to check if option is part of the EditorProfile or a BuildProfile in the editor
+* Add `XcodePostprocessor` to handle differences between iOS and macOS Xcode projects Unity generates
+
 ### 2.0.0-pre.15 (2024-08-19)
 * Ask to save or discard modified scenes before starting a build
 * Fix distros using `RunScript` getting stuck in background until editor regains focus
