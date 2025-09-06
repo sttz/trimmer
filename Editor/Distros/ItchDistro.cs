@@ -106,12 +106,23 @@ public class ItchDistro : DistroBase
             }
         }
 
-        var args = string.Format(
-            "push '{0}' '{1}:{2}' --userversion '{3}' --ignore='*.DS_Store' --ignore='build.json'",
-            path, project, channel, Application.version
-        );
+        var startInfo = new System.Diagnostics.ProcessStartInfo();
+        var argv = startInfo.ArgumentList;
+        
+        argv.Add("push");
+        argv.Add(path);
+        argv.Add($"{project}:{channel}");
+        argv.Add($"--userversion"); argv.Add(Application.version);
+        argv.Add("--ignore"); argv.Add("*.DS_Store");
+        argv.Add("--ignore"); argv.Add("build.json");
+        
+        startInfo.FileName = butlerPath;
+        startInfo.UseShellExecute = false;
 
-        await Execute(new ExecutionArgs(butlerPath, args), task);
+        var argvStr = String.Join("> <", argv);
+        task.Report(0, description: $"Executing {butlerPath}: <{argvStr}>");
+
+        await Execute(new ExecutionArgs() { startInfo = startInfo }, task);
     }
 }
 

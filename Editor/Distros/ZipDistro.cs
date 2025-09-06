@@ -4,7 +4,6 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -280,23 +279,26 @@ public class ZipDistro : DistroBase
         }
 
         // Run 7za command to create ZIP file
-        var excludes = "";
+        
+        var startInfo = new System.Diagnostics.ProcessStartInfo();
+        var argv = startInfo.ArgumentList;
+        var inputName = Path.GetFileName(basePath);
+        
+        argv.Add("a");
+        argv.Add(outputPath);
+        argv.Add(inputName);
+        argv.Add($"-mx{(int)compression}");
+        
         foreach (var pattern in ZipIgnore) {
-            excludes += @" -xr\!'" + pattern + "'";
+            argv.Add(@"-xr!" + pattern);
         }
 
-        var inputName = Path.GetFileName(basePath);
-        var args = string.Format(
-            "a '{0}' '{1}' -mx{2} {3}",
-            outputPath, inputName, (int)compression, excludes
-        );
-
-        var startInfo = new System.Diagnostics.ProcessStartInfo();
         startInfo.FileName = sevenZPath;
-        startInfo.Arguments = args;
         startInfo.WorkingDirectory = Path.GetDirectoryName(basePath);
+        startInfo.UseShellExecute = false;
 
-        task.Report(0, description: $"Archiving {inputName}");
+        var argvStr = String.Join("> <", argv);
+        task.Report(0, description: $"Archiving {inputName}: <{argvStr}>");
 
         await Execute(new ExecutionArgs() { startInfo = startInfo }, task);
 
@@ -313,11 +315,14 @@ public class ZipDistro : DistroBase
             throw new Exception("ZipDistro: Path to archive does not exist: " + archivePath);
         }
 
-        var args = string.Format(
-            "rn '{0}' '{1}' '{2}'",
-            archivePath, oldName, newName
-        );
-        await Execute(new ExecutionArgs(Get7ZipPath(), args), task);
+        var startInfo = new System.Diagnostics.ProcessStartInfo(Get7ZipPath());
+        var argv = startInfo.ArgumentList;
+        argv.Add("rn");
+        argv.Add(archivePath);
+        argv.Add(oldName);
+        argv.Add(newName);
+
+        await Execute(new ExecutionArgs(startInfo), task);
     }
 
     protected override async Task RunDistribute(IEnumerable<BuildPath> buildPaths, TaskToken task)
