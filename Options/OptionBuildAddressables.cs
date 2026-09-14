@@ -7,14 +7,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using sttz.Trimmer.BaseOptions;
-using UnityEditor.Build.Reporting;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets;
 using UnityEditor.Build;
 using UnityEditor;
+using UnityEngine.AddressableAssets;
+using IOFile = System.IO.File;
+using IOPath = System.IO.Path;
 
 namespace sttz.Trimmer.Options
 {
@@ -127,6 +130,55 @@ public class OptionBuildAddressables : OptionToggle
         }
     }
 
+    /// <summary>
+    /// Option to copy the generated build timeline to the output directory
+    /// to simplify analysis later.
+    /// </summary>
+    /// <remarks>
+    /// Addressables exposes a detailed timeline of its build process through
+    /// a file located at <c>Library/com.unity.addressables/AddressablesBuildTEP.json</c>.
+    /// This file is overwritten with each Addressables build,
+    /// which can complicate analysis if your project involves multiple build profiles.
+    /// This option, if not empty, will copy the aforementioned file
+    /// to the directory given by the value,
+    /// as resolved by the profile.
+    /// </remarks>
+    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildProfileLog"/>
+    public class OptionCopyBuildTimelineToOutputDirectory : OptionString
+    {
+        protected override void Configure()
+        {
+            DefaultValue = "[UnityEngine.AddressableAssets.Addressables.BuildPath]";
+        }
+    }
+    
+    /// <summary>
+    /// Option to copy the generated build layout to the output directory
+    /// to simplify analysis later.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Addressables provides a detailed layout of the asset bundles it produces in
+    /// a file located at <c>Library/com.unity.addressables/buildlayout.txt</c>.
+    /// This file is overwritten with each Addressables build,
+    /// which can complicate analysis if your project involves multiple build profiles.
+    /// This option, if not empty, will copy the aforementioned file
+    /// to the directory given by the value,
+    /// as resolved by the profile.
+    /// </para>
+    /// <para>
+    /// If build layout reports are disabled, this option will do nothing.
+    /// </para>
+    /// </remarks>
+    /// <seealso href="https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/BuildLayoutReport"/>
+    public class OptionCopyBuildLayoutToOutputDirectory : OptionString
+    {
+        protected override void Configure()
+        {
+            DefaultValue = "[UnityEngine.AddressableAssets.Addressables.BuildPath]";
+        }
+    }
+
     override public BuildPlayerOptions PrepareBuild(BuildPlayerOptions options, OptionInclusion inclusion)
     {
         options = base.PrepareBuild(options, inclusion);
@@ -182,6 +234,19 @@ public class OptionBuildAddressables : OptionToggle
 
             // Build!
             AddressableAssetSettings.BuildPlayerContent(out result);
+
+            // Copy relevant logs to the build directory for easier analysis, if requested
+            var buildTimelineDestinationExpression = GetChild<OptionCopyBuildTimelineToOutputDirectory>()?.Value;
+            if (!string.IsNullOrEmpty(buildTimelineDestinationExpression))
+            {
+                CopyBuildLogFile(settings, "AddressablesBuildTEP.json", buildTimelineDestinationExpression);
+            }
+
+            var buildLayoutDestinationExpression = GetChild<OptionCopyBuildLayoutToOutputDirectory>()?.Value;
+            if (!string.IsNullOrEmpty(buildLayoutDestinationExpression))
+            {
+                CopyBuildLogFile(settings, "buildlayout.txt", buildLayoutDestinationExpression);
+            }
         } finally {
             // Restore overrides
             if (settings != null) {
@@ -200,6 +265,17 @@ public class OptionBuildAddressables : OptionToggle
         }
 
         Debug.Log($"Built {result.LocationCount} Addressable assets in {result.Duration}s to {result.OutputPath}");
+    }
+
+    void CopyBuildLogFile(AddressableAssetSettings settings, string fileName, string destination)
+    {
+        var sourcePath = IOPath.Combine(Addressables.LibraryPath, fileName);
+
+        if (IOFile.Exists(sourcePath))
+        {
+            var destinationPath = settings.profileSettings.EvaluateString(settings.activeProfileId, destination);
+            File.Copy(sourcePath, IOPath.Combine(destinationPath, fileName));
+        }
     }
 }
 
