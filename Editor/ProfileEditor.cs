@@ -113,19 +113,21 @@ public class ProfileEditor : UnityEditor.Editor
         if (style == null) style = EditorStyles.foldout;
 
         // Wrap foldout into a layout region to get the foldout's rect
-        var rect = EditorGUILayout.BeginHorizontal(GUIStyle.none);
-        var clicked = false;
+        bool newFoldout = false;
+        bool clicked = false;
+        using (var rectScope = new EditorGUILayout.HorizontalScope(GUIStyle.none))
+        {
+            var rect = rectScope.rect;
 
-        // Determine if it is being clicked on the foldout before
-        // calling it to avoid it eating the event
-        if (Event.current.type == EventType.MouseUp
-            && rect.Contains(Event.current.mousePosition)) {
-            clicked = true;
+            // Determine if it is being clicked on the foldout before
+            // calling it to avoid it eating the event
+            if (Event.current.type == EventType.MouseUp
+                && rect.Contains(Event.current.mousePosition)) {
+                clicked = true;
+            }
+
+            newFoldout = EditorGUILayout.Foldout(foldout, content, style);
         }
-
-        var newFoldout = EditorGUILayout.Foldout(foldout, content, style);
-
-        EditorGUILayout.EndHorizontal();
 
         // Act in case we saw a click but the foldout didn't toggle
         if (newFoldout == foldout && clicked) {
@@ -142,7 +144,7 @@ public class ProfileEditor : UnityEditor.Editor
     /// </summary>
     public static bool Foldout(string path, bool def, string content, GUIStyle style = null)
     {
-        EditorGUI.BeginChangeCheck();
+        using var _ = new EditorGUI.ChangeCheckScope();
         
         var wasExpanded = EditorProfile.Instance.IsExpanded(path);
         if (def) wasExpanded = !wasExpanded;
@@ -474,7 +476,7 @@ public class ProfileEditor : UnityEditor.Editor
     void SourceProfileGUI()
     {
         if (editorProfile != null) {
-            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUILayout.HorizontalScope())
             {
                 if (sourceProfiles == null) {
                     sourceProfiles = BuildProfile.AllBuildProfiles.Prepend(null).ToArray();
@@ -501,7 +503,6 @@ public class ProfileEditor : UnityEditor.Editor
                 }
                 GUI.enabled = true;
             }
-            EditorGUILayout.EndHorizontal();
         }
     }
 
@@ -525,7 +526,7 @@ public class ProfileEditor : UnityEditor.Editor
         EditorGUILayout.Space();
 
         var usesActive = buildProfile.UsesActiveBuildTarget();
-        EditorGUILayout.BeginHorizontal();
+        using (new EditorGUILayout.HorizontalScope())
         {
             GUILayout.Label("Build Targets", boldLabel);
             if (GUILayout.Button(GUIContent.none, plusStyle)) {
@@ -545,11 +546,10 @@ public class ProfileEditor : UnityEditor.Editor
             }
             GUILayout.FlexibleSpace();
         }
-        EditorGUILayout.EndHorizontal();
 
         foreach (var target in buildProfile.BuildTargets) {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginDisabledGroup(usesActive);
+            using var _ = new EditorGUILayout.HorizontalScope();
+            using (new EditorGUI.DisabledGroupScope(usesActive))
             {
                 if (GUILayout.Button(GUIContent.none, minusStyle)) {
                     delayedRemovals.Add(() => {
@@ -558,7 +558,6 @@ public class ProfileEditor : UnityEditor.Editor
                 }
                 EditorGUILayout.LabelField(target.ToString());
             }
-            EditorGUI.EndDisabledGroup();
 
             var path = buildProfile.GetLastBuildPath(target);
             if (!string.IsNullOrEmpty(path) 
@@ -566,27 +565,23 @@ public class ProfileEditor : UnityEditor.Editor
                     && GUILayout.Button("Show", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
                 EditorUtility.RevealInFinder(path);
             }
-            EditorGUI.BeginDisabledGroup(BuildRunner.Current != null);
+            using (new EditorGUI.DisabledGroupScope(BuildRunner.Current != null))
             {
                 if (GUILayout.Button("Build", EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
                     BuildManager.Build(buildProfile, target);
                 }
             }
-            EditorGUI.EndDisabledGroup();
-
-            EditorGUILayout.EndHorizontal();
         }
 
         EditorGUILayout.Space();
 
-        EditorGUI.BeginDisabledGroup(BuildRunner.Current != null);
+        using (new EditorGUI.DisabledGroupScope(BuildRunner.Current != null))
         {
             var count = buildProfile.BuildTargets.Count();
             if (GUILayout.Button("Build " + count + " Target" + (count > 1 ? "s" : ""), EditorStyles.miniButton)) {
                 BuildManager.Build(buildProfile);
             }
         }
-        EditorGUI.EndDisabledGroup();
     }
 
     protected void AddBuildTarget(object userData)
@@ -674,12 +669,11 @@ public class ProfileEditor : UnityEditor.Editor
             }
 
             if (category != lastCategory) {
-                EditorGUILayout.BeginHorizontal(categoryBackground);
+                using (new EditorGUILayout.HorizontalScope(categoryBackground))
                 {
                     var path = pathBase + "_" + category;
                     categoryExpanded = Foldout(path, true, category, categoryFoldout);
                 }
-                EditorGUILayout.EndHorizontal();
                 lastCategory = category;
             } else if (categoryExpanded) {
                 GUILayout.Label(GUIContent.none, separator);
@@ -692,8 +686,10 @@ public class ProfileEditor : UnityEditor.Editor
 
         // Option GUI
         var lineHeight = EditorGUIUtility.singleLineHeight + linePadding;
-        var rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(lineHeight));
+        Rect rect;
+        using (var rectScope = new EditorGUILayout.HorizontalScope(GUILayout.Height(lineHeight)))
         {
+            rect = rectScope.rect;
             // Variant container
             if (option.IsDefaultVariant && !showDefaultVariant) {
                 EditorGUILayout.LabelField(displayName, width);
@@ -708,9 +704,9 @@ public class ProfileEditor : UnityEditor.Editor
 
                 if (option.Variance == OptionVariance.Dictionary) {
                     // Disable when editing the default variant
-                    EditorGUI.BeginDisabledGroup(isDefault);
+                    using (new EditorGUI.DisabledGroupScope(isDefault))
                     {
-                        EditorGUI.BeginDisabledGroup(isDefault);
+                        using (new EditorGUI.DisabledGroupScope(isDefault))
                         {
                             var newParam = EditorGUILayout.DelayedTextField(option.VariantParameter, width);
                             if (newParam != option.VariantParameter) {
@@ -722,9 +718,7 @@ public class ProfileEditor : UnityEditor.Editor
                                 Option.changed = true;
                             }
                         }
-                        EditorGUI.EndDisabledGroup();
                     }
-                    EditorGUI.EndDisabledGroup();
                 } else {
                     EditorGUILayout.PrefixLabel(" ");
                 }
@@ -760,7 +754,7 @@ public class ProfileEditor : UnityEditor.Editor
                 color.a = 1;
                 GUI.color = color;
                 
-                EditorGUILayout.BeginHorizontal(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.Height(lineHeight));
+                using (new EditorGUILayout.HorizontalScope(includeBackground, GUILayout.Width(buildColumnWidth), GUILayout.Height(lineHeight)))
                 {
                     if (
                         buildProfile != null
@@ -770,25 +764,21 @@ public class ProfileEditor : UnityEditor.Editor
                             || (option.Capabilities & OptionCapabilities.HasAssociatedFeature) != 0
                         )
                     ) {
-                        EditorGUI.BeginDisabledGroup(!optionAvailable);
+                        using var _ = new EditorGUI.DisabledGroupScope(!optionAvailable);
                         var root = buildProfile.Store.GetOrCreateRoot(option.Name);
                         GUILayout.Label(LabelForInclusion(root, option.Capabilities), inclusionLabel);
                         if (optionAvailable) {
                             DoInclusionMenu(root, option.Capabilities);
                         }
-                        EditorGUI.EndDisabledGroup();
                     } else {
                         EditorGUILayout.Space();
                     }
                 }
-                EditorGUILayout.EndHorizontal();
             } else {
                 // Not including a layout group here somehow makes the parent group taller
-                EditorGUILayout.BeginHorizontal(GUILayout.Width(0));
-                EditorGUILayout.EndHorizontal();
+                using var _ = new EditorGUILayout.HorizontalScope(GUILayout.Width(0));
             }
         }
-        EditorGUILayout.EndHorizontal();
 
         // Expansion toggle
         if (expandable) {
